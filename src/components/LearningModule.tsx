@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import { getCourseById, ICourse, ILesson } from '@/services/courseService';
-import { getEnrolledCourses, updateCourseProgress } from '@/services/profileService';
+import { getEnrolledCourses, updateCourseProgress, getUserCourseDetails } from '@/services/profileService';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,11 +13,21 @@ import { Button } from '@/components/ui/button';
 import QuizList from '@/components/QuizList';
 import { confetti } from '@/lib/confetti';
 import courseStructureService, { CourseStructure, Chapter, Subchapter, Section } from '@/services/courseStructureService';
-import { ChevronDown, ChevronRight, BookOpen, FileQuestion, ArrowLeft, CheckCircle2, Lock } from 'lucide-react';
+import { ChevronDown, ChevronRight, BookOpen, FileQuestion, ArrowLeft, CheckCircle2, Lock, Eye, BookMarked, FileText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import quizService from '@/services/quizService';
 import { Link } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import ReactMarkdown from 'react-markdown';
+import StudyMaterialsList from './StudyMaterialsList';
 
 const LearningModule: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +55,7 @@ const LearningModule: React.FC = () => {
     sectionIndex: number;
     title: string;
     content: string;
+    videoUrl?: string;
   } | null>(null);
   
   // Completed sections tracking
@@ -54,6 +65,13 @@ const LearningModule: React.FC = () => {
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
   const [quizzesBySubchapter, setQuizzesBySubchapter] = useState<{[key: string]: any[]}>({});
   const [loadingQuizzes, setLoadingQuizzes] = useState<boolean>(false);
+  const [quizScores, setQuizScores] = useState<{[quizId: string]: number}>({});
+
+  // Modal state for viewing section content
+  const [isContentModalOpen, setIsContentModalOpen] = useState(false);
+  const [selectedSectionTitle, setSelectedSectionTitle] = useState('');
+  const [selectedSectionContent, setSelectedSectionContent] = useState<string | undefined>('');
+  const [loadingContent, setLoadingContent] = useState(false);
 
   // Fetch course data
   useEffect(() => {
@@ -65,29 +83,41 @@ const LearningModule: React.FC = () => {
 
   // Add this new effect to handle course completion state
   useEffect(() => {
-    // Only mark as completed if progress is exactly 100%
-    if (progress === 100 && !isCompleted) {
+    // Only mark as completed if progress is exactly 100% AND admin has marked the course as completed
+    if (progress === 100 && !isCompleted && course?.isCompleted) {
       setIsCompleted(true);
       toast.success("Congratulations! You've completed this course!");
       confetti();
     }
-  }, [progress]);
+  }, [progress, course?.isCompleted]);
 
-  // Refresh quiz attempts when the component is focused (e.g., after completing a quiz)
+  // Add a function to manually refresh quiz progress
+  const refreshQuizProgress = () => {
+    console.log('Manually refreshing quiz progress');
+    fetchUserQuizProgress();
+  };
+
+  // Update the useEffect that handles window focus
   useEffect(() => {
     if (!id) return;
     
+    // Store previous quiz completion state to check for newly completed quizzes
+    const prevCompletedQuizzes = new Set(completedQuizzes);
+    
     const handleFocus = () => {
       console.log('Window focused, refreshing quiz attempts');
-      fetchUserQuizProgress();
+      refreshQuizProgress();
     };
     
     window.addEventListener('focus', handleFocus);
     
+    // Initial fetch on mount
+    refreshQuizProgress();
+    
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [id]);
+  }, [id]); // Only depend on id to avoid re-attaching listeners
 
   const fetchCourseData = async () => {
     if (!id) {
@@ -107,6 +137,19 @@ const LearningModule: React.FC = () => {
       }
       
       setCourse(courseData);
+      
+      // Show course completion notification if the course is marked as completed by admin
+      if (courseData.isCompleted) {
+        toast.info(
+          <div className="flex flex-col gap-1">
+            <p className="font-semibold">This course has been marked as completed</p>
+            {courseData.completionAnnouncement && (
+              <p className="text-sm">{courseData.completionAnnouncement}</p>
+            )}
+          </div>,
+          { duration: 6000 }
+        );
+      }
       
       // Fetch course structure data
       try {
@@ -131,7 +174,8 @@ const LearningModule: React.FC = () => {
                 subchapterIndex: 0,
                 sectionIndex: 0,
                 title: firstSection.title,
-                content: firstSection.generatedContent || 'No content available for this section.'
+                content: firstSection.generatedContent || 'No content available for this section.',
+                videoUrl: firstSection.videoUrl
               });
             }
           }
@@ -145,18 +189,40 @@ const LearningModule: React.FC = () => {
       
       // Fetch user's progress for this course
       try {
-        const enrolledCourses = await getEnrolledCourses();
-        const currentCourse = enrolledCourses.find((course: any) => course.id === id);
+        // Get user course details including completed sections and quizzes
+        const userCourseDetails = await getUserCourseDetails(id);
         
-        if (currentCourse) {
+        if (userCourseDetails) {
           // Set progress and completion status
-          const userProgress = currentCourse.progress || 0;
+          const userProgress = userCourseDetails.progress || 0;
           setProgress(userProgress);
-          setIsCompleted(userProgress === 100);
+          setIsCompleted(userCourseDetails.completed || false);
           
           // If user has progress, select the appropriate lesson
-          if (userProgress > 0 && userProgress < 100 && currentCourse.currentLesson !== undefined) {
-            setCurrentLessonIndex(currentCourse.currentLesson);
+          if (userProgress > 0 && userProgress < 100 && userCourseDetails.currentLesson !== undefined) {
+            setCurrentLessonIndex(userCourseDetails.currentLesson);
+          }
+          
+          // Load completed sections from the database
+          if (userCourseDetails.completedSections && userCourseDetails.completedSections.length > 0) {
+            const completedSectionsSet = new Set<string>(userCourseDetails.completedSections);
+            setCompletedSections(completedSectionsSet);
+          }
+          
+          // Load completed quizzes from the database
+          if (userCourseDetails.completedQuizzes && userCourseDetails.completedQuizzes.length > 0) {
+            const completedQuizzesSet = new Set<string>();
+            const quizScoresMap: {[quizId: string]: number} = {};
+            
+            userCourseDetails.completedQuizzes.forEach((quiz: any) => {
+              if (quiz.passed) {
+                completedQuizzesSet.add(quiz.quizId);
+              }
+              quizScoresMap[quiz.quizId] = quiz.score;
+            });
+            
+            setCompletedQuizzes(completedQuizzesSet);
+            setQuizScores(quizScoresMap);
           }
         }
       } catch (err) {
@@ -171,68 +237,167 @@ const LearningModule: React.FC = () => {
     }
   };
 
-  // Fetch user quiz progress for this course
+  // Fetch user quiz progress
   const fetchUserQuizProgress = async () => {
+    if (!id) return;
+    
     try {
       setLoadingQuizzes(true);
+      console.log("Fetching quizzes for course:", id);
       
-      // Get all quizzes for this course
-      const quizzesResponse = await quizService.getQuizzesByCourse(id);
-      console.log('All course quizzes:', quizzesResponse);
+      // Fetch all quizzes for this course
+      const quizzes = await quizService.getQuizzesByCourse(id);
+      console.log("Quizzes fetched:", quizzes);
       
-      // Get all quiz attempts for this course
-      const attemptsResponse = await quizService.getUserQuizAttemptsByCourse(id);
-      console.log('User quiz attempts:', attemptsResponse);
+      if (!quizzes || quizzes.length === 0) {
+        console.log("No quizzes found for this course");
+        setLoadingQuizzes(false);
+        return;
+      }
       
-      // Organize quizzes by subchapter title for easier access
-      const quizzesBySubchapterMap = new Map();
+      // Group quizzes by subchapter
+      const quizzesBySubchapterMap: {[key: string]: any[]} = {};
       
-      quizzesResponse.forEach((quiz: any) => {
-        const subchapterTitle = quiz.subchapter || 'Uncategorized';
-        if (!quizzesBySubchapterMap.has(subchapterTitle)) {
-          quizzesBySubchapterMap.set(subchapterTitle, []);
+      // Get the course structure to match quizzes with subchapters
+      if (courseStructure) {
+        // Initialize with empty arrays for each subchapter
+        courseStructure.chapters.forEach(chapter => {
+          chapter.subchapters.forEach(subchapter => {
+            quizzesBySubchapterMap[subchapter.title] = [];
+          });
+        });
+      }
+      
+      quizzes.forEach((quiz: any) => {
+        console.log("Processing quiz:", quiz.title);
+        
+        // Extract subchapter from quiz title if not explicitly set
+        // Format is usually "SubchapterName: Quiz Title"
+        let subchapterName = quiz.subchapter;
+        
+        if (!subchapterName) {
+          // Try to extract from title
+          const titleParts = quiz.title.split(':');
+          if (titleParts.length > 1) {
+            subchapterName = titleParts[0].trim();
+            console.log("Extracted subchapter from title:", subchapterName);
+          } else if (courseStructure && courseStructure.chapters.length > 0) {
+            // Default to the first subchapter if we can't extract it
+            subchapterName = courseStructure.chapters[0].subchapters[0]?.title || 'Unknown';
+            console.log("Using default subchapter:", subchapterName);
+          } else {
+            subchapterName = 'Unknown';
+          }
         }
-        quizzesBySubchapterMap.get(subchapterTitle).push(quiz);
+        
+        // Initialize array for this subchapter if it doesn't exist
+        if (!quizzesBySubchapterMap[subchapterName]) {
+          quizzesBySubchapterMap[subchapterName] = [];
+        }
+        
+        quizzesBySubchapterMap[subchapterName].push(quiz);
       });
       
-      setQuizzesBySubchapter(Object.fromEntries(quizzesBySubchapterMap));
+      console.log("Quizzes by subchapter:", quizzesBySubchapterMap);
+      setQuizzesBySubchapter(quizzesBySubchapterMap);
       
-      // Track completed quizzes
+      // Fetch user's quiz attempts
+      const attempts = await quizService.getUserQuizAttempts(id);
+      console.log("User quiz attempts:", attempts);
+      
+      // Mark quizzes as completed if the user has passed them with a good percentage
       const completedQuizzesSet = new Set<string>();
+      const quizScores: {[quizId: string]: number} = {};
       
-      attemptsResponse.forEach((attempt: any) => {
-        // Make sure we're using the correct property to get the quiz ID
-        if (attempt.quiz && attempt.quiz._id && attempt.passed) {
-          completedQuizzesSet.add(attempt.quiz._id);
-          console.log(`Adding completed quiz: ${attempt.quiz._id}`);
+      // Process each attempt and check if the quiz is completed
+      attempts.forEach((attempt: any) => {
+        // Check the structure of the attempt object
+        console.log("Processing attempt:", attempt);
+        
+        // Get the quiz ID - it could be either directly in quiz._id or in quiz as a string
+        let quizId;
+        if (attempt.quiz && typeof attempt.quiz === 'object') {
+          quizId = attempt.quiz._id;
+        } else {
+          quizId = attempt.quiz || attempt.quizId;
+        }
+        
+        if (!quizId) {
+          console.error("Could not find quiz ID in attempt:", attempt);
+          return;
+        }
+        
+        const percentage = attempt.percentage || 0;
+        
+        // Store the highest score for each quiz
+        if (!quizScores[quizId] || percentage > quizScores[quizId]) {
+          quizScores[quizId] = percentage;
+        }
+        
+        // Mark as completed if passed and score is good (>= 70%)
+        if (attempt.passed && percentage >= 70) {
+          completedQuizzesSet.add(quizId);
         }
       });
       
-      console.log('Completed quizzes set:', completedQuizzesSet);
-      setCompletedQuizzes(completedQuizzesSet);
+      console.log("Completed quizzes:", Array.from(completedQuizzesSet));
+      console.log("Quiz scores:", quizScores);
       
+      setCompletedQuizzes(completedQuizzesSet);
+      setQuizScores(quizScores);
+      
+      setLoadingQuizzes(false);
     } catch (error) {
-      console.error('Error fetching quiz progress:', error);
-    } finally {
+      console.error("Error fetching quiz progress:", error);
       setLoadingQuizzes(false);
     }
   };
 
-  // Update progress when navigating to a new section
+  // Check if a quiz has been passed with a good percentage
+  const hasPassedQuizWithGoodPercentage = (quizId: string): boolean => {
+    return completedQuizzes.has(quizId);
+  };
+
+  // Check if all quizzes for a subchapter have been completed with good percentage
+  const hasCompletedAllSubchapterQuizzes = (subchapterTitle: string): boolean => {
+    const subchapterQuizzes = quizzesBySubchapter[subchapterTitle] || [];
+    
+    // If no quizzes, consider it completed
+    if (subchapterQuizzes.length === 0) return true;
+    
+    // Check if all quizzes are completed with good percentage
+    return subchapterQuizzes.every(quiz => hasPassedQuizWithGoodPercentage(quiz._id));
+  };
+
+  // Update progress when a section is viewed
   const updateProgress = async (chapterIndex: number, subchapterIndex: number, sectionIndex: number) => {
-    if (!course || !id || !courseStructure) return;
+    if (!courseStructure || !id) return;
     
     try {
-      // Create a unique identifier for this section
+      // Mark this section as completed
       const sectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex}`;
       
-      // Add to completed sections if not already there
+      // Only update if not already completed
       if (!completedSections.has(sectionId)) {
+        // Store previous unlock states to check for newly unlocked content
+        const previousUnlockStates = {
+          chapters: courseStructure.chapters.map((_, idx) => isChapterUnlocked(idx)),
+          subchapters: courseStructure.chapters.map((chapter, chIdx) => 
+            chapter.subchapters.map((_, subIdx) => isSubchapterUnlocked(chIdx, subIdx))
+          ),
+          sections: courseStructure.chapters.map((chapter, chIdx) => 
+            chapter.subchapters.map((subchapter, subIdx) => 
+              subchapter.sections.map((_, secIdx) => isSectionAccessible(chIdx, subIdx, secIdx))
+            )
+          )
+        };
+        
+        // Add to completed sections
         const newCompletedSections = new Set(completedSections);
         newCompletedSections.add(sectionId);
         setCompletedSections(newCompletedSections);
         
-        // Calculate total sections in the course
+        // Calculate new progress percentage
         let totalSections = 0;
         courseStructure.chapters.forEach(chapter => {
           chapter.subchapters.forEach(subchapter => {
@@ -240,43 +405,117 @@ const LearningModule: React.FC = () => {
           });
         });
         
-        // Calculate new progress percentage
-        const newProgress = Math.min(Math.round((newCompletedSections.size / totalSections) * 100), 100);
-      setProgress(newProgress);
-      
-        // Update progress in database
-        await updateProgressInDatabase(newProgress, chapterIndex, newProgress === 100);
+        const newProgress = Math.round((newCompletedSections.size / totalSections) * 100);
+        
+        // Check if this is the last chapter and section
+        const isLastChapter = chapterIndex === courseStructure.chapters.length - 1;
+        const isLastSubchapter = isLastChapter && 
+          subchapterIndex === courseStructure.chapters[chapterIndex].subchapters.length - 1;
+        const isLastSection = isLastSubchapter && 
+          sectionIndex === courseStructure.chapters[chapterIndex].subchapters[subchapterIndex].sections.length - 1;
+        
+        // Determine if the course should be marked as completed
+        // Mark as completed ONLY if:
+        // 1. The admin has marked the course as completed, AND
+        // 2. The user has completed the last section OR has 100% progress
+        const shouldMarkAsCompleted = 
+          course?.isCompleted && (isLastSection || newProgress === 100);
+        
+        try {
+          // Update progress in the backend
+          await updateCourseProgress(id, {
+            progress: newProgress,
+            currentLesson: currentLessonIndex,
+            completed: shouldMarkAsCompleted,
+            completedSections: Array.from(newCompletedSections) // Send the updated completed sections
+          });
+          
+          // Update local state
+          setProgress(newProgress);
+          
+          // Update completion status if needed
+          if (shouldMarkAsCompleted && !isCompleted) {
+            setIsCompleted(true);
+            toast.success("Congratulations! You've completed this course!");
+            confetti();
+          }
+          
+          // Show completion notification
+          const section = courseStructure.chapters[chapterIndex]?.subchapters[subchapterIndex]?.sections[sectionIndex];
+          if (section) {
+            toast.success(`Section "${section.title}" completed!`);
+          }
+          
+          // Check for newly unlocked content
+          checkForNewlyUnlockedContent(previousUnlockStates);
+        } catch (error: any) {
+          console.error("Error updating progress:", error);
+          
+          // Handle authentication errors
+          if (error.response && error.response.status === 401) {
+            toast.error("Your session has expired. Please log in again.");
+            // Redirect to login page after a short delay
+            setTimeout(() => {
+              navigate('/LoginPage');
+            }, 2000);
+          } else {
+            // For other errors, show a generic message but keep the local progress update
+            toast.error("Failed to save your progress. Please check your connection.");
+          }
+        }
       }
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error("Error in progress update logic:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
-  // Update the progress tracking function
-  const updateProgressInDatabase = async (newProgress: number, currentLesson: number, completed: boolean) => {
-    if (!id) return;
+  // Check for newly unlocked content after completing a section or quiz
+  const checkForNewlyUnlockedContent = (previousUnlockStates: {
+    chapters: boolean[],
+    subchapters: boolean[][],
+    sections: boolean[][][]
+  }) => {
+    if (!courseStructure) return;
     
-    try {
-      const progressData = {
-        progress: newProgress,
-        currentLesson: currentLesson,
-        completed: completed
-      };
+    // Check for newly unlocked chapters
+    courseStructure.chapters.forEach((chapter, chapterIndex) => {
+      const wasUnlocked = previousUnlockStates.chapters[chapterIndex];
+      const isNowUnlocked = isChapterUnlocked(chapterIndex);
       
-      await updateCourseProgress(id, progressData);
-      console.log(`Progress updated to ${newProgress}%`);
-    } catch (error) {
-      console.error("Error updating progress:", error);
-      toast.error("Failed to update your progress");
-    }
+      if (!wasUnlocked && isNowUnlocked) {
+        toast.info(`New chapter unlocked: "${chapter.title}"`, {
+          duration: 5000
+        });
+      }
+      
+      // Check for newly unlocked subchapters
+      chapter.subchapters.forEach((subchapter, subchapterIndex) => {
+        const subchapterWasUnlocked = previousUnlockStates.subchapters[chapterIndex]?.[subchapterIndex];
+        const subchapterIsNowUnlocked = isSubchapterUnlocked(chapterIndex, subchapterIndex);
+        
+        if (!subchapterWasUnlocked && subchapterIsNowUnlocked) {
+          toast.info(`New subchapter unlocked: "${subchapter.title}"`, {
+            duration: 5000
+          });
+        }
+        
+        // Check for newly unlocked sections
+        subchapter.sections.forEach((section, sectionIndex) => {
+          const sectionWasUnlocked = previousUnlockStates.sections[chapterIndex]?.[subchapterIndex]?.[sectionIndex];
+          const sectionIsNowUnlocked = isSectionAccessible(chapterIndex, subchapterIndex, sectionIndex);
+          
+          if (!sectionWasUnlocked && sectionIsNowUnlocked && sectionIndex > 0) {
+            toast.info(`New section unlocked: "${section.title}"`, {
+              duration: 5000
+            });
+          }
+        });
+      });
+    });
   };
 
-  // Handle lesson navigation
-  const handleSelectLesson = (index: number) => {
-    setCurrentLessonIndex(index);
-  };
-
-  // Toggle chapter expansion in course structure
+  // Toggle chapter expansion
   const toggleChapter = (chapterId: string) => {
     setExpandedChapters(prev => 
       prev.includes(chapterId) 
@@ -285,56 +524,13 @@ const LearningModule: React.FC = () => {
     );
   };
 
-  // Toggle subchapter expansion in course structure
+  // Toggle subchapter expansion
   const toggleSubchapter = (subchapterId: string) => {
     setExpandedSubchapters(prev => 
       prev.includes(subchapterId) 
         ? prev.filter(id => id !== subchapterId) 
         : [...prev, subchapterId]
     );
-  };
-
-  // Select a section to display its content
-  const handleSelectSection = (chapterIndex: number, subchapterIndex: number, sectionIndex: number) => {
-    if (!courseStructure) return;
-    
-    // Check if the chapter and subchapter are unlocked
-    const chapterUnlocked = isChapterUnlocked(chapterIndex);
-    const subchapterUnlocked = isSubchapterUnlocked(chapterIndex, subchapterIndex);
-    
-    if (!chapterUnlocked) {
-      toast.error("Complete all sections and at least one quiz in the previous chapter to unlock this content");
-      return;
-    }
-    
-    if (!subchapterUnlocked) {
-      toast.error("Complete all sections and at least one quiz in the previous subchapter to unlock this content");
-      return;
-    }
-    
-    const chapter = courseStructure.chapters[chapterIndex];
-    const subchapter = chapter.subchapters[subchapterIndex];
-    const section = subchapter.sections[sectionIndex];
-    
-    setSelectedSection({
-      chapterIndex,
-      subchapterIndex,
-      sectionIndex,
-      title: section.title,
-      content: section.generatedContent || 'No content available for this section.'
-    });
-    
-    // Update progress
-    updateProgress(chapterIndex, subchapterIndex, sectionIndex);
-  };
-
-  // Add this event handler to handle tab changes
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-  };
-
-  const handleBack = () => {
-    navigate(`/course/${id}`);
   };
 
   // Check if a chapter is unlocked
@@ -358,29 +554,16 @@ const LearningModule: React.FC = () => {
       });
     });
     
-    // Check if at least one quiz in the previous chapter is completed
-    let hasCompletedAtLeastOneQuiz = false;
-    let hasQuizzes = false;
-    
+    // Check if all quizzes in the previous chapter are completed with good percentage
+    let allQuizzesCompleted = true;
     prevChapter.subchapters.forEach((subchapter) => {
-      const quizzes = quizzesBySubchapter[subchapter.title] || [];
-      if (quizzes.length > 0) {
-        hasQuizzes = true;
-        const anyQuizCompleted = quizzes.some((quiz: any) => 
-          completedQuizzes.has(quiz._id)
-        );
-        if (anyQuizCompleted) {
-          hasCompletedAtLeastOneQuiz = true;
-        }
+      if (!hasCompletedAllSubchapterQuizzes(subchapter.title)) {
+        allQuizzesCompleted = false;
       }
     });
     
-    console.log(`Chapter ${chapterIndex} unlock status:`, 
-      `All sections completed: ${allSectionsCompleted}, Has quizzes: ${hasQuizzes}, Has completed quiz: ${hasCompletedAtLeastOneQuiz}`);
-    
-    // If there are no quizzes, only check sections completion
-    // If there are quizzes, require at least one quiz to be completed
-    return allSectionsCompleted && (!hasQuizzes || hasCompletedAtLeastOneQuiz);
+    // Need both all sections completed and all quizzes passed with good percentage
+    return allSectionsCompleted && allQuizzesCompleted;
   };
 
   // Check if a subchapter is unlocked
@@ -406,235 +589,176 @@ const LearningModule: React.FC = () => {
       return completedSections.has(sectionId);
     }) ?? false;
     
-    // Check if at least one quiz in the previous subchapter is completed
-    const previousSubchapterTitle = previousSubchapter.title;
-    const quizzesForPreviousSubchapter = quizzesBySubchapter[previousSubchapterTitle] || [];
+    // Check if all quizzes in the previous subchapter are completed with good percentage
+    const allQuizzesCompleted = hasCompletedAllSubchapterQuizzes(previousSubchapter.title);
     
-    console.log(`Checking quizzes for subchapter "${previousSubchapterTitle}":`, quizzesForPreviousSubchapter);
+    // Need both all sections completed and all quizzes passed with good percentage
+    return allSectionsCompleted && allQuizzesCompleted;
+  };
+
+  // Check if a section is accessible based on quiz completion and previous sections
+  const isSectionAccessible = (chapterIndex: number, subchapterIndex: number, sectionIndex: number): boolean => {
+    // First section of first subchapter of first chapter is always accessible
+    if (chapterIndex === 0 && subchapterIndex === 0 && sectionIndex === 0) return true;
     
-    const hasCompletedQuiz = quizzesForPreviousSubchapter.length === 0 || quizzesForPreviousSubchapter.some(
-      (quiz: any) => {
-        const isCompleted = completedQuizzes.has(quiz._id);
-        console.log(`Quiz ${quiz._id} completion check:`, isCompleted);
-        return isCompleted;
+    // Check if the chapter and subchapter are unlocked
+    if (!isChapterUnlocked(chapterIndex)) return false;
+    if (!isSubchapterUnlocked(chapterIndex, subchapterIndex)) return false;
+    
+    // If it's not the first section in a subchapter, check if previous section is completed
+    if (sectionIndex > 0) {
+      const prevSectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex - 1}`;
+      if (!completedSections.has(prevSectionId)) return false;
+      
+      // Get the subchapter to check for quizzes
+      const subchapter = courseStructure?.chapters[chapterIndex]?.subchapters[subchapterIndex];
+      if (subchapter) {
+        const subchapterQuizzes = quizzesBySubchapter[subchapter.title] || [];
+        
+        // If there are quizzes for this subchapter
+        if (subchapterQuizzes.length > 0) {
+          // For sections after the first section, require quiz completion
+          // This ensures users must complete quizzes before moving to the next section
+          if (sectionIndex > 0) {
+            // Check if all quizzes for this subchapter are completed with good percentage
+            const allQuizzesCompleted = hasCompletedAllSubchapterQuizzes(subchapter.title);
+            if (!allQuizzesCompleted) return false;
+          }
+        }
       }
-    );
-    
-    console.log(`Subchapter ${chapterIndex}.${subchapterIndex} unlock status:`, 
-      `All sections completed: ${allSectionsCompleted}, Has completed quiz: ${hasCompletedQuiz}`);
-    
-    return allSectionsCompleted && hasCompletedQuiz;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen bg-white items-center justify-center">
-        <Spinner className="h-12 w-12 text-[#8A63FF]" />
-        <span className="ml-3 text-gray-600">Loading course content...</span>
-      </div>
-    );
-  }
-
-  if (error || !course) {
-    return (
-      <div className="flex min-h-screen bg-white items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-500 text-xl mb-4">
-            {error || 'Course not found'}
-          </div>
-          <button
-            onClick={() => navigate('/courses')}
-            className="bg-[#8A63FF] text-white px-4 py-2 rounded-lg hover:bg-[#6D28D9] transition"
-          >
-            Go Back to Courses
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Render course structure tab content
-  const renderCourseStructure = () => {
-    if (loadingStructure || loadingQuizzes) {
-      return (
-        <div className="flex justify-center py-8">
-          <Spinner className="h-8 w-8 text-[#8A63FF]" />
-          <span className="ml-3 text-gray-600">Loading course structure...</span>
-        </div>
-      );
     }
     
-    if (!courseStructure || !courseStructure.chapters || courseStructure.chapters.length === 0) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No structured content available for this course.</p>
-        </div>
-      );
+    return true;
+  };
+
+  // Handle back button click
+  const handleBack = () => {
+    navigate('/course');
+  };
+
+  // Get quiz score display
+  const getQuizScoreDisplay = (quizId: string): string => {
+    const score = quizScores[quizId];
+    if (score === undefined) return 'Not attempted';
+    return `${score}%`;
+  };
+
+  // Get section lock reason
+  const getSectionLockReason = (chapterIndex: number, subchapterIndex: number, sectionIndex: number): string => {
+    if (!isChapterUnlocked(chapterIndex)) {
+      return 'Complete the previous chapter to unlock';
     }
     
-    return (
-      <div className="space-y-2">
-        {courseStructure.chapters.map((chapter, chapterIndex) => {
-          // Create a unique identifier for this chapter
-          const chapterId = chapter.id;
-          const isExpanded = expandedChapters.includes(chapterId);
-          const unlocked = isChapterUnlocked(chapterIndex);
-          
-          return (
-            <div key={chapterId} className="border rounded-md overflow-hidden">
-              <div 
-                className={`flex items-center justify-between p-3 ${
-                  unlocked ? 'bg-gray-50 cursor-pointer hover:bg-gray-100' : 'bg-gray-100 cursor-not-allowed'
-                } transition-colors`}
-                onClick={() => unlocked && toggleChapter(chapterId)}
-              >
-                <div className="flex items-center gap-2">
-                  {unlocked ? (
-                    isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-gray-600" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-600" />
-                    )
-                  ) : (
-                    <Lock className="h-4 w-4 text-gray-400" />
-                  )}
-                  <span className={`font-medium ${!unlocked ? 'text-gray-400' : ''}`}>
-                    {chapterIndex + 1}. {chapter.title}
-                  </span>
-            </div>
-                
-                {!unlocked && (
-                  <Badge variant="outline" className="text-gray-400 border-gray-300">
-                    Complete previous chapter and one quiz to unlock
-                  </Badge>
-                )}
-          </div>
-              
-              {isExpanded && unlocked && (
-                <div className="pl-4 pr-2 pb-2">
-                  {chapter.subchapters.map((subchapter, subchapterIndex) => {
-                    // Create a unique identifier for this subchapter
-                    const subchapterId = subchapter.id;
-                    const isSubExpanded = expandedSubchapters.includes(subchapterId);
-                    const subUnlocked = isSubchapterUnlocked(chapterIndex, subchapterIndex);
-                    
-                    // Check if this subchapter has quizzes
-                    const hasQuizzes = (quizzesBySubchapter[subchapter.title]?.length || 0) > 0;
-                    const hasCompletedQuiz = hasQuizzes && quizzesBySubchapter[subchapter.title]?.some(
-                      (quiz: any) => {
-                        // Log the quiz ID and check if it's in the completedQuizzes set
-                        const isCompleted = completedQuizzes.has(quiz._id);
-                        console.log(`Checking if quiz ${quiz._id} is completed:`, isCompleted, completedQuizzes);
-                        return isCompleted;
-                      }
-                    );
-                    
-                    return (
-                      <div key={subchapterId} className="mt-1 border-l-2 border-gray-200">
-                        <div 
-                          className={`flex items-center justify-between ml-2 p-2 rounded-md ${
-                            subUnlocked ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed bg-gray-50'
-                          } transition-colors`}
-                          onClick={() => subUnlocked && toggleSubchapter(subchapterId)}
-                        >
-                          <div className="flex items-center">
-                            {subUnlocked ? (
-                              isSubExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-gray-600 mr-2" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-gray-600 mr-2" />
-                              )
-                            ) : (
-                              <Lock className="h-4 w-4 text-gray-400 mr-2" />
-                            )}
-                            <span className={`font-medium text-sm ${!subUnlocked ? 'text-gray-400' : ''}`}>
-                              {chapterIndex + 1}.{subchapterIndex + 1} {subchapter.title}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            {hasQuizzes && (
-                              <Badge className={hasCompletedQuiz ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                                {hasCompletedQuiz ? "Quiz Completed" : "Has Quiz"}
-                              </Badge>
-                            )}
-                            
-                            {!subUnlocked && (
-                              <Badge variant="outline" className="text-gray-400 border-gray-300 text-xs">
-                                Locked
-                              </Badge>
-                            )}
-          </div>
-        </div>
-                        
-                        {/* Show quizzes for this subchapter if expanded */}
-                        {isSubExpanded && subchapter.sections && (
-                          <div className="ml-4 space-y-1">
-                            {subchapter.sections.map((section: Section, sectionIndex: number) => {
-                              const sectionId = `${chapterId}-${subchapterId}-${sectionIndex}`;
-                              const isSelected = selectedSection && 
-                                selectedSection.chapterIndex === chapterIndex && 
-                                selectedSection.subchapterIndex === subchapterIndex && 
-                                selectedSection.sectionIndex === sectionIndex;
-                              
-                              return (
-                                <div 
-                                  key={sectionId} 
-                                  className={`p-2 rounded-md text-sm ${
-                                    subUnlocked 
-                                      ? isSelected 
-                                        ? 'bg-blue-50 text-blue-700 font-medium' 
-                                        : 'hover:bg-gray-50 cursor-pointer'
-                                      : 'text-gray-400 cursor-not-allowed'
-                                  }`}
-                                  onClick={() => handleSelectSection(chapterIndex, subchapterIndex, sectionIndex)}
-                                >
-                                  {chapterIndex + 1}.{subchapterIndex + 1}.{sectionIndex + 1} {section.title}
-                                </div>
-                              );
-                            })}
-                            
-                            {/* Display quizzes for this subchapter */}
-                            {quizzesBySubchapter[subchapter.title]?.map((quiz: any) => {
-                              const isQuizCompleted = completedQuizzes.has(quiz._id);
-                              console.log(`Rendering quiz ${quiz._id}, completed:`, isQuizCompleted, completedQuizzes);
-                              
-                              return (
-                                <Link 
-                                  key={quiz._id} 
-                                  to={`/quiz/${quiz._id}`}
-                                  className={`p-2 rounded-md text-sm flex items-center ${
-                                    subUnlocked 
-                                      ? 'hover:bg-gray-50 cursor-pointer' 
-                                      : 'text-gray-400 cursor-not-allowed'
-                                  } ${isQuizCompleted ? 'text-green-600' : ''}`}
-                                  onClick={(e) => !subUnlocked && e.preventDefault()}
-                                >
-                                  <FileQuestion className="h-4 w-4 mr-2" />
-                                  <span>Quiz: {quiz.title}</span>
-                                  {isQuizCompleted && <CheckCircle2 className="h-4 w-4 ml-2 text-green-500" />}
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
+    if (!isSubchapterUnlocked(chapterIndex, subchapterIndex)) {
+      return 'Complete the previous subchapter to unlock';
+    }
+    
+    if (sectionIndex > 0) {
+      const prevSectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex - 1}`;
+      if (!completedSections.has(prevSectionId)) {
+        return 'Complete the previous section to unlock';
+      }
+      
+      const subchapter = courseStructure?.chapters[chapterIndex]?.subchapters[subchapterIndex];
+      if (subchapter) {
+        const subchapterQuizzes = quizzesBySubchapter[subchapter.title] || [];
+        if (subchapterQuizzes.length > 0 && sectionIndex > 0) {
+          const allQuizzesCompleted = hasCompletedAllSubchapterQuizzes(subchapter.title);
+          if (!allQuizzesCompleted) {
+            return 'Complete all quizzes with at least 70% score to unlock';
+          }
+        }
+      }
+    }
+    
+    return 'Locked';
   };
-  
+
+  // Check if user has completed all available content
+  const hasCompletedAllAvailableContent = (): boolean => {
+    if (!courseStructure) return false;
+    
+    // Check if all chapters, subchapters, and sections are completed
+    let allCompleted = true;
+    
+    courseStructure.chapters.forEach((chapter, chapterIndex) => {
+      chapter.subchapters.forEach((subchapter, subchapterIndex) => {
+        subchapter.sections.forEach((section, sectionIndex) => {
+          const sectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex}`;
+          if (!completedSections.has(sectionId)) {
+            allCompleted = false;
+          }
+        });
+        
+        // Check if all quizzes are completed
+        if (!hasCompletedAllSubchapterQuizzes(subchapter.title)) {
+          allCompleted = false;
+        }
+      });
+    });
+    
+    return allCompleted;
+  };
+
   // Render section content
   const renderSectionContent = () => {
     if (!selectedSection) {
+      const userCompletedAllContent = hasCompletedAllAvailableContent();
+      const adminMarkedCompleted = course?.isCompleted === true;
+      const userOfficiallyCompleted = userCompletedAllContent && adminMarkedCompleted;
+      
+      // Show completion message if:
+      // 1. User has completed all content, OR
+      // 2. Admin has marked the course as completed
+      if (userCompletedAllContent || adminMarkedCompleted) {
+                    return (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-md text-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-green-800 mb-2">Congratulations!</h3>
+              
+              {/* Different messages based on completion status */}
+              <p className="text-green-700 mb-4">
+                {userOfficiallyCompleted ? (
+                  "You've officially completed this course!"
+                ) : userCompletedAllContent ? (
+                  "You've completed all the available content for this course."
+                ) : (
+                  "This course has been marked as completed by the administrator."
+                )}
+              </p>
+              
+              {/* Display course completion announcement if available */}
+              {course?.completionAnnouncement && (
+                <div className="mt-4 p-4 bg-white rounded-lg border border-green-100">
+                  <h4 className="font-semibold text-green-800 mb-2">Message from the instructor:</h4>
+                  <p className="text-gray-700 italic">"{course.completionAnnouncement}"</p>
+                </div>
+              )}
+              
+              {/* Display additional information based on completion status */}
+              {adminMarkedCompleted && !userCompletedAllContent && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-700 font-medium">
+                    Complete all remaining content to receive your official completion status.
+                  </p>
+          </div>
+              )}
+              
+              {userCompletedAllContent && !adminMarkedCompleted && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-amber-700 font-medium">
+                    You've completed all content! Waiting for the administrator to mark this course as officially completed.
+                  </p>
+                          </div>
+                        )}
+                      </div>
+            </div>
+          );
+      }
+  
       return (
-        <div className="flex flex-col items-center justify-center h-full py-16">
+        <div className="flex flex-col items-center justify-center py-12">
           <BookOpen className="h-16 w-16 text-gray-300 mb-4" />
           <p className="text-gray-500 text-center">
             Select a section from the course structure to view its content.
@@ -643,823 +767,676 @@ const LearningModule: React.FC = () => {
       );
     }
 
-    // Format the content properly
-    const formatContent = (content: string) => {
-      if (!content) return '';
-
-      // Extract and format metadata from content
-      let formattedContent = content;
-
-      // Extract course, chapter, subchapter, section info
-      const courseMatch = formattedContent.match(/# Course: ([^\n]+)/);
-      const chapterMatch = formattedContent.match(/## Chapter: ([^\n]+)/);
-      const subchapterMatch = formattedContent.match(/### Subchapter: ([^\n]+)/);
-      const sectionMatch = formattedContent.match(/#### Section: ([^\n]+)/);
-      
-      // Extract difficulty level
-      const difficultyMatch = formattedContent.match(/#### Difficulty Level: ([^\n]+)/);
-      const difficulty = difficultyMatch ? difficultyMatch[1] : null;
-      
-      // Extract learning objectives
-      const learningObjectivesMatch = formattedContent.match(/### Learning Objectives:([\s\S]*?)(?=###|$)/);
-      const learningObjectives = learningObjectivesMatch ? learningObjectivesMatch[1].trim() : null;
-
-      // Handle numbered headings (e.g. "2. Main Content with Relevant Examples")
-      formattedContent = formattedContent.replace(/(\d+)\.\s+([^\n]+)/g, (_, number, title) => {
-        return `<h2 class="text-2xl font-bold mt-8 mb-4">${number}. ${title}</h2>`;
-      });
-
-      // Handle "What is a `div`?" style headings
-      formattedContent = formattedContent.replace(/What is a \`([^`]+)\`\?/g, (_, element) => {
-        return `<h3 class="text-xl font-semibold mt-6 mb-3">What is a <code class="bg-gray-100 px-1 py-0.5 rounded">${element}</code>?</h3>`;
-      });
-
-      // Handle "The `div`" style text
-      formattedContent = formattedContent.replace(/The \`([^`]+)\`/g, (_, element) => {
-        return `<p class="my-3">The <code class="bg-gray-100 px-1 py-0.5 rounded">${element}</code></p>`;
-      });
-
-      // Handle "`div` element" style text
-      formattedContent = formattedContent.replace(/\`([^`]+)\` element/g, (_, element) => {
-        return `<code class="bg-gray-100 px-1 py-0.5 rounded">${element}</code> element`;
-      });
-
-      // Handle "Key Properties of `div`:" style headings
-      formattedContent = formattedContent.replace(/Key Properties of \`([^`]+)\`:/g, (_, element) => {
-        return `<h3 class="text-xl font-semibold mt-6 mb-3">Key Properties of <code class="bg-gray-100 px-1 py-0.5 rounded">${element}</code>:</h3>`;
-      });
-
-      // Handle bullet points with bold text
-      formattedContent = formattedContent.replace(/• (\*\*[^:]+:\*\*) (.*)/g, (_, boldPart, restText) => {
-        return `<li class="ml-5 list-disc mb-2"><strong>${boldPart.replace(/\*\*/g, '')}</strong> ${restText}</li>`;
-      });
-
-      // Handle the special format with multiple hash symbols
-      formattedContent = formattedContent.replace(
-        /# Course: ([^\n]+) ## Chapter: ([^\n]+) ### Subchapter: ([^\n]+) #### Section: ([^\n]+) --- #### Difficulty Level: ([^\n]+)/g,
-        (_, course, chapter, subchapter, section, difficulty) => {
-          return `<div class="mb-4">
-            <div class="flex flex-wrap gap-2">
-              <Badge variant="outline" className="bg-gray-100">Course: ${course}</Badge>
-              <Badge variant="outline" className="bg-gray-100">Chapter: ${chapter}</Badge>
-              <Badge variant="outline" className="bg-gray-100">Subchapter: ${subchapter}</Badge>
-              <Badge variant="outline" className="bg-gray-100">Section: ${section}</Badge>
-              <Badge className="bg-blue-100 text-blue-800">Difficulty: ${difficulty}</Badge>
-            </div>
-          </div>`;
-        }
-      );
-
-      // Handle learning objectives in special format
-      formattedContent = formattedContent.replace(
-        /### Learning Objectives: - ([^\n]+) - ([^\n]+)/g,
-        (_, obj1, obj2) => {
-          return `<div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
-            <h3 class="text-md font-semibold mb-2">Learning Objectives:</h3>
-            <ul class="list-disc pl-5">
-              <li>${obj1}</li>
-              <li>${obj2}</li>
-            </ul>
-          </div>`;
-        }
-      );
-
-      // Remove the metadata headers from the content
-      formattedContent = formattedContent
-        .replace(/# Course:[^\n]+\n?/g, '')
-        .replace(/## Chapter:[^\n]+\n?/g, '')
-        .replace(/### Subchapter:[^\n]+\n?/g, '')
-        .replace(/#### Section:[^\n]+\n?/g, '')
-        .replace(/#### Difficulty Level:[^\n]+\n?/g, '')
-        .replace(/### Learning Objectives:[\s\S]*?(?=###|$)/g, '');
-
-      // Format section headings (e.g., "### 1. Introduction" -> proper heading)
-      formattedContent = formattedContent.replace(/### (\d+\.\s+.+)/g, (_, title) => {
-        return `<h3 class="text-xl font-bold mt-6 mb-3">${title}</h3>`;
-      });
-
-      // Format subsection headings
-      formattedContent = formattedContent.replace(/#### (.+)/g, (_, title) => {
-        return `<h4 class="text-lg font-semibold mt-5 mb-2">${title}</h4>`;
-      });
-
-      // Format the special pattern with multiple hash symbols
-      formattedContent = formattedContent.replace(
-        /# ([^#]+) ## ([^#]+) ### ([^#]+) #### ([^-]+) --- #### ([^\n]+)/g,
-        (_, course, chapter, subchapter, section, difficulty) => {
-          return `<div class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-            <h2 class="text-xl font-bold mb-2">${section.trim()}</h2>
-            <div class="flex flex-wrap gap-2 mb-2">
-              <Badge variant="outline">Course: ${course.trim()}</Badge>
-              <Badge variant="outline">Chapter: ${chapter.trim()}</Badge>
-              <Badge variant="outline">Subchapter: ${subchapter.trim()}</Badge>
-              <Badge className="bg-blue-100 text-blue-800">Difficulty: ${difficulty.trim()}</Badge>
-            </div>
-          </div>`;
-        }
-      );
-
-      // Code blocks
-      formattedContent = formattedContent.replace(/```([^`]+)```/g, (_, code) => {
-        return `<pre class="bg-gray-100 p-3 rounded-md my-3 overflow-x-auto"><code>${code}</code></pre>`;
-      });
-
-      // Inline code (backticks)
-      formattedContent = formattedContent.replace(/`([^`]+)`/g, (_, code) => {
-        return `<code class="bg-gray-100 px-1 py-0.5 rounded">${code}</code>`;
-      });
-
-      // Bold text
-      formattedContent = formattedContent.replace(/\*\*([^*]+)\*\*/g, (_, text) => {
-        return `<strong>${text}</strong>`;
-      });
-
-      // Italic text
-      formattedContent = formattedContent.replace(/\*([^*]+)\*/g, (_, text) => {
-        return `<em>${text}</em>`;
-      });
-
-      // Lists with bullet points
-      formattedContent = formattedContent.replace(/• (.+)/g, (_, item) => {
-        return `<li class="ml-5 list-disc">${item}</li>`;
-      });
-
-      // Lists with dash
-      formattedContent = formattedContent.replace(/- (.+)/g, (_, item) => {
-        return `<li class="ml-5 list-disc">${item}</li>`;
-      });
-
-      // Group list items
-      formattedContent = formattedContent.replace(/(<li[^>]*>.*<\/li>)\n(<li[^>]*>)/g, '$1$2');
-      formattedContent = formattedContent.replace(/(<li[^>]*>.*<\/li>)(\n\n|\n)(?!<li)/g, '<ul class="my-3">$1</ul>$2');
-      formattedContent = formattedContent.replace(/(<li[^>]*>.*<\/li>)$/g, '<ul class="my-3">$1</ul>');
-
-      // Paragraphs
-      formattedContent = formattedContent.replace(/\n\n([^<\n][^\n]+)/g, (_, text) => {
-        if (!text.startsWith('<')) {
-          return `\n\n<p class="my-3">${text}</p>`;
-        }
-        return `\n\n${text}`;
-      });
-
+    // Add tabs for content and video (if video is available)
+    if (selectedSection.videoUrl) {
       return (
-        <div>
-          {/* Metadata section */}
-          <div className="mb-8">
-            {difficulty && !formattedContent.includes('Difficulty:') && (
-              <div className="mb-4">
-                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                  {difficulty} Level
-                </Badge>
-              </div>
-            )}
+        <div className="h-full overflow-y-auto">
+          <div className="pb-6">
+            <h2 className="text-2xl font-semibold mb-4">{selectedSection.title}</h2>
             
-            {learningObjectives && !formattedContent.includes('Learning Objectives:') && (
-              <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
-                <h3 className="text-md font-semibold mb-2">Learning Objectives:</h3>
-                <div dangerouslySetInnerHTML={{ 
-                  __html: learningObjectives
-                    .replace(/- /g, '• ')
-                    .replace(/\n/g, '<br/>')
-                }} />
-              </div>
-            )}
-          </div>
-
-          {/* Main content */}
-          <div className="prose max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+            <Tabs defaultValue="content" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="content">Content</TabsTrigger>
+                <TabsTrigger value="video">Video</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="content" className="mt-4">
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown>{selectedSection.content}</ReactMarkdown>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="video" className="mt-4">
+                <div className="aspect-w-16 aspect-h-9 mb-4">
+                  {/* Embed the Google Drive video */}
+                  <iframe 
+                    src={getGoogleDriveEmbedUrl(selectedSection.videoUrl)}
+                    className="w-full h-[450px] border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={selectedSection.title}
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
+                    referrerPolicy="no-referrer"
+                  ></iframe>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       );
-    };
-    
-    return (
-      <div>
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{selectedSection.title}</h1>
-          <div className="flex items-center text-sm text-gray-500">
-            <span>Chapter {selectedSection.chapterIndex + 1}</span>
-            <span className="mx-2">•</span>
-            <span>Subchapter {selectedSection.subchapterIndex + 1}</span>
-            <span className="mx-2">•</span>
-            <span>Section {selectedSection.sectionIndex + 1}</span>
+    } else {
+      // Original content display without video
+      return (
+        <div className="h-full overflow-y-auto">
+          <div className="pb-6">
+            <h2 className="text-2xl font-semibold mb-4">{selectedSection.title}</h2>
+            <div className="prose prose-sm max-w-none">
+              <ReactMarkdown>{selectedSection.content}</ReactMarkdown>
+            </div>
           </div>
         </div>
-        
-        {formatContent(selectedSection.content)}
-      </div>
+      );
+    }
+  };
+
+  // Handle selecting a section
+  const handleSelectSection = (chapterIndex: number, subchapterIndex: number, sectionIndex: number) => {
+    if (!courseStructure) return;
+    
+    const section = courseStructure.chapters[chapterIndex]?.subchapters[subchapterIndex]?.sections[sectionIndex];
+    if (!section) return;
+    
+    // Check if section is accessible based on previous sections
+    if (!isSectionAccessible(chapterIndex, subchapterIndex, sectionIndex)) {
+      const reason = getSectionLockReason(chapterIndex, subchapterIndex, sectionIndex);
+      toast.error(`This section is locked. ${reason}`);
+      return;
+    }
+    
+    // Set the selected section including videoUrl if available
+    setSelectedSection({
+      chapterIndex,
+      subchapterIndex,
+      sectionIndex,
+      title: section.title,
+      content: section.generatedContent || 'No content available for this section.',
+      videoUrl: section.videoUrl
+    });
+    
+    // Update progress
+    updateProgress(chapterIndex, subchapterIndex, sectionIndex);
+  };
+
+  // View section content in modal
+  const viewSectionContent = (section: Section) => {
+    setSelectedSectionTitle(section.title);
+    setLoadingContent(true);
+    setIsContentModalOpen(true);
+    
+    // If we have generatedContent in the section, use it directly
+    if (section.generatedContent) {
+      setSelectedSectionContent(section.generatedContent);
+      setLoadingContent(false);
+    } else {
+      // Otherwise, display a message
+      setSelectedSectionContent('No content available for this section.');
+      setLoadingContent(false);
+    }
+  };
+
+  // Section Content Modal component
+  const SectionContentModal = () => {
+      return (
+      <Dialog open={isContentModalOpen} onOpenChange={setIsContentModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedSectionTitle}</DialogTitle>
+            <DialogDescription>
+              Section content
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {loadingContent ? (
+              <div className="flex items-center justify-center py-12">
+          <Spinner className="h-8 w-8 text-[#8A63FF]" />
+                <span className="ml-2">Loading content...</span>
+            </div>
+            ) : selectedSectionContent ? (
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{selectedSectionContent}</ReactMarkdown>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No content available for this section.
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsContentModalOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   };
 
-  // Calculate course completion stats
-  const calculateCompletionStats = () => {
-    if (!courseStructure) return { totalSections: 0, completedSections: 0, percentage: 0 };
+  // Calculate progress for a chapter
+  const calculateChapterProgress = (chapterIndex: number): number => {
+    if (!courseStructure) return 0;
+    
+    const chapter = courseStructure.chapters[chapterIndex];
+    if (!chapter) return 0;
     
     let totalSections = 0;
-    courseStructure.chapters.forEach(chapter => {
-      chapter.subchapters.forEach(subchapter => {
-        totalSections += subchapter.sections.length;
+    let completedSectionsCount = 0;
+    
+    chapter.subchapters.forEach((subchapter, subchapterIndex) => {
+      subchapter.sections.forEach((section, sectionIndex) => {
+        totalSections++;
+        const sectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex}`;
+        if (completedSections.has(sectionId)) {
+          completedSectionsCount++;
+        }
       });
     });
     
-    const completed = completedSections.size;
-    const percentage = totalSections > 0 ? Math.round((completed / totalSections) * 100) : 0;
-    
-    return { totalSections, completedSections: completed, percentage };
+    return totalSections > 0 ? Math.round((completedSectionsCount / totalSections) * 100) : 0;
   };
 
-  const stats = calculateCompletionStats();
+  // Calculate progress for a subchapter
+  const calculateSubchapterProgress = (chapterIndex: number, subchapterIndex: number): number => {
+    if (!courseStructure) return 0;
+    
+    const subchapter = courseStructure.chapters[chapterIndex]?.subchapters[subchapterIndex];
+    if (!subchapter) return 0;
+    
+    const totalSections = subchapter.sections.length;
+    let completedSectionsCount = 0;
+    
+    subchapter.sections.forEach((section, sectionIndex) => {
+      const sectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex}`;
+      if (completedSections.has(sectionId)) {
+        completedSectionsCount++;
+      }
+    });
+    
+    return totalSections > 0 ? Math.round((completedSectionsCount / totalSections) * 100) : 0;
+  };
+
+  // Render course structure
+  const renderCourseStructure = () => {
+    if (!courseStructure || !courseStructure.chapters) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-gray-500">No course structure available.</p>
+              </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4">
+        {courseStructure.chapters.map((chapter, chapterIndex) => {
+          const isChapterExpanded = expandedChapters.includes(chapter.id);
+          const isUnlocked = isChapterUnlocked(chapterIndex);
+          const chapterProgress = calculateChapterProgress(chapterIndex);
+          
+          return (
+            <div key={chapter.id} className="border rounded-lg overflow-hidden">
+              {/* Chapter Header */}
+              <div 
+                className={`flex items-center justify-between p-4 cursor-pointer ${
+                  isUnlocked ? 'bg-white hover:bg-gray-50' : 'bg-gray-100'
+                }`}
+                onClick={() => isUnlocked && toggleChapter(chapter.id)}
+                title={!isUnlocked ? 'Complete the previous chapter to unlock' : ''}
+              >
+                <div className="flex items-center space-x-2">
+                  {isUnlocked ? (
+                    <BookOpen className="h-5 w-5 text-[#8A63FF]" />
+                  ) : (
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  )}
+                  <div className="flex flex-col">
+                    <span className={`font-medium ${isUnlocked ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {chapter.title}
+                  </span>
+                    {isUnlocked && (
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Progress value={chapterProgress} className="h-1 w-24" />
+                        <span className="text-xs text-gray-500">{chapterProgress}%</span>
+              </div>
+            )}
+          </div>
+          </div>
+                <div className="flex items-center">
+                  {isUnlocked && (
+                    isChapterExpanded ? 
+                    <ChevronDown className="h-5 w-5 text-gray-500" /> : 
+                    <ChevronRight className="h-5 w-5 text-gray-500" />
+                  )}
+        </div>
+          </div>
+              
+              {/* Subchapters */}
+              {isChapterExpanded && isUnlocked && (
+                <div className="border-t">
+                  {chapter.subchapters.map((subchapter, subchapterIndex) => {
+                    const isSubchapterExpanded = expandedSubchapters.includes(subchapter.id);
+                    const isSubUnlocked = isSubchapterUnlocked(chapterIndex, subchapterIndex);
+                    const subchapterQuizzes = quizzesBySubchapter[subchapter.title] || [];
+                    const subchapterProgress = calculateSubchapterProgress(chapterIndex, subchapterIndex);
+    
+    return (
+                      <div key={subchapter.id} className="border-b last:border-b-0">
+                        {/* Subchapter Header */}
+                        <div 
+                          className={`flex items-center justify-between p-3 pl-8 cursor-pointer ${
+                            isSubUnlocked ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-100'
+                          }`}
+                          onClick={() => isSubUnlocked && toggleSubchapter(subchapter.id)}
+                          title={!isSubUnlocked ? 'Complete the previous subchapter to unlock' : ''}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {isSubUnlocked ? (
+                              <BookOpen className="h-4 w-4 text-[#8A63FF]" />
+                            ) : (
+                              <Lock className="h-4 w-4 text-gray-400" />
+                            )}
+                            <div className="flex flex-col">
+                              <span className={`text-sm ${isSubUnlocked ? 'text-gray-900' : 'text-gray-500'}`}>
+                                {subchapter.title}
+                            </span>
+                              {isSubUnlocked && (
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <Progress value={subchapterProgress} className="h-1 w-20" />
+                                  <span className="text-xs text-gray-500">{subchapterProgress}%</span>
+          </div>
+                              )}
+        </div>
+      </div>
+                          <div className="flex items-center">
+                            {isSubUnlocked && (
+                              isSubchapterExpanded ? 
+                              <ChevronDown className="h-4 w-4 text-gray-500" /> : 
+                              <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                </div>
+              </div>
+                        
+                        {/* Sections */}
+                        {isSubchapterExpanded && isSubUnlocked && (
+                          <div>
+                            {subchapter.sections.map((section, sectionIndex) => {
+                              const sectionId = `${chapterIndex}-${subchapterIndex}-${sectionIndex}`;
+                              const isCompleted = completedSections.has(sectionId);
+                              const isSectionUnlocked = isSectionAccessible(chapterIndex, subchapterIndex, sectionIndex);
+                              const lockReason = !isSectionUnlocked ? getSectionLockReason(chapterIndex, subchapterIndex, sectionIndex) : '';
+                              
+                              // Check if section is locked specifically due to quiz requirements
+                              const isLockedDueToQuiz = !isSectionUnlocked && 
+                                lockReason.includes('quiz') && 
+                                completedSections.has(`${chapterIndex}-${subchapterIndex}-${sectionIndex-1}`);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      {/* Course header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center mb-4">
+                                <div 
+                                  key={section.id} 
+                                  className={`flex items-center justify-between p-2 pl-12 ${
+                                    isSectionUnlocked 
+                                      ? 'hover:bg-gray-50 cursor-pointer' 
+                                      : isLockedDueToQuiz
+                                        ? 'bg-orange-50 opacity-80 cursor-not-allowed'
+                                        : 'bg-gray-50 opacity-60 cursor-not-allowed'
+                                  }`}
+                                  onClick={() => {
+                                    if (isSectionUnlocked) {
+                                      handleSelectSection(chapterIndex, subchapterIndex, sectionIndex);
+                                      setActiveTab('structure'); // Switch to the structure tab to show content
+                                    }
+                                  }}
+                                  title={lockReason}
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    ) : isSectionUnlocked ? (
+                                      <div className="h-4 w-4 rounded-full border border-gray-300"></div>
+                                    ) : isLockedDueToQuiz ? (
+                                      <FileQuestion className="h-4 w-4 text-orange-500" />
+                                    ) : (
+                                      <Lock className="h-4 w-4 text-gray-400" />
+                                    )}
+                                    <span className={`text-sm ${
+                                      isSectionUnlocked 
+                                        ? 'text-gray-700' 
+                                        : isLockedDueToQuiz 
+                                          ? 'text-orange-700'
+                                          : 'text-gray-500'
+                                    }`}>
+                                      {section.title}
+                                    </span>
+                                    {isLockedDueToQuiz && (
+                                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                                        Requires Quiz
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {isSectionUnlocked && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={handleBack}
-              className="mr-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        viewSectionContent(section);
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4 text-gray-500" />
             </Button>
-            <h1 className="text-xl font-bold">{course.title}</h1>
+                                  )}
           </div>
-          
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Badge className="capitalize">{course.level}</Badge>
-              <span className="text-sm text-gray-500">{course.category}</span>
-            </div>
-            
-            <div className="flex flex-col sm:items-end">
-              <div className="flex items-center mb-1">
-                <span className="text-sm font-medium mr-2">Progress</span>
-                <span className="text-sm font-semibold text-[#8A63FF]">{stats.percentage}%</span>
+                              );
+                            })}
+                            
+                            {/* Quizzes for this subchapter */}
+                            {(() => {
+                              // Debug info
+                              console.log(`Rendering quizzes for subchapter: ${subchapter.title}`);
+                              const subchapterQuizzes = quizzesBySubchapter[subchapter.title] || [];
+                              console.log(`Found ${subchapterQuizzes.length} quizzes:`, subchapterQuizzes);
+                              
+                              return subchapterQuizzes.map(quiz => {
+                              const isQuizCompleted = completedQuizzes.has(quiz._id);
+                                console.log(`Quiz ${quiz.title} (${quiz._id}) completion status:`, isQuizCompleted);
+                                console.log(`Quiz in completedQuizzes set:`, Array.from(completedQuizzes).includes(quiz._id));
+                                
+                                const lastSectionIndex = subchapter.sections.length - 1;
+                                const lastSectionId = `${chapterIndex}-${subchapterIndex}-${lastSectionIndex}`;
+                                const isQuizUnlocked = completedSections.has(lastSectionId);
+                                const quizScore = getQuizScoreDisplay(quiz._id);
+                                const quizScoreDisplay = isQuizCompleted ? 
+                                  `Passed (${quizScore})` : 
+                                  quizScore !== 'Not attempted' ? 
+                                  `Score: ${quizScore}` : '';
+                              
+                              return (
+                                <Link 
+                                  key={quiz._id} 
+                                    to={isQuizUnlocked ? `/course/${id}/quiz/${quiz._id}` : '#'}
+                                    onClick={(e) => !isQuizUnlocked && e.preventDefault()}
+                                    className={`flex items-center justify-between p-2 pl-12 ${
+                                      isQuizUnlocked 
+                                      ? 'hover:bg-gray-50 cursor-pointer' 
+                                        : 'bg-gray-50 opacity-60 cursor-not-allowed'
+                                    }`}
+                                    title={!isQuizUnlocked ? 'Complete all sections first' : ''}
+                                  >
+                                    <div className="flex items-center space-x-2">
+                                      {isQuizCompleted ? (
+                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                      ) : isQuizUnlocked ? (
+                                        <FileQuestion className="h-4 w-4 text-orange-500" />
+                                      ) : (
+                                        <Lock className="h-4 w-4 text-gray-400" />
+                                      )}
+                                      <span className={`text-sm ${isQuizUnlocked ? 'text-gray-700' : 'text-gray-500'}`}>
+                                        {quiz.title}
+                                      </span>
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`text-xs ${
+                                          isQuizUnlocked 
+                                            ? 'bg-orange-50 text-orange-800 border-orange-200' 
+                                            : 'bg-gray-50 text-gray-500 border-gray-300'
+                                        }`}
+                                      >
+                                        Quiz
+                                      </Badge>
+                                      {quizScoreDisplay && (
+                                        <span className={`text-xs ${
+                                          isQuizCompleted ? 'text-green-600' : 'text-orange-600'
+                                        }`}>
+                                          {quizScoreDisplay}
+                                        </span>
+                                      )}
               </div>
-              <div className="w-full sm:w-48">
-                <Progress value={stats.percentage} className="h-2" />
+                                    {!isQuizUnlocked ? (
+                                      <div className="mr-2 text-xs text-gray-500">
+                                        Complete all sections first
               </div>
+                                    ) : !isQuizCompleted && (
+                                      <div className="mr-2 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                                        Required to unlock next section
             </div>
+                                    )}
+                                </Link>
+                              );
+                              });
+                            })()}
           </div>
+                        )}
         </div>
+                    );
+                  })}
       </div>
-      
-      <div className="container mx-auto px-4 py-6">
-        {isCompleted && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-100 rounded-full p-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+  
+  // Main render
+  if (loading) {
+      return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <Spinner className="h-12 w-12 text-[#8A63FF]" />
+          <span className="ml-2 text-gray-600">Loading course...</span>
               </div>
-              <div className="ml-3">
-                <h3 className="text-base font-medium text-green-800">Course Completed!</h3>
-                <p className="text-sm text-green-700 mt-0.5">
-                  Congratulations! You've mastered all the content in this course.
-                </p>
               </div>
-              <div className="ml-auto">
-                <Button 
-                  size="sm"
-                  onClick={() => navigate('/profile/courses')}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  View Certificate
-                </Button>
+    );
+  }
+
+  if (error || !course) {
+      return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">{error || 'Course not found'}</h1>
+            <p className="text-gray-600 mb-4">We couldn't load this course. Please try again later.</p>
+            <Button onClick={() => navigate('/')}>Return to Home</Button>
               </div>
             </div>
           </div>
-        )}
-        
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="structure" className="flex items-center">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Course Content
-            </TabsTrigger>
-            <TabsTrigger value="quizzes" className="flex items-center">
-              <FileQuestion className="h-4 w-4 mr-2" />
-              Quizzes
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="structure">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Course structure sidebar */}
-          <div className="lg:col-span-1">
-                <Card className="sticky top-4">
-              <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Course Structure</CardTitle>
-                    <CardDescription>
-                      {stats.completedSections} of {stats.totalSections} sections completed
-                    </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                    <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div className="px-4 pb-4">
-                        {renderCourseStructure()}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-          
-              {/* Content area */}
-          <div className="lg:col-span-2">
-                  <Card>
-                  <CardContent className="p-6">
-                    {renderSectionContent()}
-                  </CardContent>
-                </Card>
-                        </div>
-                      </div>
-              </TabsContent>
-              
-              <TabsContent value="quizzes">
-                <Card>
-                  <CardHeader>
-                <CardTitle>Course Quizzes</CardTitle>
-                <CardDescription>
-                  Test your knowledge with these quizzes
-                </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                <QuizList courseId={id} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-
-{/* 
-
-            import React, { useState } from 'react';
-import CourseIntro from './CourseIntro';
-import LessonViewer from './LessonViewer';
-import Quiz from './QuizScreen';
-import Navbar from './Navbar';
-import Uipdf from '../Assets/pdfs/front-end.pdf';
-import UserResearchPdf from '../Assets/pdfs/UI_UX_Basics.pdf';
-import UxDesignPdf from '../Assets/pdfs/front-end.pdf';
-import DoubleDiamondPdf from '../Assets/pdfs/UI_UX_Basics.pdf';
-import UiDesignPdf from '../Assets/pdfs/UI_UX_Basics.pdf';
-import ResearchMethodsPdf from '../Assets/pdfs/UI_UX_Basics.pdf';
-import figma from "../Assets/video/Master Figma UI Design in 15 Minutes _ This Tutorial Is For You!.mp4";
-import "../Styles/LearningModule.css";
-import frontend from "../Assets/video/Frontend web development - a complete overview.mp4"
-import backend from "../Assets/video/Backend web development - a complete overview.mp4"
-
-type VideoContent = {
-  title: string;
-  duration: string;
-  videoSrc: string;
-};
-
-type Category = {
-  title: string;
-  videos: VideoContent[];
-  book: string;
-};
-
-type Lesson = {
-  title: string;
-  categories: Category[];
-};
-
-interface FlatVideo {
-  lessonIndex: number;
-  catIndex: number;
-  video: VideoContent;
-  book: string;
-}
-
-const lessonData: Lesson[] = [
-  {
-    title: 'Lesson 1',
-    categories: [
-      {
-        title: 'Introduction to UI/UX',
-        videos: [
-          { title: 'Introduction to UI/UX - Part 1', duration: '5:00 min', videoSrc: frontend  },
-        ],
-        book: Uipdf,
-      },
-      {
-        title: 'What is UI?',
-        videos: [
-          { title: 'What is UI? - Basics', duration: '15:00 min', videoSrc: figma }, // Use the imported figma video
-        ],
-        book: UiDesignPdf,
-      },
-      {
-        title: 'What is UX?',
-        videos: [
-          { title: 'What is UX? - Overview', duration: '5:00 min', videoSrc: backend }, // Updated to a different YouTube video
-        ],
-        book: UxDesignPdf,
-      },
-    ],
-  },
-  {
-    title: 'Lesson 2',
-    categories: [
-      {
-        title: 'User Research',
-        videos: [
-          { title: 'User Research - Part 1', duration: '5:00 min', videoSrc: 'https://www.youtube.com/watch?v=0MLwuhpwRiE' },
-        ],
-        book: UserResearchPdf,
-      },
-      {
-        title: 'Methods of User Research',
-        videos: [
-          { title: 'Methods of User Research', duration: '5:00 min', videoSrc: 'https://www.youtube.com/watch?v=4ldPT4nbx5c' },
-        ],
-        book: ResearchMethodsPdf,
-      },
-      {
-        title: 'Double Diamond Process',
-        videos: [
-          { title: 'Double Diamond Process', duration: '5:00 min', videoSrc: 'https://www.youtube.com/watch?v=fYOPjWWDZHk' },
-        ],
-        book: DoubleDiamondPdf,
-      },
-    ],
-  },
-];
-
-const LearningModule: React.FC = () => {
-  const [isLearningVideoOpen, setIsLearningVideoOpen] = useState(true);
-  const [expandedLessons, setExpandedLessons] = useState<number[]>([0]);
-  const [expandedCategory, setExpandedCategory] = useState<{ lessonIndex: number; catIndex: number } | null>({ lessonIndex: 0, catIndex: 0 });
-  const [selectedTab, setSelectedTab] = useState<'video' | 'book'>('video');
-  const [completedVideos, setCompletedVideos] = useState<{ [lessonIndex: number]: number[] }>({ 0: [0, 1, 2] });
-  const [isQuizActive, setIsQuizActive] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<VideoContent | null>(lessonData[0].categories[0].videos[0]);
-  const [selectedBook, setSelectedBook] = useState<string | null>(lessonData[0].categories[0].book);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
-
-  const flatVideos: FlatVideo[] = lessonData.flatMap((lesson, lessonIndex) =>
-    lesson.categories.flatMap((category, catIndex) =>
-      category.videos.map(video => ({
-        lessonIndex,
-        catIndex,
-        video,
-        book: category.book,
-      }))
-    )
-  );
-
-  const toggleLesson = (index: number) => {
-    setExpandedLessons((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    );
-  };
-
-  const toggleCategory = (lessonIndex: number, catIndex: number) => {
-    if (expandedCategory?.lessonIndex === lessonIndex && expandedCategory?.catIndex === catIndex) {
-      setExpandedCategory(null);
-    } else {
-      setExpandedCategory({ lessonIndex, catIndex });
-    }
-  };
-
-  const isVideoCompleted = (lessonIndex: number, videoIndex: number) =>
-    completedVideos[lessonIndex]?.includes(videoIndex);
-
-  const handleVideoClick = (video: VideoContent, book: string, tab: 'video' | 'book', lessonIndex: number, catIndex: number) => {
-    setSelectedVideo(video);
-    setSelectedBook(book);
-    setSelectedTab(tab);
-    setIsQuizActive(false);
-
-    const videoIndex = flatVideos.findIndex(
-      (flatVideo) =>
-        flatVideo.lessonIndex === lessonIndex &&
-        flatVideo.catIndex === catIndex &&
-        flatVideo.video === video
-    );
-    setCurrentVideoIndex(videoIndex);
-
-    if (!expandedLessons.includes(lessonIndex)) {
-      setExpandedLessons((prev) => [...prev, lessonIndex]);
-    }
-    setExpandedCategory({ lessonIndex, catIndex });
-  };
-
-  const handleQuizClick = () => {
-    setIsQuizActive(true);
-    setSelectedVideo(null);
-    setSelectedBook(null);
-  };
-
-  const handlePrevious = () => {
-    if (currentVideoIndex > 0) {
-      const newIndex = currentVideoIndex - 1;
-      const { lessonIndex, catIndex, video, book } = flatVideos[newIndex];
-      handleVideoClick(video, book, 'video', lessonIndex, catIndex);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentVideoIndex < flatVideos.length - 1) {
-      const newIndex = currentVideoIndex + 1;
-      const { lessonIndex, catIndex, video, book } = flatVideos[newIndex];
-      handleVideoClick(video, book, 'video', lessonIndex, catIndex);
-    }
-  };
-
-  const handleBack = () => {
-    setSelectedVideo(null);
-    setSelectedBook(null);
-    setIsQuizActive(false);
-    setCurrentVideoIndex(0);
-    setExpandedLessons([0]);
-    setExpandedCategory({ lessonIndex: 0, catIndex: 0 });
-  };
+      );
+  }
 
   return (
-    <div className="flex min-h-screen bg-white p-4">
-     
-      <div className="Left Sidebar bg-white rounded-2xl border border-violet-300 shadow-md ml-4 mt-4 mr-0 w-96">
-        <div className="flex justify-between items-center p-5">
-          <h2 className="learing text-xl font-semibold text-gray-800">Learning</h2>
-          <button className="text-gray-500 hover:text-gray-700">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="mb-4">
-          <div className="w-full h-px bg-gray-300"></div>
-        </div>
-
-        
-        <div className={`Learning Videos Section border rounded-lg mx-6 mb-4 ${isLearningVideoOpen ? 'border-purple-500' : 'border-gray-200'}`}>
-          <button
-            onClick={() => setIsLearningVideoOpen((prev) => !prev)}
-            className="w-full flex justify-between items-center text-left py-3 px-4 rounded hover:bg-white transition"
-          >
-            <div>
-              <p className="font-medium text-gray-700 text-base">Learning Videos</p>
-              <p className="text-sm text-gray-500">{flatVideos.length} Videos</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Spinner className="h-8 w-8 border-2 border-primary" />
+            <span className="ml-2">Loading course content...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 p-8">
+            <p className="text-xl">{error}</p>
+            <Button className="mt-4" onClick={() => navigate('/dashboard')}>
+              Return to Dashboard
+            </Button>
+          </div>
+        ) : course ? (
+          <>
+            <div className="flex items-center mb-6">
+              <Button variant="ghost" onClick={handleBack} className="mr-2">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <h1 className="text-2xl font-bold">{course.title}</h1>
+              {isCompleted && (
+                <Badge className="ml-2 bg-green-500">Completed</Badge>
+              )}
             </div>
-            <svg
-              className={`w-5 h-5 text-gray-500 transform transition-transform ${isLearningVideoOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
 
-          {isLearningVideoOpen && (
-            <div className="px-4 pb-4">
-              {lessonData.map((lesson, lessonIndex) => (
-                <div key={lessonIndex} className="mb-4">
-                  <button
-                    onClick={() => toggleLesson(lessonIndex)}
-                    className="w-full flex justify-between items-center text-left py-3 px-3 rounded hover:bg-white transition"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-violet-500 rounded-full p-0.5">
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <span className="text-gray-800 font-medium text-base">{lesson.title}</span>
-                    </div>
-                    <svg
-                      className={`w-5 h-5 transform transition-transform ${expandedLessons.includes(lessonIndex) ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="w-full h-px bg-gray-300 rounded-full mt-2"></div>
-
-                  {expandedLessons.includes(lessonIndex) && (
-                    <div className="mt-3 border border-violet-200 rounded-md p-3 text-base">
-                      <ul className="space-y-3">
-                        {lesson.categories.map((category, catIndex) => (
-                          <li key={catIndex}>
-                            <div
-                              className="flex justify-between items-center cursor-pointer"
-                              onClick={() => toggleCategory(lessonIndex, catIndex)}
-                            >
-                              <div className="flex items-center space-x-3">
-                                {isVideoCompleted(lessonIndex, catIndex * 100) ? (
-                                  <svg
-                                    className="w-5 h-5 text-green-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="w-5 h-5 text-gray-500"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M14.752 11.168l-6.518-3.759A1 1 0 007 8.06v7.879a1 1 0 001.234.97l6.518-1.709a1 1 0 00.748-.97v-2.121a1 1 0 00-.748-.971z"
-                                    />
-                                  </svg>
-                                )}
-                                <span className="text-base">{category.title}</span>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <span className="text-gray-500 text-sm">{category.videos[0].duration}</span>
-                                <svg
-                                  className={`w-5 h-5 transform transition-transform ${
-                                    expandedCategory?.lessonIndex === lessonIndex && expandedCategory?.catIndex === catIndex
-                                      ? 'rotate-180'
-                                      : ''
-                                  }`}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </div>
-                            </div>
-                            <div className="w-full h-px bg-gray-300 rounded-full mt-1 mb-3"></div>
-                            {expandedCategory?.lessonIndex === lessonIndex && expandedCategory?.catIndex === catIndex && (
-                              <div className="ml-8 mt-3">
-                                <div className="flex bg-white rounded-full p-1 mb-4 w-48 border border-gray-200">
-                                  {category.videos.map((video, vidIndex) => (
-                                    <div key={vidIndex} className="relative flex w-full rounded-full bg-white">
-                                      <div
-                                        className={`absolute w-1/2 h-full rounded-full bg-violet-600 transition-transform duration-300 ${
-                                          selectedTab === 'video' && selectedVideo === video ? 'translate-x-0' : 'translate-x-full'
-                                        }`}
-                                      ></div>
-                                      <button
-                                        onClick={() => handleVideoClick(video, category.book, 'video', lessonIndex, catIndex)}
-                                        className={`relative z-10 flex-1 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
-                                          selectedTab === 'video' && selectedVideo === video ? 'text-white' : 'text-gray-700'
-                                        }`}
-                                      >
-                                        Video
-                                      </button>
-                                      <button
-                                        onClick={() => handleVideoClick(video, category.book, 'book', lessonIndex, catIndex)}
-                                        className={`relative z-10 flex-1 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
-                                          selectedTab === 'book' && selectedVideo === video ? 'text-white' : 'text-gray-700'
-                                        }`}
-                                      >
-                                        Book
-                                      </button>
-                                    </div>
-                                  ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid grid-cols-3 mb-4">
+                    <TabsTrigger value="structure" className="flex items-center">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Content
+                    </TabsTrigger>
+                    <TabsTrigger value="videos" className="flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Videos
+                    </TabsTrigger>
+                    <TabsTrigger value="materials" className="flex items-center">
+                      <BookMarked className="h-4 w-4 mr-2" />
+                      Study Materials
+                    </TabsTrigger>
+                  </TabsList>
+          
+                  <TabsContent value="structure">
+                    {renderSectionContent()}
+                  </TabsContent>
+              
+                  <TabsContent value="videos">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Course Videos</CardTitle>
+                        <CardDescription>Watch video content for this course</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {courseStructure?.chapters?.length ? (
+                          <div className="space-y-6">
+                            {courseStructure.chapters.map((chapter, chapterIndex) => {
+                              // Check if chapter is unlocked
+                              const isChapterAccessible = isChapterUnlocked(chapterIndex);
+                              
+                              return (
+                                <div key={chapter.id} className={`border rounded-lg ${!isChapterAccessible ? 'opacity-60' : ''}`}>
+                                  <div className="bg-gray-50 p-3 font-medium border-b">
+                                    Chapter {chapterIndex + 1}: {chapter.title}
+                                    {!isChapterAccessible && (
+                                      <span className="ml-2 text-sm text-gray-500">(Complete previous chapter to unlock)</span>
+                                    )}
+                                  </div>
+                                  <div className="p-3">
+                                    {chapter.subchapters.map((subchapter, subchapterIndex) => {
+                                      // Check if subchapter is unlocked
+                                      const isSubchapterAccessible = isChapterAccessible && isSubchapterUnlocked(chapterIndex, subchapterIndex);
+                                      
+                                      // Check if subchapter has any videos
+                                      const hasVideos = subchapter.sections.some(section => section.videoUrl);
+                                      
+                                      if (!hasVideos) return null;
+                                      
+                                      return (
+                                        <div key={subchapter.id} className={`mb-4 last:mb-0 ${!isSubchapterAccessible ? 'opacity-60' : ''}`}>
+                                          <h3 className="text-sm font-semibold mb-2">
+                                            {chapterIndex + 1}.{subchapterIndex + 1}: {subchapter.title}
+                                            {!isSubchapterAccessible && (
+                                              <span className="ml-2 text-xs text-gray-500">(Locked)</span>
+                                            )}
+                                          </h3>
+                                          <div className="space-y-2 ml-4">
+                                            {subchapter.sections.map((section, sectionIndex) => {
+                                              // Only show sections with videos
+                                              if (!section.videoUrl) return null;
+                                              
+                                              // Check if section is accessible
+                                              const isSectionUnlocked = isSubchapterAccessible && 
+                                                isSectionAccessible(chapterIndex, subchapterIndex, sectionIndex);
+                                              
+                                              return (
+                                                <Card key={section.id} className={`border border-gray-200 ${!isSectionUnlocked ? 'opacity-60' : ''}`}>
+                                                  <CardHeader className="py-3 px-4">
+                                                    <div className="flex justify-between items-center">
+                                                      <CardTitle className="text-sm">
+                                                        {chapterIndex + 1}.{subchapterIndex + 1}.{sectionIndex + 1}: {section.title}
+                                                      </CardTitle>
+                                                      <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        disabled={!isSectionUnlocked}
+                                                      >
+                                                        {isSectionUnlocked ? 'Watch Video' : 'Locked'}
+                                                      </Button>
+                                                    </div>
+                                                    {!isSectionUnlocked && (
+                                                      <CardDescription className="mt-1 text-orange-600 flex items-center">
+                                                        <Lock className="h-3 w-3 mr-1" />
+                                                        Complete previous sections to unlock
+                                                      </CardDescription>
+                                                    )}
+                                                  </CardHeader>
+                                                </Card>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                      {selectedTab === 'book' && selectedVideo && (
-                        <div className="text-gray-600 mt-3 text-base">
-                         
-                        </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-gray-500">No videos available for this course.</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="materials">
+                    <StudyMaterialsList courseId={id || ''} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              <div className="lg:col-span-1">
+                <Card className="sticky top-4">
+                  <CardHeader>
+                    <CardTitle>Course Progress</CardTitle>
+                    <CardDescription>
+                      {progress}% Complete
+                      {isCompleted && (
+                        <span className="ml-2 text-green-500">
+                          (Course Completed)
+                        </span>
                       )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-       
-        <div className="Quiz Section border border-gray-200 rounded-lg mx-6 mb-4">
-          <button
-            onClick={handleQuizClick}
-            className="w-full flex justify-between items-center text-left py-3 px-4 rounded hover:bg-white transition opacity-60 cursor-not-allowed"
-          >
-            <div>
-              <p className="font-medium text-gray-700 text-base">Quiz</p>
-              <p className="text-sm text-gray-500">1 Assessment</p>
-            </div>
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="#4C1D95"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M17 9V7a5 5 0 10-10 0v2H5v11a2 2 0 002 2h10a2 2 0 002-2V9h-2zM9 7a3 3 0 116 0v2H9V7z"
-                fill="#4C1D95"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <div className="Claim Your Course Certificate Section border border-gray-200 rounded-lg mx-6 mb-4 opacity-60 cursor-not-allowed">
-          <button className="w-full flex justify-between items-center text-left py-3 px-4 rounded hover:bg-white transition">
-            <div>
-              <p className="font-medium text-gray-700 text-base">Claim your course certificate</p>
-              <p className="text-sm text-gray-500">1 Assessment, New ass</p>
-            </div>
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="#4C1D95"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M17 9V7a5 5 0 10-10 0v2H5v11a2 2 0 002 2h10a2 2 0 002-2V9h-2zM9 7a3 3 0 116 0v2H9V7z"
-                fill="#4C1D95"
-              />
-            </svg>
-          </button>
-        </div>
-
-        
-        <div className="Learning Materials Section border border-gray-200 rounded-lg mx-6 mb-6">
-          <button className="w-full flex justify-between items-center text-left py-3 px-4 rounded hover:bg-white transition">
-            <div>
-              <p className="font-medium text-gray-700 text-base">Learning Materials</p>
-              <p className="text-sm text-gray-500">1 Resource</p>
-            </div>
-            <svg
-              className="w-5 h-5 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-    
-      <div className="Right Side Content flex-1 p-4 m-4 bg-white rounded-2xl border border-gray-200  shadow-md flex items-center justify-center min-h-[calc(100vh-2rem)]">
-        {isQuizActive ? (
-          <div className="quiz-com w-full h-full">
-            <Quiz />
-          </div>
-        ) : selectedTab === 'video' && selectedVideo ? (
-          <div className="video-com w-full h-full">
-            <CourseIntro
-              courseTitle="UI/UX Designer Tutorial"
-              lessonTitle={
-                lessonData[expandedCategory?.lessonIndex || 0].categories[
-                  expandedCategory?.catIndex || 0
-                ].title
-              }
-              videoSrc={
-                lessonData[expandedCategory?.lessonIndex || 0].categories[
-                  expandedCategory?.catIndex || 0
-                ].videos[0]?.videoSrc // Pass the first video's videoSrc
-              }
-              onBack={handleBack}
-              onPrevious={currentVideoIndex > 0 ? handlePrevious : undefined}
-              onNext={currentVideoIndex < flatVideos.length - 1 ? handleNext : undefined}
-            />
-          </div>
-        ) : selectedTab === 'book' && selectedVideo && selectedBook ? (
-          <div className="book-com w-full h-full">
-            <LessonViewer config={{ bookSrc: selectedBook }} />
-          </div>
-        ) : (
-          <div className="text-gray-500 text-center">Please select a video or book to view content.</div>
-        )} */}
-      </div>
+                    </CardDescription>
+                    <Progress value={progress} className="h-2" />
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[60vh]">
+                      {renderCourseStructure()}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+                              </div>
+                              </div>
+          </>
+        ) : null}
+                            </div>
+      
+      {SectionContentModal()}
     </div>
   );
+};
+
+// Add a helper function to convert Google Drive links to embed format
+const getGoogleDriveEmbedUrl = (url: string): string => {
+  if (!url) return '';
+  
+  // Handle different Google Drive URL formats
+  if (url.includes('drive.google.com/file/d/')) {
+    // Format: https://drive.google.com/file/d/FILE_ID/view
+    const fileId = url.split('/file/d/')[1].split('/')[0];
+    // Add parameters to prevent navigation and direct access
+    return `https://drive.google.com/file/d/${fileId}/preview?rm=minimal&disableExtensions=true&hl=en`;
+  } else if (url.includes('drive.google.com/open?id=')) {
+    // Format: https://drive.google.com/open?id=FILE_ID
+    const fileId = url.split('open?id=')[1].split('&')[0];
+    // Add parameters to prevent navigation and direct access
+    return `https://drive.google.com/file/d/${fileId}/preview?rm=minimal&disableExtensions=true&hl=en`;
+  }
+  // If it's already an embed URL, add security parameters
+  if (url.includes('/preview')) {
+    return url.includes('?') ? `${url}&rm=minimal&disableExtensions=true&hl=en` : `${url}?rm=minimal&disableExtensions=true&hl=en`;
+  }
+  // Return original URL with security parameters
+  return url;
 };
 
 export default LearningModule;

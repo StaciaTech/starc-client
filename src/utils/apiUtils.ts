@@ -7,7 +7,7 @@ import axios, { AxiosError } from 'axios';
  * @param defaultMessage Default message to show if error doesn't have a response
  * @returns Empty array or object depending on context
  */
-export const handleApiError = (error: unknown, defaultMessage: string = 'An error occurred') => {
+export const handleApiError = (error: unknown, defaultMessage: string = 'An error occurred'): Error => {
   console.error('API Error Details:', error);
   
   if (axios.isAxiosError(error)) {
@@ -16,47 +16,62 @@ export const handleApiError = (error: unknown, defaultMessage: string = 'An erro
     // Handle specific status codes
     if (axiosError.response) {
       const status = axiosError.response.status;
-      const data = axiosError.response.data as any;
       
-      console.log('API Error Response:', {
-        status,
-        data,
-        headers: axiosError.response.headers
-      });
-      
-      // Show error message from API if available
-      const message = data?.message || defaultMessage;
-      
-      // Handle different status codes
+      // Authentication error
       if (status === 401) {
-        toast.error('Authentication error. Please login again.');
-        // Redirect to login page or refresh token
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      } else if (status === 403) {
-        toast.error('You do not have permission to perform this action.');
-      } else {
-        toast.error(message);
+        return new Error('Authentication failed. Please log in again.');
       }
-    } else if (axiosError.request) {
-      // The request was made but no response was received
-      console.log('No response received:', axiosError.request);
-      toast.error('Server did not respond. Please try again later.');
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.log('Error setting up request:', axiosError.message);
-      toast.error('Network error. Please check your connection.');
+      
+      // Server returned an error message
+      if (axiosError.response.data && typeof axiosError.response.data === 'object') {
+        const data = axiosError.response.data as any;
+        if (data.message) {
+          return new Error(data.message);
+        }
+      }
     }
-  } else if (error instanceof Error) {
-    // Handle non-Axios errors
-    console.log('Non-Axios error:', error.message);
-    toast.error(error.message || defaultMessage);
-  } else {
-    // Generic error
-    toast.error(defaultMessage);
-    console.error('Unknown API Error:', error);
+    
+    // Network error
+    if (axiosError.code === 'ECONNABORTED' || !axiosError.response) {
+      return new Error('Network error. Please check your connection.');
+    }
   }
   
-  // Return empty result based on expected return type context
-  return [];
+  // Default error message
+  if (error instanceof Error) {
+    return error;
+  }
+  
+  return new Error(defaultMessage);
+};
+
+/**
+ * Checks if the current authentication token is valid
+ * @returns true if token exists, false otherwise
+ */
+export const hasValidToken = (): boolean => {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  
+  try {
+    // Check if token is expired by decoding it
+    // This is a simple check - for a real app you might want to validate with the server
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) return false;
+    
+    const payload = JSON.parse(atob(tokenParts[1]));
+    
+    // Check if token has expired
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      // Token has expired, remove it
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error checking token validity:', error);
+    return false;
+  }
 }; 

@@ -22,9 +22,20 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
-import { Search, ArrowLeft, UserCheck, UserX } from 'lucide-react';
+import { Search, ArrowLeft, UserCheck, UserX, UserPlus, Trash } from 'lucide-react';
 import userManagementService from '@/services/userManagementService';
 import authService from '@/services/authService';
+import CreateUserForm from '@/components/admin/CreateUserForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface User {
   _id: string;
@@ -48,6 +59,11 @@ const AdminUserManagementPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [processingUser, setProcessingUser] = useState<string | null>(null);
+  const [showCreateUserForm, setShowCreateUserForm] = useState(false);
+  
+  // State for delete confirmation dialog
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   // Check if user is admin
   useEffect(() => {
@@ -111,6 +127,13 @@ const AdminUserManagementPage: React.FC = () => {
     }
   };
 
+  // Handle user creation success
+  const handleUserCreationSuccess = () => {
+    fetchUsers(); // Refresh the user list
+    setShowCreateUserForm(false); // Hide the form
+    toast.success('User account has been created and is ready to hand over');
+  };
+
   // Filter users based on search query
   const filteredUsers = users.filter(user => {
     const query = searchQuery.toLowerCase();
@@ -124,6 +147,34 @@ const AdminUserManagementPage: React.FC = () => {
   // Navigate back to admin dashboard
   const handleBackToAdmin = () => {
     navigate('/admin');
+  };
+
+  // Handle user deletion
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      setProcessingUser(userToDelete._id);
+      await userManagementService.deleteUser(userToDelete._id);
+      
+      // Remove the user from the list
+      setUsers(prevUsers => prevUsers.filter(user => user._id !== userToDelete._id));
+      
+      toast.success(`User ${userToDelete.name} has been deleted successfully`);
+      setShowDeleteDialog(false);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    } finally {
+      setProcessingUser(null);
+      setUserToDelete(null);
+    }
+  };
+
+  // Open delete confirmation dialog
+  const confirmDeleteUser = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
   };
 
   if (loading && !users.length) {
@@ -169,15 +220,28 @@ const AdminUserManagementPage: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-            <p className="text-gray-600">Manage user access to course enrollment</p>
+            <p className="text-gray-600">Manage user access and create student accounts</p>
           </div>
+          <Button 
+            onClick={() => setShowCreateUserForm(!showCreateUserForm)}
+            className="bg-[#8A63FF] hover:bg-[#7047e0]"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            {showCreateUserForm ? 'Hide Form' : 'Create User Account'}
+          </Button>
         </div>
+
+        {showCreateUserForm && (
+          <div className="mb-6">
+            <CreateUserForm onSuccess={handleUserCreationSuccess} />
+          </div>
+        )}
 
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Users</CardTitle>
             <CardDescription>
-              Toggle enrollment access for users. Only users with enrollment access can enroll in courses.
+              Manage users: toggle enrollment access, and delete user accounts.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -199,7 +263,7 @@ const AdminUserManagementPage: React.FC = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Registration Date</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Enrollment Access</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -222,15 +286,29 @@ const AdminUserManagementPage: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-2">
                           {processingUser === user._id ? (
                             <Spinner className="h-4 w-4 mr-2" />
-                          ) : null}
-                          <Switch
-                            checked={user.enrollmentEnabled}
-                            onCheckedChange={() => handleToggleEnrollment(user._id)}
-                            disabled={processingUser === user._id}
-                          />
+                          ) : (
+                            <>
+                              <Switch
+                                checked={user.enrollmentEnabled}
+                                onCheckedChange={() => handleToggleEnrollment(user._id)}
+                                disabled={processingUser === user._id}
+                                className="data-[state=checked]:bg-[#8A63FF]"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => confirmDeleteUser(user)}
+                                disabled={processingUser === user._id || user.role === 'admin'}
+                                title={user.role === 'admin' ? 'Admin users cannot be deleted' : 'Delete user'}
+                                className="ml-2"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -239,12 +317,35 @@ const AdminUserManagementPage: React.FC = () => {
               </Table>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No users found matching your search criteria.</p>
+                <p className="text-gray-500">No users found.</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {userToDelete?.name}? 
+              This action cannot be undone and will permanently remove the user account 
+              along with all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteUser}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

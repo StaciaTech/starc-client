@@ -100,12 +100,17 @@ const CardDetail: React.FC = () => {
   }, [id]);
 
   const handleGoBack = () => {
-    navigate('/courses');
+    navigate('/course');
   };
 
   // Add this function to handle continue learning
   const handleContinueLearning = () => {
     navigate(`/course/${id}/learn`);
+  };
+
+  // Add this function to navigate to assignments
+  const handleViewAssignments = () => {
+    navigate(`/course/${id}/assignments`);
   };
 
   if (loading) {
@@ -114,7 +119,6 @@ const CardDetail: React.FC = () => {
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center">
-            <Spinner/>
             <p className="mt-4 text-gray-600">Loading course details...</p>
           </div>
         </div>
@@ -163,44 +167,55 @@ const CardDetail: React.FC = () => {
     : course.price;
 
   return (
-    <div className="flex-col min-h-[800px] bg-gray-50 font-mont ">
-        <Navbar/>
+    <div className="flex-col min-h-[800px] bg-gray-50 font-mont">
+      <Navbar/>
+      
+      {/* Mobile Enrollment Sticky Button (only visible on mobile) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg z-50 border-t border-gray-200">
+        <Button
+          onClick={isEnrolled ? handleContinueLearning : handleDirectEnroll}
+          className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition"
+        >
+          {isEnrolled ? "Continue Learning" : "Enroll Now"}
+        </Button>
+      </div>
+
       {/* Flex Row for Main Content and Enroll Sidebar */}
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Main Content Area */}
-        <div className="w-2/3 p-20">
+        <div className="w-full lg:w-2/3 p-4 lg:p-20">
           {/* Supervised Course Tag with Back Arrow */}
-          <div className="mb-4 flex items-center space-x-3">
+          <div className="mb-4 flex flex-wrap items-center gap-2 lg:gap-3">
             
             {/* Back Button */}
             <button
               onClick={handleGoBack}
-              className="flex items-center bg-[#8A63FF] text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-[#6D28D9] transition"
+              className="flex items-center bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full hover:bg-[#6D28D9] transition"
             >
               <IoArrowBack className="mr-1" />
               Back
             </button>
             {/* Supervised Course Tag */}
-            <span className="inline-block bg-[#8A63FF] text-white text-sm font-semibold px-4 py-2 rounded-full">
+            <span className="inline-block bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full">
               {course.level.charAt(0).toUpperCase() + course.level.slice(1)} Level
             </span>
             {course.category && (
-              <span className="inline-block bg-gray-200 text-gray-800 text-sm font-semibold px-4 py-1 rounded-full">
+              <span className="inline-block bg-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-1 rounded-full">
                 {course.category}
               </span>
             )}
           </div>
 
           {/* Heading */}
-          <h1 className="text-4xl font-bold text-black mb-6">{course.title}</h1>
+          <h1 className="text-2xl lg:text-4xl font-bold text-black mb-4 lg:mb-6">{course.title}</h1>
 
           {/* Description */}
-          <p className="text-gray-600 text-base mb-8">
+          <p className="text-gray-600 text-sm lg:text-base mb-6 lg:mb-8">
             {course.description}
           </p>
 
           {/* Course details */}
-          <div className="flex items-center space-x-4 mb-8 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-3 mb-6 lg:mb-8 text-sm text-gray-600">
             <div className="flex items-center">
               <span className="font-semibold mr-1">Duration:</span> {formatDuration(course.duration)}
             </div>
@@ -213,44 +228,37 @@ const CardDetail: React.FC = () => {
           </div>
 
           {/* --------------- */}
-          <div className="bg-white p-16 shadow-[0_0_10px_0_rgba(0,0,0,0.2)] rounded-lg">
+          <div className="bg-white p-4 lg:p-16 shadow-[0_0_10px_0_rgba(0,0,0,0.2)] rounded-lg">
             {/* What You'll Learn Section */}
-            <div className="mb-8">
+            <div className="mb-6 lg:mb-8">
               <div className="grid grid-cols-1 mb-4 w-full">
-                <h2 className="text-xl font-semibold text-[#8A63FF] ">What You'll Learn</h2>
-                <p className=''>{course.title} Fundamentals:</p>
+                <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF]">What You'll Learn</h2>
+                <p className="">{course.title} Fundamentals:</p>
               </div>
 
-              <div className="flex items-end pl-60">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
                 {course.lessons && course.lessons.length > 0 ? (
-                  <ul className="space-y-5">
+                  <ul className="space-y-3 lg:space-y-5 mb-4 md:mb-0">
                     {course.lessons.slice(0, Math.ceil(course.lessons.length / 2)).map((lesson, index) => (
-                      <li key={index} className="flex items-center gap-2 text-gray-600">
-                        <div className="flex items-end pl-1">
-                          <img src={frame} alt="" className="w-5 h-5" />
+                      <li key={index} className="flex items-center gap-2 text-sm lg:text-base text-gray-600">
+                        <div className="flex items-center justify-center">
+                          <img src={frame} alt="" className="w-4 h-4 lg:w-5 lg:h-5" />
                         </div>
                         {lesson.title}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-500">Lesson content will be available soon.</p>
+                  <p className="text-gray-500 text-sm lg:text-base">Lesson content will be available soon.</p>
                 )}
                 
                 {course.lessons && course.lessons.length > 1 && (
-                  <ul className="space-y-5">
+                  <ul className="space-y-3 lg:space-y-5">
                     {course.lessons.slice(Math.ceil(course.lessons.length / 2)).map((lesson, index) => (
-                      <li key={`second-${index}`} className="flex items-center text-gray-600">
-                        <div className="flex items-end pl-1">
-                          <img src={frame} alt="" className="w-5 h-5" />
+                      <li key={`second-${index}`} className="flex items-center text-sm lg:text-base text-gray-600">
+                        <div className="flex items-center justify-center">
+                          <img src={frame} alt="" className="w-4 h-4 lg:w-5 lg:h-5" />
                         </div>
-
-                         {/* <div className="flex items-center justify-center   w-5 h-5 bg-green-600 rounded-full">
-                     <FaCheck className='text-white ' size={"0.75rem"} />
-                      
-                    </div> */}
-
-
                         {lesson.title}
                       </li>
                     ))}
@@ -258,114 +266,122 @@ const CardDetail: React.FC = () => {
                 )}
               </div>
             </div>
-<div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between text-gray-600"></div>
+            
+            <div className="border-t border-gray-200 mt-6 lg:mt-8 pt-6 lg:pt-8"></div>
+            
             {/* Value Beyond the Classroom Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-[#8A63FF] mb-4">VALUE BEYOND THE CLASSROOM</h2>
-              <div className="grid grid-cols-4 gap-4">
+            <div className="mb-6 lg:mb-8">
+              <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF] mb-4">VALUE BEYOND THE CLASSROOM</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center space-y-2">
-                  <div className=" rounded-full flex items-center justify-center">
-                    <div className="flex items-end pl-1">
-                      <img src={Behance} alt="" className="w-15 h-12" />
-                    </div>
+                  <div className="flex items-center justify-center">
+                    <img src={Behance} alt="" className="w-12 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Behance Profile</p>
-                  <p className="text-gray-500 text-sm">
-                    Showcase projects, collaborate, network, showcase skills, attract opportunities
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Behance Profile</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">
+                    Showcase projects, collaborate, network
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="w-12 h-12 mx-auto mb-2 bg-white-600 flex items-center justify-center">
-                    <div className="flex items-end pl-1">
-                      <img src={linkedin} alt="" className="w-15 h-12" />
-                    </div>
+                  <div className="flex items-center justify-center">
+                    <img src={linkedin} alt="" className="w-12 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">LinkedIn Profile</p>
-                  <p className="text-gray-500 text-sm">Highlight skills, projects, career growth</p>
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">LinkedIn Profile</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">Highlight skills, projects</p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className=" mx-auto mb-2  flex items-center justify-center">
-                    <div className="flex items-end pl-1">
-                      <img src={resume} alt="" className="w-12 h-12" />
-                    </div>
+                  <div className="flex items-center justify-center">
+                    <img src={resume} alt="" className="w-10 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Resume Building</p>
-                  <p className="text-gray-500 text-sm">
-                    Master communication, negotiation, and interview skills
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Resume Building</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">
+                    Master communication skills
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className=" rounded-full flex items-center justify-center">
-                    <div className="flex items-end pl-1">
-                      <img src={interview} alt="" className="w-12 h-12" />
-                    </div>
+                  <div className="flex items-center justify-center">
+                    <img src={interview} alt="" className="w-10 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Interview Preparation</p>
-                  <p className="text-gray-500 text-sm">Guidance, mock interviews, feedback</p>
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Interview Prep</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">Mock interviews, feedback</p>
                 </div>
               </div>
             </div>
-<div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between text-gray-600"></div>
+            
+            <div className="border-t border-gray-200 mt-6 lg:mt-8 pt-6 lg:pt-8"></div>
+            
             {/* What You'll Get Section */}
-            <div className="">
-              <h2 className="text-xl font-semibold text-[#8A63FF] mb-4">What You'll Get</h2>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center space-y-3">
+            <div>
+              <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF] mb-4">What You'll Get</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <div className="flex items-end pl-0">
-                      <img src={coc} alt="" className="w-12 h-12" />
-                    </div>
+                    <img src={coc} alt="" className="w-10 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Certificate of Completion</p>
-                  <p className="text-gray-500 text-sm">
-                    Receive a certificate to validate your skills and enhance your profile
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Certificate</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">
+                    Validate your skills
                   </p>
                 </div>
-                <div className="text-center space-y-3">
-                  <div className=" flex items-center justify-center">
-                    <div className="flex items-end pl-0">
-                      <img src={reference} alt="" className="w-12 h-12" />
-                    </div>
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center">
+                    <img src={reference} alt="" className="w-10 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Reference Materials</p>
-                  <p className="text-gray-500 text-sm">
-                    Access comprehensive materials to support continued learning
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Reference Materials</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">
+                    Comprehensive resources
                   </p>
                 </div>
-                <div className="text-center space-y-3">
-                  <div className=" flex items-center justify-center">
-                    <div className="flex items-end pl-0">
-                      <img src={skill} alt="" className="w-12 h-12" />
-                    </div>
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center">
+                    <img src={skill} alt="" className="w-10 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Skill Assessment</p>
-                  <p className="text-gray-500 text-sm">
-                    Evaluate your expertise with in-depth skill assessments
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Skill Assessment</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">
+                    Evaluate your expertise
                   </p>
                 </div>
-                <div className="text-center space-y-3">
-                  <div className=" flex items-center justify-center">
-                    <div className="flex items-end pl-0">
-                      <img src={mentor} alt="" className="w-12 h-12" />
-                    </div>
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center">
+                    <img src={mentor} alt="" className="w-10 h-10" />
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold">Mentorship Guidance</p>
-                  <p className="text-gray-500 text-sm">
-                    Get guidance and feedback from industry experts
+                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Mentorship</p>
+                  <p className="text-gray-500 text-xs lg:text-sm">
+                    Expert guidance
                   </p>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Course Actions */}
+          <div className="mt-6 flex flex-wrap gap-4">
+            {isEnrolled && (
+              <>
+                <Button 
+                  onClick={handleContinueLearning}
+                  className="bg-[#8A63FF] text-white hover:bg-[#7A53EF]"
+                >
+                  Continue Learning
+                </Button>
+                <Button 
+                  onClick={handleViewAssignments}
+                  variant="outline"
+                  className="border-[#8A63FF] text-[#8A63FF] hover:bg-[#F5F0FF]"
+                >
+                  View Assignments
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Form Sidebar (Enroll Component) */}
-        <div className="w-1/3 flex items-center justify-center p-6 sticky top-0 h-screen overflow-y-auto">
+        {/* Form Sidebar (Enroll Component) - Hidden on mobile */}
+        <div className="hidden lg:flex lg:w-1/3 items-start justify-center p-6 sticky top-0 h-screen overflow-y-auto">
           {checkingEnrollment ? (
             <div className="w-[100%] bg-white p-6 shadow-lg rounded-lg border border-[#8A63FF4D]">
               <div className="text-center py-10">
                 <Spinner />
-                {/* <Spinner className="mx-auto h-10 w-10 text-[#8A63FF] mb-4" /> */}
                 <p className="text-gray-600">Checking enrollment status...</p>
               </div>
             </div>
@@ -410,13 +426,40 @@ const CardDetail: React.FC = () => {
 
       {/* Other Components */}
       <WallOfLove />
-      <div className='flex justify-center'>
-
+      <div className="flex justify-center mb-20 lg:mb-0">
         <PurpleBox />
       </div>
       <Footer />
     </div>
   );
+};
+
+// Helper function for direct enrollment (to use in the mobile button)
+const handleDirectEnroll = async () => {
+  try {
+    const courseId = window.location.pathname.split('/').pop();
+    if (!courseId) return;
+    
+    await courseService.enrollInCourse(courseId);
+    toast.success("Successfully enrolled in course!");
+    window.location.href = `/course/${courseId}/learn`;
+  } catch (error: any) {
+    console.error("Error enrolling in course:", error);
+    
+    // Check if this is the "already enrolled" error
+    if (error.response && error.response.status === 400 && 
+        error.response.data && error.response.data.message === 'User already enrolled in this course') {
+      toast.info("You're already enrolled in this course. Redirecting to learning page...");
+      
+      // Wait a moment to show the message before redirecting
+      const courseId = window.location.pathname.split('/').pop();
+      setTimeout(() => {
+        window.location.href = `/course/${courseId}/learn`;
+      }, 1500);
+    } else {
+      toast.error("Failed to enroll in course. Please try again.");
+    }
+  }
 };
 
 export default CardDetail;

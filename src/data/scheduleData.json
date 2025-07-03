@@ -1,0 +1,157 @@
+{
+  "currentDate": "26-06-2025",
+  "classSchedule": [
+    {
+      "date": "26-06-2025",
+      "title": "Induction",
+      "description": "Course introduction and overview",
+      "time": "10:00 AM",
+      "duration": "2 hours",
+      "type": "class"
+    },
+    {
+      "date": "29-06-2025",
+      "title": "Course Initiation",
+      "description": "Getting started with course material",
+      "time": "11:00 AM",
+      "duration": "3 hours",
+      "type": "mentoring"
+    },
+    {
+      "date": "12-07-2025",
+      "title": "Assignment 1",
+      "description": "First practical assignment",
+      "time": "10:00 AM",
+      "duration": "4 hours",
+      "type": "assignment"
+    },
+    {
+      "date": "13-07-2025",
+      "title": "Mentoring Session",
+      "description": "Assignment review and feedback",
+      "time": "02:00 PM",
+      "duration": "2 hours",
+      "type": "mentoring"
+    },
+    {
+      "date": "26-07-2025",
+      "title": "Assignment 2",
+      "description": "Advanced concepts implementation",
+      "time": "10:00 AM",
+      "duration": "4 hours",
+      "type": "assignment"
+    },
+    {
+      "date": "27-07-2025",
+      "title": "Mentoring Session",
+      "description": "Assignment review and doubt clearing",
+      "time": "02:00 PM",
+      "duration": "2 hours",
+      "type": "mentoring"
+    },
+    {
+      "date": "09-08-2025",
+      "title": "Assignment 3",
+      "description": "System design implementation",
+      "time": "10:00 AM",
+      "duration": "4 hours",
+      "type": "assignment"
+    },
+    {
+      "date": "10-08-2025",
+      "title": "Mentoring Session",
+      "description": "Design review and feedback",
+      "time": "02:00 PM",
+      "duration": "2 hours",
+      "type": "mentoring"
+    },
+    {
+      "date": "23-08-2025",
+      "title": "Assignment 4",
+      "description": "Final module implementation",
+      "time": "10:00 AM",
+      "duration": "4 hours",
+      "type": "assignment"
+    },
+    {
+      "date": "24-08-2025",
+      "title": "Mentoring Session",
+      "description": "Final module review",
+      "time": "02:00 PM",
+      "duration": "2 hours",
+      "type": "mentoring"
+    },
+    {
+      "date": "06-09-2025",
+      "title": "Assignment 5",
+      "description": "Complete system integration",
+      "time": "10:00 AM",
+      "duration": "4 hours",
+      "type": "assignment"
+    },
+    {
+      "date": "07-09-2025",
+      "title": "Mentoring Session",
+      "description": "Pre-project planning and guidance",
+      "time": "02:00 PM",
+      "duration": "2 hours",
+      "type": "mentoring"
+    },
+    {
+      "date": "15-09-2025",
+      "title": "Capstone Project",
+      "description": "Project kickoff and requirements",
+      "time": "10:00 AM",
+      "duration": "3 hours",
+      "type": "project"
+    },
+    {
+      "date": "21-09-2025",
+      "title": "Doubt Clearing",
+      "description": "Optional session for project help",
+      "time": "04:00 PM",
+      "duration": "2 hours",
+      "type": "optional"
+    },
+    {
+      "date": "28-09-2025",
+      "title": "Doubt Clearing",
+      "description": "Optional session for project help",
+      "time": "04:00 PM",
+      "duration": "2 hours",
+      "type": "optional"
+    },
+    {
+      "date": "06-10-2025",
+      "title": "Project Submission",
+      "description": "Final project submission deadline",
+      "time": "11:59 PM",
+      "duration": "All day",
+      "type": "deadline"
+    },
+    {
+      "date": "07-10-2025",
+      "title": "Exit Interview",
+      "description": "Course completion interview",
+      "time": "10:00 AM",
+      "duration": "1 hour",
+      "type": "interview"
+    },
+    {
+      "date": "09-10-2025",
+      "title": "Evaluation Report",
+      "description": "Performance evaluation release",
+      "time": "02:00 PM",
+      "duration": "N/A",
+      "type": "report"
+    },
+    {
+      "date": "12-10-2025",
+      "title": "Certification",
+      "description": "Certificate distribution ceremony",
+      "time": "11:00 AM",
+      "duration": "2 hours",
+      "type": "ceremony"
+    }
+  ]
+} 

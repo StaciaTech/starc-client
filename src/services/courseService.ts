@@ -2,6 +2,7 @@ import axios from 'axios';
 import { getAuthHeader } from '@/utils/authUtils';
 import { toast } from 'sonner';
 import { API_URL } from '@/config/api';
+import { handleApiError } from '@/utils/apiUtils';
 
 // Fallback API URL in case proxy fails
 const FALLBACK_API_URL = 'https://server.edifai.in';
@@ -24,6 +25,8 @@ export interface ICourse {
   rating: number;
   reviews: IReview[];
   discountedPrice?: number;
+  completionAnnouncement?: string;
+  isCompleted?: boolean;
 }
 
 export interface ILesson {
@@ -223,6 +226,41 @@ export const getMentorCourses = async (mentorId: string): Promise<ICourse[]> => 
   }
 };
 
+// Set course completion announcement and status
+export const setCourseCompletion = async (courseId: string, data: { completionAnnouncement?: string, isCompleted?: boolean }): Promise<any> => {
+  try {
+    const response = await axios.put(
+      `${FALLBACK_API_URL}/api/courses/${courseId}/completion`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    throw handleApiError(error, 'Failed to update course completion status');
+  }
+};
+
+// Get completed users for a course (admin only)
+export const getCompletedCourseUsers = async (courseId: string): Promise<any[]> => {
+  try {
+    const response = await axios.get(
+      `${FALLBACK_API_URL}/api/courses/${courseId}/completed-users`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    return response.data.data || [];
+  } catch (error) {
+    throw handleApiError(error, 'Failed to get completed course users');
+  }
+};
+
 // Create default export with all functions
 const courseService = {
   getCourses,
@@ -234,7 +272,9 @@ const courseService = {
   addCourseReview,
   getMentors,
   getMentorById,
-  getMentorCourses
+  getMentorCourses,
+  setCourseCompletion,
+  getCompletedCourseUsers
 };
 
 export default courseService; 

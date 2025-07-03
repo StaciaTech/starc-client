@@ -25,6 +25,17 @@ interface Course {
   image: string;
   badge?: string;
   _id?: string; // Add _id field for course ID
+  driveUrl?: string; // Added for book links
+  type?: string; // Added to distinguish between 'course' and 'book' types
+  id?: string; // Some courses might use id instead of _id
+}
+
+// Define interface for UserCourse
+interface UserCourse {
+  courseId: string;
+  userId: string;
+  progress?: number;
+  completed?: boolean;
 }
 
 // Define TypeScript interface for FilterSection props
@@ -207,23 +218,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               </select>
             </div>
 
-            <div>
-              <label
-                htmlFor="teacher"
-                className="block text-sm font-medium mb-1 text-gray-700"
-              >
-                Teacher:
-              </label>
-              <select
-                id="teacher"
-                className="w-full rounded-full border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
-              >
-                <option>All Teachers</option>
-                <option>John Doe</option>
-                <option>Alex Chen</option>
-                <option>Sarah Green</option>
-              </select>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -238,75 +233,137 @@ const Course: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"supervised" | "unsupervised">("supervised");
+  // Add userCourses state with mock data for supervised mode
+  const [userCourses, setUserCourses] = useState<UserCourse[]>([
+    { courseId: "1", userId: "user1" },
+    { courseId: "2", userId: "user1" },
+    { courseId: "3", userId: "user1" }
+  ]);
 
-  // Sample PDF books for unsupervised mode
-  const pdfBooks: Course[] = [
+  // Sample data for books in unsupervised mode - updated with all books from Book page
+  const starcBooks = [
     {
-      title: "Introduction to Machine Learning (PDF)",
-      instructor: "Self-paced",
-      rating: 4.5,
-      students: 3000,
+      id: "1",
+      title: "STARC Full Stack Development Book",
+      author: "STARC Learning Team",
+      topic: "Full Stack",
+      coverImage: "https://images.unsplash.com/photo-1558655146-d09347e92766?w=300&h=400&fit=crop",
+      driveUrl: "https://drive.google.com/file/d/1qKlORe2GuOlmxVuTGF1Ac1qQrzbbHQhf/view?usp=sharing",
+      rating: 4.9,
+      pages: 412,
+      description: "Comprehensive guide to full stack web development covering frontend and backend technologies.",
+      category: "development",
+      instructor: "STARC Learning Team",
+      students: 1200,
       price: 0,
-      originalPrice: 29,
+      originalPrice: 49.99,
+      duration: "Self-paced",
+      lessons: 18,
+      level: "intermediate",
+      badge: "STARC",
+      type: "book"
+    },
+    {
+      id: "2",
+      title: "The Ultimate Self-Learning Guide to Autodesk Fusion 360",
+      author: "Design Engineering Team",
+      topic: "3D Design",
+      coverImage: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=300&h=400&fit=crop",
+      driveUrl: "https://docs.google.com/document/d/16cO2mnQiksjODlgMq5GCXjNsK3wSpxmWhN9OJ9SgbRE/edit?usp=sharing",
+      rating: 4.8,
+      pages: 325,
+      description: "Learn Autodesk Fusion 360 from scratch with this comprehensive self-learning guide.",
+      category: "design",
+      instructor: "Design Engineering Team",
+      students: 950,
+      price: 0,
+      originalPrice: 39.99,
       duration: "Self-paced",
       lessons: 15,
       level: "beginner",
-      category: "books",
-      image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=300&h=200&fit=crop",
-      badge: "Free",
+      badge: "STARC",
+      type: "book"
     },
     {
-      title: "Python Programming Handbook (PDF)",
-      instructor: "Self-paced",
+      id: "3",
+      title: "Machine Learning Fundamentals",
+      author: "AI Research Group",
+      topic: "AI/ML",
+      coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=300&h=400&fit=crop",
+      driveUrl: "https://drive.google.com/file/d/1SH1l3XIK3v9mmvGiO-RbMll9Ho9e25qx/preview",
       rating: 4.7,
-      students: 5000,
+      pages: 280,
+      description: "Comprehensive introduction to machine learning concepts and algorithms.",
+      category: "ai/ml",
+      instructor: "AI Research Group",
+      students: 1500,
       price: 0,
-      originalPrice: 25,
+      originalPrice: 59.99,
       duration: "Self-paced",
-      lessons: 12,
-      level: "beginner",
-      category: "books",
-      image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=300&h=200&fit=crop",
-      badge: "Free",
+      lessons: 22,
+      level: "intermediate",
+      badge: "STARC",
+      type: "book"
     },
     {
-      title: "Web Development Fundamentals (PDF)",
-      instructor: "Self-paced",
-      rating: 4.6,
-      students: 4500,
+      id: "4",
+      title: "Advanced Python Programming",
+      author: "STARC Development Team",
+      topic: "Programming",
+      coverImage: "https://images.unsplash.com/photo-1555952494-efd681c7e3f9?w=300&h=400&fit=crop",
+      driveUrl: "https://docs.google.com/document/d/1IzaS0SFQFqY7swvCB9ZGFA2OCgFbEt4OgAYu_-kwP2s/edit?usp=sharing",
+      rating: 4.9,
+      pages: 350,
+      description: "Master advanced Python concepts and best practices for professional development.",
+      category: "development",
+      instructor: "STARC Development Team",
+      students: 1800,
       price: 0,
-      originalPrice: 35,
+      originalPrice: 45.99,
       duration: "Self-paced",
-      lessons: 18,
-      level: "beginner",
-      category: "books",
-      image: "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=300&h=200&fit=crop",
-      badge: "Free",
+      lessons: 20,
+      level: "advanced",
+      badge: "STARC",
+      type: "book"
     }
   ];
 
   useEffect(() => {
+    // Fetch courses from the API
     const fetchCourses = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const data = await courseService.getCourses();
+        const courses = await courseService.getCourses();
         
-        // Transform backend course data to match our Course interface
-        const formattedCourses: Course[] = data.map((course: ICourse) => ({
-          title: course.title,
-          instructor: course.instructor?.name || "Unknown Instructor",
-          rating: course.rating,
-          students: course.enrolledUsers?.length || 0,
-          price: course.discountedPrice || course.price,
-          originalPrice: course.price,
-          duration: `${course.duration} hours`,
-          lessons: course.lessons?.length || 0,
-          level: course.level,
-          category: course.category,
-          image: course.thumbnail || "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=300&h=200&fit=crop",
-          badge: course.discount ? "Sale" : undefined,
-          _id: course._id
-        }));
+        // Format the course data
+        const formattedCourses: Course[] = courses.map((course: ICourse) => {
+          // Determine badge value, removing AI Generated badges completely
+          let badgeValue;
+          if (course.discount) {
+            badgeValue = "Sale";
+          } else {
+            // Don't set a badge for AI Generated courses or if no badge exists
+            badgeValue = undefined;
+          }
+          
+          return {
+            title: course.title,
+            instructor: course.instructor?.name || "Unknown Instructor",
+            rating: course.rating || 0,
+            students: course.enrolledUsers?.length || 0,
+            price: course.price,
+            originalPrice: course.price,
+            duration: `${course.duration} hours`,
+            lessons: course.lessons?.length || 0,
+            level: course.level,
+            category: course.category === "AI Generated" ? "Development" : course.category, // Replace "AI Generated" category
+            image: course.thumbnail || "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=300&h=200&fit=crop",
+            badge: badgeValue,
+            _id: course._id,
+            // Add safe type property with default 'course'
+            type: 'course'
+          };
+        });
         
         setCoursesData(formattedCourses);
         setLoading(false);
@@ -330,23 +387,38 @@ const Course: React.FC = () => {
   };
 
   // Get the courses to display based on mode and filters
-  const getDisplayCourses = () => {
-    // If in unsupervised mode, show PDF books
-    if (mode === "unsupervised") {
-      if (selectedCategory === "all") {
-        return pdfBooks;
-      }
-      return pdfBooks.filter(book => book.category === selectedCategory);
+  const getDisplayCourses = (mode: string, courses: Course[] | undefined, userCourses: UserCourse[] | undefined) => {
+    // In supervised mode, show regular courses
+    if (mode === 'supervised') {
+      if (!courses) return [];
+      
+      // Filter to show only regular courses (excluding books)
+      return courses.filter(course => 
+        // Only include items with type 'course' or without driveUrl (meaning they're not books)
+        (course.type === 'course' || !course.driveUrl)
+      );
+    } 
+    // In unsupervised mode, show only books (STARC materials)
+    else {
+      // Return the starcBooks array for unsupervised mode
+      return starcBooks as unknown as Course[];
     }
-    
-    // Otherwise show regular courses
-    if (selectedCategory === "all") {
-      return coursesData;
-    }
-    return coursesData.filter(course => course.category === selectedCategory);
   };
 
-  const filteredCourses = getDisplayCourses();
+  // Apply category filtering if needed
+  const applyFilters = (courses: Course[]) => {
+    if (!courses) return [];
+    if (selectedCategory === "all") return courses;
+    
+    return courses.filter(course => {
+      const courseCategory = (course.category || "").toLowerCase();
+      return courseCategory.includes(selectedCategory.toLowerCase());
+    });
+  };
+
+  // Get courses based on mode, then apply filters
+  const displayCourses = getDisplayCourses(mode, coursesData, userCourses);
+  const filteredCourses = applyFilters(displayCourses);
 
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -394,7 +466,7 @@ const Course: React.FC = () => {
                 Discover Our Edifai Courses
               </h1>
               <p className="text-[14px] text-gray-600 max-w-3xl mx-auto mb-8">
-                Discover thousands of courses taught by expert instructors.
+                Discover selected courses taught by expert instructors.
                 Start learning today and advance your career.
               </p>
             </div>
@@ -422,43 +494,75 @@ const Course: React.FC = () => {
         ) : error ? (
           <div className="text-red-500 text-center py-8">{error}</div>
         ) : (
-       <section className="flex relative justify-center py-8 mb-16  xl:w-[90%]">
-            <section className="sticky h-[80vh] top-[90px]  lg:w-[25%]  xl:w-[25%] 2xl:w-[25%] 3xl:w-[25%] overflow-y-auto px-2 " style={{scrollbarWidth:"thin"}}>
-            <div className="w-full">
-              <div className="max-w-c mx-auto px-4 sm:px-6 lg:px-10">
-                <h2 className="text-2xl font-mont font-bold mb-4 py-2 text-gray-800 text-center">
-                  Categories
-                </h2>
-                <ul className="w-full h-full overflow-y-auto pr-2 custom-scrollbar">
-                  {categories.map((category, index) => (
-                    <li
-                      key={index}
-                      onClick={() =>{ setActiveIndex(index);
-                      filterCards(index === 0 ? "all" : category.toLowerCase());
-                      }}
-                      className={`py-4 px-4 lg:text-[10px] xl:text-sm 2xl:text-base 3xl:text-lg cursor-pointer items-start w-[95%] border-gray-200 border-b-[0.1px] transition-all duration-200 ${index === activeIndex
-                          ? "text-[#8A63FF] font-semibold"
-                          : "text-gray-800"
-                        }`}
-                    >
-                      {category}
-                    </li>
-                  ))}
-                </ul>
+       <section className="flex relative justify-center py-8 mb-16 xl:w-[90%] flex-col md:flex-row">
+            {/* Sidebar - hide on mobile, show on md and up */}
+            <section className="hidden md:block sticky h-[80vh] top-[90px] lg:w-[25%] xl:w-[25%] 2xl:w-[25%] 3xl:w-[25%] overflow-y-auto px-2" style={{scrollbarWidth:"thin"}}>
+              <div className="w-full">
+                <div className="max-w-c mx-auto px-4 sm:px-6 lg:px-10">
+                  <h2 className="text-2xl font-mont font-bold mb-4 py-2 text-gray-800 text-center">
+                    Categories
+                  </h2>
+                  <ul className="w-full h-full overflow-y-auto pr-2 custom-scrollbar">
+                    {categories.map((category, index) => (
+                      <li
+                        key={index}
+                        onClick={() =>{ 
+                          setActiveIndex(index);
+                          filterCards(index === 0 ? "all" : category.toLowerCase());
+                        }}
+                        className={`py-4 px-4 lg:text-[10px] xl:text-sm 2xl:text-base 3xl:text-lg cursor-pointer items-start w-[95%] border-gray-200 border-b-[0.1px] transition-all duration-200 ${index === activeIndex
+                            ? "text-[#8A63FF] font-semibold"
+                            : "text-gray-800"
+                          }`}
+                      >
+                        {category}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
             
-            <div className="flex justify-start pl-10 items-center flex-wrap lg:w-[80%]  xl:w-[85%] 2xl:w-[80%] 3xl:w-[80%] px-8 overflow-auto" style={{scrollbarWidth:'none'}}>
+            {/* Mobile Categories Dropdown */}
+            <div className="md:hidden w-full px-4 mb-4">
+              <select 
+                className="w-full rounded-lg border border-gray-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                onChange={(e) => {
+                  const index = parseInt(e.target.value);
+                  setActiveIndex(index);
+                  filterCards(index === 0 ? "all" : categories[index].toLowerCase());
+                }}
+                value={activeIndex}
+              >
+                {categories.map((category, index) => (
+                  <option key={index} value={index}>{category}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Course Cards Grid - full width on mobile, adjusted for larger screens */}
+            <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] md:pl-4 lg:pl-10 px-2 md:px-4 overflow-auto gap-3 md:gap-4" style={{scrollbarWidth:'none'}}>
               {filteredCourses.length > 0 ? (
                 filteredCourses.map((course, index) => (
-                <div  
-                  key={index}
-                  onClick={() => navigate(`/course/${course._id}`)}
-                    className="cursor-pointer xl:[32%] xl:w-[32%] 2xl:w-[32%] lg:mx-2 xl:mx-1 2xl:mx-1 3xl:w-[32%] 3xl:mx-2"
-                >
-                  <Recard course={course} key={index} />
-                </div>
+                  <div  
+                    key={index}
+                    onClick={() => {
+                      // Navigate differently based on the content type
+                      if (mode === "unsupervised" && course.driveUrl) {
+                        // For books, go directly to the book page
+                        navigate("/book");
+                      } else if (course._id) {
+                        // For regular courses with ID, go to the course detail page
+                        navigate(`/course/${course._id}`);
+                      } else {
+                        // Fallback for other types of content
+                        navigate('/carddetail', { state: { course } });
+                      }
+                    }}
+                    className="flex justify-center w-full xs:w-[45%] sm:w-[45%] md:w-[30%] lg:w-[30%] xl:w-[30%] 2xl:w-[30%] 3xl:w-[30%]"
+                  >
+                    <Recard course={course} key={index} />
+                  </div>
                 ))
               ) : (
                 <div className="w-full text-center py-8 text-gray-500">

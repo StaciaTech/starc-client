@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { handleApiError } from '@/utils/apiUtils';
-import { API_URL } from '../config/api';
+import { handleApiError, hasValidToken } from '@/utils/apiUtils';
+import { API_URL } from '@/config/api';
 
 // Fallback API URL in case proxy fails
 const FALLBACK_API_URL = 'https://server.edifai.in';
@@ -35,8 +35,9 @@ export interface ScheduleEvent {
   userId: string;
 }
 
-// Update API URL to use direct fallback URL
-const PROFILE_API_URL = `${FALLBACK_API_URL}/api/users`;
+// Update API URLs to use correct endpoints
+const AUTH_API_URL = `${FALLBACK_API_URL}/api/auth`;
+const PROFILE_API_URL = `${FALLBACK_API_URL}/api/profile`;
 
 export interface UserProfile {
   _id: string;
@@ -57,7 +58,24 @@ export const getUserProfile = async (): Promise<UserProfile> => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No authentication token found');
 
-    const response = await axios.get(`${PROFILE_API_URL}/profile`, {
+    // First try the profile endpoint
+    try {
+      const response = await axios.get(`${PROFILE_API_URL}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data && response.data.success && response.data.data) {
+        return response.data.data;
+      }
+    } catch (profileError) {
+      console.log('Could not fetch from profile API, falling back to auth/me', profileError);
+      // Fall back to the auth/me endpoint
+    }
+
+    // Use the auth/me endpoint as fallback to get user info
+    const response = await axios.get(`${AUTH_API_URL}/me`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -97,12 +115,27 @@ export const updateUserProfile = async (profileData: Partial<UserProfile>): Prom
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No authentication token found');
 
-    const response = await axios.put(PROFILE_API_URL, profileData, {
+    // Use the auth/profile endpoint to update user profile
+    const response = await axios.put(`${AUTH_API_URL}/profile`, profileData, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
+
+    // After successful update, update the local storage user data
+    if (response.data.success && response.data.data) {
+      const currentUser = localStorage.getItem('user');
+      if (currentUser) {
+        const userData = JSON.parse(currentUser);
+        const updatedUser = {
+          ...userData,
+          name: profileData.name || userData.name,
+          email: profileData.email || userData.email
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    }
 
     return response.data.data;
   } catch (error) {
@@ -184,11 +217,12 @@ export const getUserActivity = async (): Promise<any> => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No authentication token found');
 
-    const response = await axios.get(`${FALLBACK_API_URL}/api/users/activity`, {
+    const response = await axios.get(`${FALLBACK_API_URL}/api/profile/activity`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
+    
     return response.data.data || {
       learningHours: 0,
       certificatesEarned: 0,
@@ -198,7 +232,7 @@ export const getUserActivity = async (): Promise<any> => {
     };
   } catch (error) {
     console.error('Error fetching user activity:', error);
-    // Return default values on error
+    // Return empty values on error
     return {
       learningHours: 0,
       certificatesEarned: 0,
@@ -216,17 +250,30 @@ export const updateCourseProgress = async (
     progress?: number; 
     currentLesson?: number;
     completed?: boolean;
+    completedSections?: string[];
   }
 ): Promise<any> => {
   try {
+    // Check if token is valid
+    if (!hasValidToken()) {
+      throw new Error('Authentication token is missing or expired');
+    }
+
+    const token = localStorage.getItem('token');
+    
     const response = await axios.put(
       `${FALLBACK_API_URL}/api/courses/${courseId}/progress`, 
-      progressData
+      progressData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
     );
     return response.data.data;
   } catch (error) {
     console.error('Error updating course progress:', error);
-    throw error;
+    throw handleApiError(error, 'Failed to update course progress');
   }
 };
 
@@ -248,6 +295,38 @@ export const uploadProfilePicture = async (file: File): Promise<{ avatar: string
     return response.data.data;
   } catch (error) {
     throw handleApiError(error, 'Error uploading profile picture');
+  }
+};
+
+// Get user course details including completed sections and quizzes
+export const getUserCourseDetails = async (courseId: string): Promise<any> => {
+  try {
+    // Check if token is valid
+    if (!hasValidToken()) {
+      throw new Error('Authentication token is missing or expired');
+    }
+
+    const token = localStorage.getItem('token');
+    
+    const response = await axios.get(
+      `${FALLBACK_API_URL}/api/courses/${courseId}/user-details`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching user course details:', error);
+    // Return empty default values instead of throwing to prevent UI errors
+    return {
+      progress: 0,
+      completed: false,
+      currentLesson: 0,
+      completedSections: [],
+      completedQuizzes: []
+    };
   }
 };
 

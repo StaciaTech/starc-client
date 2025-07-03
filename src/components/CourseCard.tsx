@@ -1,110 +1,209 @@
-import React from 'react';
-import { ICourse } from '@/services/courseService';
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Clock, Tag, Star, Users } from "lucide-react";
+import React from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { Users, Clock, Star } from "lucide-react";
+import defaultImage from "../Assets/icons/course1.svg";
+import softwareImage from "../Assets/icons/course1.svg";
+import designImg from "../Assets/icons/course2.svg";
+import mechanicalImage from "../Assets/icons/course4.svg";
 
-// Import course images
-import course1 from "../Assets/icons/course1.svg";
-import course2 from "../Assets/icons/course2.svg";
-import course3 from "../Assets/icons/course3.svg";
-import course4 from "../Assets/icons/course4.svg";
-import course5 from "../Assets/icons/course5.svg";
-import course6 from "../Assets/icons/course6.svg";
-
-// Course images mapping
-const courseImages = [course1, course2, course3, course4, course5, course6];
-
-interface CourseCardProps {
-  course: ICourse;
+export interface ICourse {
+  _id: string;
+  title: string;
+  description: string;
+  instructor: any;
+  price: number;
+  discount?: boolean;
+  duration: number;
+  lessons: any[];
+  level: string;
+  category: string;
+  enrolledUsers?: string[];
+  rating?: number;
+  thumbnail?: string;
+  badge?: string; // Added for badges like 'Sale'
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
-  const navigate = useNavigate();
+export interface CourseCardProps {
+  title: string;
+  instructor: string;
+  rating: number;
+  students: number;
+  price: number;
+  originalPrice?: number;
+  duration: string;
+  lessons: number;
+  level: string;
+  category: string;
+  image?: string;
+  badge?: string;
+  _id?: string;
+}
 
-  // Format duration from minutes to hours and minutes
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins > 0 ? `${mins}m` : ''}`;
-  };
-
-  // Calculate discounted price
-  const discountedPrice = course.discount 
-    ? course.price - (course.price * (course.discount / 100)) 
-    : course.price;
+const CourseCard: React.FC<CourseCardProps> = ({
+  title,
+  instructor,
+  rating,
+  students,
+  price,
+  originalPrice,
+  duration,
+  lessons,
+  level,
+  category,
+  image,
+  badge,
+  _id,
+}) => {
+  // Determine the appropriate image based on course title or category keywords
+  const getAppropriateImage = () => {
+    const titleLower = title.toLowerCase();
+    const categoryLower = category ? category.toLowerCase() : '';
     
-  // Get a random course image from the imported images
-  const getRandomCourseImage = () => {
-    const randomIndex = Math.floor(Math.random() * courseImages.length);
-    return courseImages[randomIndex];
+    // Check for software-related keywords
+    if (
+      titleLower.includes('software') ||
+      titleLower.includes('programming') ||
+      titleLower.includes('coding') ||
+      titleLower.includes('development') ||
+      titleLower.includes('web') ||
+      titleLower.includes('python') ||
+      titleLower.includes('java') ||
+      titleLower.includes('javascript') ||
+      categoryLower.includes('development') ||
+      categoryLower.includes('programming')
+    ) {
+      return softwareImage;
+    }
+    
+    // Check for design-related keywords
+    if (
+      titleLower.includes('design') ||
+      titleLower.includes('ui') ||
+      titleLower.includes('ux') ||
+      titleLower.includes('user interface') ||
+      titleLower.includes('user experience') ||
+      categoryLower.includes('design') ||
+      categoryLower.includes('ui') ||
+      categoryLower.includes('ux')
+    ) {
+      return designImg;
+    }
+    
+    // Check for mechanical-related keywords
+    if (
+      titleLower.includes('mechanical') ||
+      titleLower.includes('engineering') ||
+      titleLower.includes('machine') ||
+      categoryLower.includes('mechanical') ||
+      categoryLower.includes('engineering')
+    ) {
+      return mechanicalImage;
+    }
+    
+    // Check for AutoCAD-related keywords
+    if (
+      titleLower.includes('autocad') ||
+      titleLower.includes('auto cad') ||
+      titleLower.includes('cad') ||
+      categoryLower.includes('autocad') ||
+      categoryLower.includes('cad')
+    ) {
+      return mechanicalImage; // Using mechanical image for AutoCAD
+    }
+    
+    // Check for 3D design keywords
+    if (
+      titleLower.includes('3d') ||
+      titleLower.includes('modeling') ||
+      titleLower.includes('blender') ||
+      titleLower.includes('fusion') ||
+      categoryLower.includes('3d')
+    ) {
+      return mechanicalImage; // Using mechanical image for 3D design
+    }
+    
+    // Use provided image or default if no keywords match
+    return image || defaultImage;
   };
+  
+  const courseImage = getAppropriateImage();
+
+  // Only display badge if it's not "AI Generated"
+  const displayBadge = badge && badge !== "AI Generated";
 
   return (
-    <Card className="overflow-hidden transition-transform hover:scale-105 hover:shadow-lg">
-      <div className="relative">
-        <img 
-          src={getRandomCourseImage()}
-          alt={course.title} 
-          className="h-48 w-full object-cover"
-        />
-        {course.discount && (
-          <div className="absolute top-0 right-0 bg-red-600 text-white p-1 px-2 text-xs font-bold">
-            {course.discount}% OFF
-          </div>
-        )}
-      </div>
-      
-      <CardHeader className="p-4 pb-0">
-        <div className="flex justify-between items-start">
-          <h3 className="font-bold text-lg line-clamp-2 flex-1">{course.title}</h3>
-          <div className="flex items-center ml-2">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm ml-1">{course.rating.toFixed(1)}</span>
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="p-4 pt-2 pb-0">
-        <p className="text-sm text-gray-600 line-clamp-2 mb-3">{course.description}</p>
-        
-        <div className="flex flex-wrap gap-2 mt-2">
-          <div className="flex items-center text-xs text-gray-500">
-            <Clock className="h-3 w-3 mr-1" />
-            {formatDuration(course.duration)}
-          </div>
-          <div className="flex items-center text-xs text-gray-500">
-            <Tag className="h-3 w-3 mr-1" />
-            {course.level}
-          </div>
-          <div className="flex items-center text-xs text-gray-500">
-            <Users className="h-3 w-3 mr-1" />
-            {course.enrolledUsers?.length || 0} students
-          </div>
-        </div>
-      </CardContent>
-      
-      <CardFooter className="p-4 pt-3 flex justify-between items-center">
-        <div>
-          {course.discount ? (
-            <div className="flex items-center">
-              <span className="text-lg font-bold text-primary">${discountedPrice.toFixed(2)}</span>
-              <span className="text-xs line-through ml-2 text-gray-500">${course.price.toFixed(2)}</span>
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden max-w-md mx-auto w-full"
+    >
+      <Link to={`/courses/${_id}`} className="block">
+        <div className="relative">
+          <img
+            src={courseImage}
+            alt={title}
+            className="w-full h-48 object-cover"
+          />
+          {displayBadge && (
+            <div className="absolute top-3 right-3 bg-[#8A63FF] text-white text-xs font-bold py-1 px-2 rounded">
+              {badge}
             </div>
-          ) : (
-            <span className="text-lg font-bold text-primary">${course.price.toFixed(2)}</span>
           )}
         </div>
-        
-        <Button 
-          size="sm" 
-          onClick={() => navigate(`/course/${course._id}`)}
-        >
-          View Course
-        </Button>
-      </CardFooter>
-    </Card>
+
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-2 text-sm text-gray-500">
+            <div className="flex items-center">
+              <Clock size={14} className="mr-1" />
+              <span>{duration}</span>
+            </div>
+            <div className="flex items-center">
+              <Users size={14} className="mr-1" />
+              <span>{students} students</span>
+            </div>
+          </div>
+
+          <h3 className="font-semibold text-gray-800 mb-1">{title}</h3>
+          
+          <div className="flex items-center mb-2">
+            <div className="flex mr-1">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  size={14}
+                  className={i < Math.floor(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-500">{rating.toFixed(1)}</span>
+          </div>
+
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+            <div className="text-sm font-medium text-gray-500">
+              {level.charAt(0).toUpperCase() + level.slice(1)}
+            </div>
+            <div>
+              {originalPrice && originalPrice > price ? (
+                <div className="flex items-center">
+                  <span className="text-gray-400 text-sm line-through mr-2">
+                    ${originalPrice.toFixed(2)}
+                  </span>
+                  <span className="text-[#8A63FF] font-bold">
+                    ${price.toFixed(2)}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-[#8A63FF] font-bold">
+                  {price === 0 ? "Free" : `$${price.toFixed(2)}`}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
   );
 };
 

@@ -3,6 +3,7 @@ import SubmissionSuccess from './SubmissionSuccess';
 import { useNavigate } from 'react-router-dom';
 import courseService from '@/services/courseService';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface EnrollProps {
     courseId: string;
@@ -28,6 +29,7 @@ const Enroll: React.FC<EnrollProps> = ({
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
     const [alreadyEnrolled, setAlreadyEnrolled] = useState(false);
+    const [showForm, setShowForm] = useState(false); // Toggle between quick enroll and form
     const navigate = useNavigate();
     
     // State for form inputs
@@ -126,7 +128,7 @@ const Enroll: React.FC<EnrollProps> = ({
 
     if (alreadyEnrolled) {
         return (
-            <div className="w-[100%] bg-white p-6 shadow-lg rounded-lg border border-[#8A63FF4D]">
+            <div className="w-full bg-white p-4 lg:p-6 shadow-lg rounded-lg border border-[#8A63FF4D]">
                 <div className="text-center">
                     <div className="text-green-600 text-xl mb-4">
                         You're already enrolled in this course
@@ -141,149 +143,174 @@ const Enroll: React.FC<EnrollProps> = ({
     }
 
     return (
-        <div className="w-[100%] bg-white p-6 shadow-lg rounded-lg border border-[#8A63FF4D]">
+        <div className="w-full bg-white p-4 lg:p-6 shadow-lg rounded-lg border border-[#8A63FF4D]">
             {/* Course Info Section */}
-            <div className="mb-6 pb-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">{title}</h2>
-                <div className="flex items-center mb-2">
-                    <span className="text-gray-600 text-sm">Instructor: </span>
-                    <span className="text-gray-800 text-sm ml-1 font-medium">{instructor}</span>
+            <div className="mb-4 lg:mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-lg lg:text-xl font-bold text-gray-800 mb-2">{title}</h2>
+                <div className="flex items-center mb-1 lg:mb-2">
+                    <span className="text-gray-600 text-xs lg:text-sm">Instructor: </span>
+                    <span className="text-gray-800 text-xs lg:text-sm ml-1 font-medium">{instructor}</span>
                 </div>
-                <div className="flex items-center mb-2">
-                    <span className="text-gray-600 text-sm">Duration: </span>
-                    <span className="text-gray-800 text-sm ml-1 font-medium">{duration}</span>
+                <div className="flex items-center mb-1 lg:mb-2">
+                    <span className="text-gray-600 text-xs lg:text-sm">Duration: </span>
+                    <span className="text-gray-800 text-xs lg:text-sm ml-1 font-medium">{duration}</span>
                 </div>
-                <div className="flex items-center mb-4">
-                    <span className="text-gray-600 text-sm">Level: </span>
-                    <span className="text-gray-800 text-sm ml-1 font-medium">{level}</span>
+                <div className="flex items-center mb-3 lg:mb-4">
+                    <span className="text-gray-600 text-xs lg:text-sm">Level: </span>
+                    <span className="text-gray-800 text-xs lg:text-sm ml-1 font-medium">{level}</span>
                 </div>
                 <div className="flex items-center">
                     {discount ? (
                         <>
-                            <span className="text-2xl font-bold text-[#8A63FF]">${discountedPrice?.toFixed(2)}</span>
-                            <span className="text-gray-500 line-through ml-2">${price.toFixed(2)}</span>
+                            <span className="text-xl lg:text-2xl font-bold text-[#8A63FF]">${discountedPrice?.toFixed(2)}</span>
+                            <span className="text-gray-500 line-through ml-2 text-sm lg:text-base">${price.toFixed(2)}</span>
                             <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded ml-2">
                                 {discount}% OFF
                             </span>
                         </>
                     ) : (
-                        <span className="text-2xl font-bold text-[#8A63FF]">${price.toFixed(2)}</span>
+                        <span className="text-xl lg:text-2xl font-bold text-[#8A63FF]">${price.toFixed(2)}</span>
                     )}
                 </div>
             </div>
 
-            {/* Direct Enrollment Button */}
-            <button
-                onClick={handleDirectEnroll}
-                disabled={loading}
-                className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition mb-4"
-            >
-                {loading ? "Processing..." : "Enroll Now"}
-            </button>
+            {!showForm ? (
+                <>
+                    {/* Direct Enrollment Button */}
+                    <Button
+                        onClick={handleDirectEnroll}
+                        disabled={loading}
+                        className="w-full bg-[#8A63FF] text-white py-2.5 lg:py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition mb-3 lg:mb-4"
+                    >
+                        {loading ? "Processing..." : "Enroll Now"}
+                    </Button>
 
-            <div className="text-center text-gray-500 text-sm mb-4">- OR -</div>
-
-            {/* Express Interest Form */}
-            <h2 className="text-md font-semibold text-[#8A63FF] mb-4">Express Interest in {title}</h2>
-            <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <input
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                            style={{
-                                boxShadow: '0 6px 6px rgba(0, 0, 0, 0.1)',
-                            }}
-                            placeholder="First Name"
-                        />
-                        {errors.firstName && (
-                            <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
-                        )}
-                    </div>
-                    <div>
-                        <input
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                            style={{
-                                boxShadow: '0 6px 6px rgba(0, 0, 0, 0.1)',
-                            }}
-                            placeholder="Last Name"
-                        />
-                        {errors.lastName && (
-                            <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
-                        )}
-                    </div>
-                </div>
-                <div className="mb-4">
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                        style={{
-                            boxShadow: '0 6px 6px rgba(0, 0, 0, 0.1)',
-                        }}
-                        placeholder="Email"
-                    />
-                    {errors.email && (
-                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                    )}
-                </div>
-                <div className="mb-4">
-                    <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        className="w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                        style={{
-                            boxShadow: '0 6px 6px rgba(0, 0, 0, 0.1)',
-                        }}
-                        placeholder="Phone Number"
-                    />
-                    {errors.phoneNumber && (
-                        <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
-                    )}
-                </div>
-                <div className="mb-4">
-                    <label className="block text-gray-600 mb-1">Upload a Resume</label>
-                    <div className="flex items-center text-sm">
-                        <button
-                            type="button"
-                            onClick={handleFileButtonClick}
-                            className="bg-[#8A63FF] text-white px-1 w-[35%] rounded-sm mr-0"
+                    <div className="text-center text-gray-500 text-sm mb-3 lg:mb-4">- OR -</div>
+                    
+                    {/* Button to show the interest form */}
+                    <Button
+                        onClick={() => setShowForm(true)}
+                        variant="outline"
+                        className="w-full border-[#8A63FF] text-[#8A63FF] py-2.5 lg:py-3 rounded-lg font-semibold hover:bg-[#8A63FF1A] transition"
+                    >
+                        Express Interest
+                    </Button>
+                </>
+            ) : (
+                <>
+                    {/* Express Interest Form */}
+                    <div className="flex justify-between items-center mb-3">
+                        <h2 className="text-md font-semibold text-[#8A63FF]">Express Interest</h2>
+                        <Button
+                            onClick={() => setShowForm(false)}
+                            variant="ghost"
+                            className="text-sm text-gray-500 hover:text-[#8A63FF] p-1 h-auto"
                         >
-                            Select a file
-                        </button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept=".pdf,.doc,.docx"
-                            className="hidden"
-                        />
-                        <span className="text-gray-500 text-xs pl-1">
-                            {formData.resume ? formData.resume.name : 'Supported Format PDF, Word'}
-                        </span>
+                            Back to Enroll
+                        </Button>
                     </div>
-                    {errors.resume && (
-                        <p className="text-red-500 text-sm mt-1">{errors.resume}</p>
-                    )}
-                </div>
-                <button
-                    type="submit"
-                    className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition"
-                >
-                    Submit Interest
-                </button>
-            </form>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    className="w-full p-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                    style={{
+                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                    }}
+                                    placeholder="First Name"
+                                />
+                                {errors.firstName && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+                                )}
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    className="w-full p-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                    style={{
+                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                    }}
+                                    placeholder="Last Name"
+                                />
+                                {errors.lastName && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+                                )}
+                            </div>
+                        </div>
+                        <div>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                className="w-full p-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                style={{
+                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                }}
+                                placeholder="Email"
+                            />
+                            {errors.email && (
+                                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                            )}
+                        </div>
+                        <div>
+                            <input
+                                type="tel"
+                                name="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={handleChange}
+                                className="w-full p-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                style={{
+                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                }}
+                                placeholder="Phone Number"
+                            />
+                            {errors.phoneNumber && (
+                                <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-gray-600 text-xs mb-1">Upload a Resume</label>
+                            <div className="flex items-center text-xs">
+                                <button
+                                    type="button"
+                                    onClick={handleFileButtonClick}
+                                    className="bg-[#8A63FF] text-white px-2 py-1.5 rounded-md mr-2"
+                                >
+                                    Select file
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    accept=".pdf,.doc,.docx"
+                                    className="hidden"
+                                />
+                                <span className="text-gray-500 text-xs truncate max-w-[150px]">
+                                    {formData.resume ? formData.resume.name : 'PDF, Word formats'}
+                                </span>
+                            </div>
+                            {errors.resume && (
+                                <p className="text-red-500 text-xs mt-1">{errors.resume}</p>
+                            )}
+                        </div>
+                        <Button
+                            type="submit"
+                            className="w-full bg-[#8A63FF] text-white py-2.5 lg:py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition mt-2"
+                        >
+                            Submit Interest
+                        </Button>
+                    </form>
+                </>
+            )}
         </div>
     );
 };

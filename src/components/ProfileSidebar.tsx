@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Book, Calendar, Settings } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Book, Calendar, Settings, User } from 'lucide-react';
 
 interface UserData {
   name: string;
@@ -16,8 +16,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = memo(({ user = { name: 'St
   // Define navigation items once
   const navItems = useMemo(() => [
     { path: '/profile', icon: <LayoutDashboard className="h-5 w-5" />, label: 'Overview' },
-    { path: '/courses', icon: <BookOpen className="h-5 w-5" />, label: 'Courses' },
-    { path: '/books', icon: <Book className="h-5 w-5" />, label: 'Books' },
+    { path: '/course', icon: <BookOpen className="h-5 w-5" />, label: 'Courses' },
+    { path: '/book', icon: <Book className="h-5 w-5" />, label: 'Books' },
     { path: '/schedule', icon: <Calendar className="h-5 w-5" />, label: 'Schedule' },
     { path: '/settings', icon: <Settings className="h-5 w-5" />, label: 'Settings' },
   ], []);
@@ -26,13 +26,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = memo(({ user = { name: 'St
     <div className="bg-white rounded-[16px] h-[80vh] shadow-md p-4 lg:w-[190px] xl:w-[220px] 2xl:w-[250px] 3xl:w-[274px]">
       {/* User Profile Section */}
       <div className="flex items-center mb-6">  
-        <div className="lg:w-12 lg:h-12 xl:w-16 xl:h-16 rounded-full overflow-hidden mr-4">
-          <img 
-            src="/placeholder.svg" 
-            alt="User Avatar" 
-            className="w-full h-full object-cover" 
-            loading="lazy"
-          />
+        <div className="lg:w-12 lg:h-12 xl:w-16 xl:h-16 rounded-full overflow-hidden mr-4 bg-[#8A63FF]/10 flex items-center justify-center">
+          <User className="lg:w-6 lg:h-6 xl:w-8 xl:h-8 text-[#8A63FF]" />
         </div>
         <div>
           <p className="text-gray-600 lg:text-[9px] xl:text-[11px] 2xl:text-sm">Hello!</p>

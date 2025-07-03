@@ -28,7 +28,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Edit, Plus, Save, Pen, FileQuestion, BookOpen, LayoutDashboard, Search, Sparkles, Wand2 } from 'lucide-react';
+import { Trash2, Edit, Plus, Save, Pen, FileQuestion, BookOpen, LayoutDashboard, Search, Sparkles, Wand2, BookText, FileText } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import courseService, { ICourse, ILesson } from '@/services/courseService';
 import authService from '@/services/authService';
@@ -36,6 +36,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import quizService, { IQuiz, IQuizQuestion, IQuizOption } from '@/services/quizService';
 import { Badge } from '@/components/ui/badge';
 import AIContentGenerationForm from '@/components/admin/AIContentGenerationForm';
+import StudyMaterialsManager from '@/components/admin/StudyMaterialsManager';
+import AssignmentsManager from '@/components/admin/AssignmentsManager';
 
 const AdminCoursePage: React.FC = () => {
   const navigate = useNavigate();
@@ -681,6 +683,8 @@ const AdminCoursePage: React.FC = () => {
                 <TabsTrigger value="course">Course Details</TabsTrigger>
                 <TabsTrigger value="lessons">Lessons</TabsTrigger>
                 <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+                <TabsTrigger value="materials">Study Materials</TabsTrigger>
+                <TabsTrigger value="assignments">Assignments</TabsTrigger>
               </TabsList>
               
               <TabsContent value="course">
@@ -1281,6 +1285,18 @@ const AdminCoursePage: React.FC = () => {
                   ) : (
                     <p className="text-gray-500 text-center py-4">No quizzes added yet</p>
                   )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="materials">
+                <div className="bg-white rounded-lg">
+                  <StudyMaterialsManager courseId={selectedCourse?._id || ''} />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="assignments">
+                <div className="bg-white rounded-lg">
+                  <AssignmentsManager courseId={selectedCourse?._id || ''} />
                 </div>
               </TabsContent>
             </Tabs>

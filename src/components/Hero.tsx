@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "../Assets/hero.png"; // Ensure this path is correct
+import { motion } from "framer-motion";
+import { TypingAnimation } from "@/components/magicui/typing-animation";
 
 interface Slide {
   title: string;
@@ -10,7 +12,7 @@ interface Slide {
 const Hero: React.FC = () => {
   const slides: Slide[] = [
     {
-      title: " Unlock Your Potential. Learn Without Limits.",
+      title: "Unlock Your Potential. Learn Without Limits.",
       description:
         "Access a world of knowledge. Flexible learning built for your success journey",
     },
@@ -22,23 +24,26 @@ const Hero: React.FC = () => {
     {
       title: "Accelerate Your Skills. Build Your Future.",
       description:
-        " Master cutting-edge topics. Gain certifications for career advancement.",
+        "Master cutting-edge topics. Gain certifications for career advancement.",
     },
   ];
-  const toNavigation =useNavigate();
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [skipTransition, setSkipTransition] = useState(false);
+  const [resetTyping, setResetTyping] = useState(0);
 
-  // Auto-shift to the next slide every 3 seconds
+  // Auto-shift to the next slide every 5 seconds
   useEffect(() => {
-    const interval = 3000; // 3 seconds per slide
+    const interval = 5000; // 5 seconds to allow for typing animation
     const slideTimer = setInterval(() => {
       setCurrentSlide((prevSlide) => {
         if (prevSlide === slides.length - 1) {
           setSkipTransition(true); // Disable sliding for reset
           setTimeout(() => setSkipTransition(false), 0); // Re-enable transition
+          setResetTyping(prev => prev + 1); // Trigger typing animation reset
           return 0; // Jump to first slide
         }
+        setResetTyping(prev => prev + 1); // Trigger typing animation reset
         return (prevSlide + 1) % slides.length;
       });
     }, interval);
@@ -54,100 +59,194 @@ const Hero: React.FC = () => {
     const sectionWidth = barWidth / slides.length;
     const clickedSection = Math.floor(clickX / sectionWidth);
     setCurrentSlide(clickedSection);
+    setResetTyping(prev => prev + 1); // Trigger typing animation reset
     setSkipTransition(false); // Ensure normal transition on click
   };
 
   return (
-   
-
-    <section className="relative from-purple-50 to-white overflow-hidden lg:h-[90vh] xl:h-[90vh] 2xl:h-[90vh] 3xl:h-[80vh] ">
-      {/* <div className="absolute inset-0 opacity-10 pointer-events-none">
+    <section className="relative overflow-hidden min-h-[100vh] sm:min-h-[85vh] md:min-h-[90vh] lg:min-h-[95vh] xl:min-h-[95vh] 2xl:min-h-[95vh] 3xl:min-h-[90vh] w-full bg-gradient-to-b from-purple-50/30 to-white/80">
+      {/* Subtle background pattern with enhanced opacity */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
         <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgeT0iMSIgcj0iMSIgZmlsbD0iIzAwMDAwMDMzIi8+PC9zdmc+')] bg-repeat"></div>
-      </div> */}
-      <div className=" z-10 flex flex-col justify-center items-center lg:pt-5 xl:pt-5 2xl:pt-5 3xl:pt-10">
-        <div className="relative lg:w-[628px] lg:h-[424px] xl:w-[728px] xl:h-[504px] 2xl:w-[828px] 2xl:h-[604px] 3xl:w-[1028px] 3xl:h-[694px] flex flex-col justify-center  ">
-          {/* <div className="flex justify-center w-full"> */}
+      </div>
+
+      {/* Decorative elements - Enhanced for desktop but with size limits */}
+      <div className="absolute top-10 left-5 w-24 h-24 sm:top-20 sm:left-10 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-52 xl:h-52 2xl:w-56 2xl:h-56 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+      <div className="absolute top-20 right-5 w-24 h-24 sm:top-40 sm:right-10 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-52 xl:h-52 2xl:w-56 2xl:h-56 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div className="absolute bottom-20 left-1/4 w-24 h-24 sm:bottom-40 sm:left-1/3 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-52 xl:h-52 2xl:w-56 2xl:h-56 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+      
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center py-16 sm:pt-8 md:pt-5 lg:pt-0 xl:pt-0 2xl:pt-0 3xl:pt-0">
+        <div className="relative w-full max-w-[920px] sm:max-w-[500px] md:max-w-[550px] lg:max-w-[500px] xl:max-w-[500px] 2xl:max-w-[500px] 3xl:max-w-[100px] flex flex-col justify-center items-center">
+          
+          {/* Hero Image - Size capped for desktop */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="w-full relative z-0"
+          >
             <img
               src={heroImage}
               alt="Hero"
-              className="w-[100%]   absolute z-0 top-[0px] lg:pt-6 xl:pt-12  2xl:pt-10 3xl:pt-8"
+              className="w-full h-auto object-contain pt-45 sm:pt-32 md:pt-40 lg:pt-40 xl:pt-44 2xl:pt-44 
+                         scale-[1.4] sm:scale-[1.3] md:scale-[1.4] lg:scale-[1.45] xl:scale-[1.5] 2xl:scale-[1.5] 
+                         absolute top-12 left-0 lg:top-0 xl:top-0 z-0"
+              loading="eager"
             />
-          {/* </div> */}
-          <div className=" flex flex-col relative z-10 justify-center items-center mx-auto lg:mt-32 xl:mt-36 2xl:mt-32 3xl:mt-20 text-center lg:h-[160px]     xl:h-[160px]  2xl:h-[223px] xl:w-[100%] 2xl:w-[100%] 3xl:w-[100%] ">
-            <span className="lg:w-[100px] lg:h-[25px] xl:w-[115px] xl:h-[25px] 2xl:w-[150px] 2xl:h-[32px] 3xl:w-[200px] 3xl:h-[35px]  flex justify-center items-center bg-[#8A63FF] text-white lg:text-[7px] xl:text-[8px]  2xl:text-[10px] 3xl:text-xs font-semibold  rounded-full mb-2 ">
+          </motion.div>
+          
+          {/* Hero Content - Fixed positioning for desktop */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex flex-col relative z-10 justify-center items-center mx-auto 
+                       mt-48 sm:mt-52 md:mt-60 lg:mt-72 xl:mt-80 2xl:mt-80 3xl:mt-80 text-center"
+          >
+            {/* Badge - Size capped for desktop */}
+            <motion.span 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="w-[100px] sm:w-[120px] md:w-[130px] lg:w-[150px] xl:w-[160px] 2xl:w-[160px] 3xl:w-[160px] 
+                         h-[25px] sm:h-[28px] md:h-[30px] lg:h-[35px] xl:h-[38px] 2xl:h-[38px] 3xl:h-[38px] 
+                         flex justify-center items-center bg-[#8A63FF] text-white 
+                         text-[8px] sm:text-[9px] md:text-[10px] lg:text-[12px] xl:text-[13px] 2xl:text-[13px] 3xl:text-[13px] 
+                         font-semibold rounded-full mb-3 sm:mb-4 lg:mb-6 xl:mb-6 shadow-md"
+            >
               SUPERVISED COURSES
-            </span>
-            <h1 className=" lg:text-4xl  xl:text-4xl 2xl:text-5xl 3xl:text-5xl font-bold text[#474747] h-[6rem] mb-4 ">
-              {slides[currentSlide].title.split(" ").map((word, index) => (
-                <span key={index}>
-                  {word}{" "}
-                  {index === 4 && <br />}
-                </span>
-              ))}
-            </h1>
-            <p className="lg:text-[12px] xl:text-sm 2xl:text-base 3xl:text-[1rem] text-[#474747] leading-relaxed max-w-2xl mx-auto ">
+            </motion.span>
+            
+            {/* Title with Typing Animation - Size capped for desktop */}
+            <div className="min-h-[4rem] sm:min-h-[6rem] lg:min-h-[8rem] xl:min-h-[8rem] 2xl:min-h-[8rem] 
+                           mb-2 sm:mb-3 md:mb-4 lg:mb-5 xl:mb-5 px-2 lg:px-4">
+              <TypingAnimation
+                key={`${currentSlide}-${resetTyping}`}
+                duration={50}
+                delay={300}
+                startOnView={false}
+                className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-5xl 2xl:text-5xl 3xl:text-5xl 
+                           font-bold text-[#474747] leading-tight tracking-tight"
+              >
+                {slides[currentSlide].title}
+              </TypingAnimation>
+            </div>
+            
+            {/* Description - Size capped for desktop */}
+            <motion.p 
+              key={`desc-${currentSlide}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-lg 2xl:text-lg 3xl:text-lg 
+                         text-[#474747] leading-relaxed 
+                         max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-2xl xl:max-w-2xl 2xl:max-w-2xl 3xl:max-w-2xl 
+                         mx-auto px-9 lg:px-0 font-medium"
+            >
               {slides[currentSlide].description}
-             <br />
-               {/* Posuere vel netus auctor phasellus fermentum. */}
-            </p>
-          </div>
-          <div className="flex flex-col  relative z-10 sm:flex-row items-center justify-center gap-4 mb-12 font-mont">
+            </motion.p>
+          </motion.div>
+          
+          {/* Call to Action - Size capped for desktop */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex flex-col sm:flex-row relative z-10 items-center justify-center 
+                      gap-3 sm:gap-4 lg:gap-5 xl:gap-5 
+                      mt-4 sm:mt-8 lg:mt-8 xl:mt-8 2xl:mt-8 
+                      mb-6 sm:mb-12 font-mont"
+          >
             {currentSlide === 0 ? (
               <>
                 <button
                   type="button"
-                  className="bg-[#8A63FF] text-white px-6 py-3 lg:text-xs xl:text-sm 2xl:text-base 3xl:text-lg font-medium rounded-lg shadow-md font-mont"
-                  style={{ backgroundColor: "#8A63FF", boxShadow: '0px 10px 12px 0px rgba(0, 0, 0, 0.2)' }}
-                  onClick={()=>toNavigation('/course')}
+                  onClick={() => navigate('/course')}
+                  className="bg-[#8A63FF] text-white 
+                           px-4 sm:px-5 md:px-6 lg:px-6 xl:px-7 2xl:px-7 
+                           py-2 sm:py-2.5 md:py-3 lg:py-2 xl:py-2 2xl:py-2 
+                           text-xs sm:text-sm md:text-base lg:text-base xl:text-base 2xl:text-base 
+                           font-medium rounded-lg shadow-lg hover:bg-[#7550e3] 
+                           transition-all duration-300 w-full sm:w-auto 
+                           hover:scale-105 transform"
+                  style={{ boxShadow: '0px 8px 20px rgba(138, 99, 255, 0.35)' }}
                 >
                   Explore More Now
                 </button>
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
+                <div className="flex items-center gap-2 sm:gap-3 lg:gap-3 xl:gap-3 mt-3 sm:mt-0">
+                  <div className="flex -space-x-2 sm:-space-x-3 lg:-space-x-3 xl:-space-x-3">
                     {[1, 2, 3, 4].map((i) => (
-                      <img
+                      <motion.img
                         key={i}
-                        className="w-8 h-8 rounded-full border-2 border-white"
+                        whileHover={{ y: -3, scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                        className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 xl:w-10 xl:h-10 2xl:w-10 2xl:h-10 
+                                 rounded-full border-2 border-white shadow-md"
                         src={`https://i.pravatar.cc/32?img=${i}`}
                         alt={`Student ${i}`}
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-gray-600">1k+ students</span>
+                  <span className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-lg 2xl:text-lg text-gray-600 font-medium">
+                    1k+ students
+                  </span>
                 </div>
               </>
             ) : currentSlide === 1 ? (
               <button
                 type="button"
-                className="bg-[#8A63FF] text-white px-6 py-3 text-lg font-medium rounded-lg shadow-md font-mont"
-                style={{ backgroundColor: "#8A63FF", boxShadow: '0px 10px 12px 0px rgba(0, 0, 0, 0.2)' }}
-                 onClick={()=>{toNavigation('/contact');console.log("clicked");
-                 }}
+                onClick={() => navigate('/contact')}
+                className="bg-[#8A63FF] text-white 
+                         px-4 sm:px-5 md:px-6 lg:px-6 xl:px-7 2xl:px-7 
+                         py-2 sm:py-2.5 md:py-3 lg:py-2 xl:py-2 2xl:py-2 
+                         text-xs sm:text-sm md:text-base lg:text-base xl:text-base 2xl:text-base 
+                         font-medium rounded-lg shadow-lg hover:bg-[#7550e3] 
+                         transition-all duration-300 w-full sm:w-auto 
+                         hover:scale-105 transform"
+                style={{ boxShadow: '0px 8px 20px rgba(138, 99, 255, 0.35)' }}
               >
                 Express Your Interest Now
               </button>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 lg:gap-5 xl:gap-5">
                 <button
                   type="button"
-                  className="bg-[#8A63FF] text-white px-6 py-3 text-lg font-medium rounded-lg shadow-md"
-                  style={{ backgroundColor: "#8A63FF", boxShadow: '0px 10px 12px 0px rgba(0, 0, 0, 0.2)' }}
-                   onClick={()=>toNavigation('/course')}
+                  onClick={() => navigate('/course')}
+                  className="bg-[#8A63FF] text-white 
+                           px-4 sm:px-5 md:px-6 lg:px-6 xl:px-7 2xl:px-7 
+                           py-2 sm:py-2.5 md:py-3 lg:py-2 xl:py-2 2xl:py-2 
+                           text-xs sm:text-sm md:text-base lg:text-base xl:text-base 2xl:text-base 
+                           font-medium rounded-lg shadow-lg hover:bg-[#7550e3] 
+                           transition-all duration-300 w-full sm:w-auto 
+                           hover:scale-105 transform"
+                  style={{ boxShadow: '0px 8px 20px rgba(138, 99, 255, 0.35)' }}
                 >
                   Explore Courses Now
                 </button>
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <span>📚</span>
-                  <span>300+ Modules & 30+ Courses</span>
+                <div className="flex items-center gap-2 lg:gap-3 xl:gap-3 
+                              text-xs sm:text-sm md:text-base lg:text-base xl:text-base 2xl:text-base 
+                              text-gray-600 mt-3 sm:mt-0 
+                              bg-white/80 px-3 sm:px-4 lg:px-4 xl:px-4 
+                              py-1.5 sm:py-2 lg:py-1.5 xl:py-1.5 
+                              rounded-full shadow-sm">
+                  <span className="text-base sm:text-lg md:text-xl lg:text-xl xl:text-xl 2xl:text-xl">📚</span>
+                  <span className="font-medium">300+ Modules & 30+ Courses</span>
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
 
-          {/* Animated progress bar */}
-          <div className="flex justify-center">
+          {/* Animated progress bar - Size capped for desktop */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="flex justify-center w-full mb-4 sm:mb-0"
+          >
             <div
-              className="w-64 h-1 bg-gray-200 rounded-full overflow-hidden cursor-pointer"
+              className="w-32 sm:w-48 md:w-56 lg:w-64 xl:w-72 2xl:w-72 
+                       h-1 sm:h-1.5 md:h-2 lg:h-2 xl:h-2 
+                       bg-gray-200 rounded-full overflow-hidden cursor-pointer shadow-sm"
               onClick={handleBarClick}
             >
               <div
@@ -159,12 +258,9 @@ const Hero: React.FC = () => {
                 }}
               />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
-
-
-
 
       <style>
         {`
@@ -181,9 +277,53 @@ const Hero: React.FC = () => {
           .animate-pop-slide {
             animation: popSlide 0.5s ease-in-out forwards;
           }
+          @keyframes blob {
+            0% {
+              transform: translate(0px, 0px) scale(1);
+            }
+            33% {
+              transform: translate(30px, -50px) scale(1.1);
+            }
+            66% {
+              transform: translate(-20px, 20px) scale(0.9);
+            }
+            100% {
+              transform: translate(0px, 0px) scale(1);
+            }
+          }
+          .animate-blob {
+            animation: blob 7s infinite;
+          }
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          .animation-delay-4000 {
+            animation-delay: 4s;
+          }
+          
+          /* Enhanced animations for desktop */
+          @media (min-width: 1024px) {
+            .animate-blob {
+              animation: blob 15s infinite;
+            }
+            @keyframes blob {
+              0% {
+                transform: translate(0px, 0px) scale(1);
+              }
+              33% {
+                transform: translate(50px, -80px) scale(1.2);
+              }
+              66% {
+                transform: translate(-40px, 40px) scale(0.8);
+              }
+              100% {
+                transform: translate(0px, 0px) scale(1);
+              }
+            }
+          }
         `}
       </style>
-    </section >
+    </section>
   );
 };
 

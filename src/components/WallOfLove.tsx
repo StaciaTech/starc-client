@@ -8,127 +8,183 @@ import WOLImage4 from '../Assets/icons/WOLImage4.svg'
 import WOLImage5 from '../Assets/icons/WOLImage5.svg'
 import WOLImage6 from '../Assets/icons/WOLImage6.svg'
 import WOLtwitterLogo from '../Assets/icons/WOLtwitterLogo.svg'
+import { cn } from "@/lib/utils";
+import { Marquee } from "@/components/magicui/marquee";
 
 // --- TestimonialCard Component ---
 interface TestimonialCardProps {
-   id: number;
+  id: number;
   name: string;
   role: string;
   date: string;
   content: string;
-  image:string;
+  image: string;
 }
 
 const testimonials: TestimonialCardProps[] = [
- {
+  {
     id: 1,
     name: 'Esther Howard',
-    role:"Developer",
-    date:" 12:15 PM . May 19,2024",
+    role: "Developer",
+    date: " 12:15 PM · May 19",
     content:
       'This platform has transformed my learning experience! The courses are engaging. Highly recommend to everyone.',
-    image:WOLImage1
-   
+    image: WOLImage1
   },
   {
     id: 2,
     name: 'Leslie Alexander',
-     role:"UI/UX Designer",
-     date:" 10:02 AM . June 15,2024",
+    role: "UI/UX Designer",
+    date: " 10:02 AM · Jun 15",
     content:
-      'Absolutely brilliant! The content is so well-structured and easy tofollow. I have gained so many valuable skills in such a short time.',
-    image:WOLImage2
- 
-  
+      'Absolutely brilliant! The content is so well-structured and easy to follow. I have gained valuable skills in a short time.',
+    image: WOLImage2
   },
   {
     id: 3,
     name: 'Wade Warren',
-     role:"Developer",
-     date:" 1:15 PM . June 15,2024",
+    role: "Developer",
+    date: " 1:15 PM · Jun 15",
     content:
-      '"Incredible community and top-notch instructors. I feel so much more confident in my career path now. A true game-changer!',
-    image:WOLImage3
-
-  
+      'Incredible community and top-notch instructors. I feel so much more confident in my career path now. A true game-changer!',
+    image: WOLImage3
   },
   {
     id: 4,
     name: 'Jacob Jones',
-     role:"Mechanical",
-     date:" 12:18 PM . September 10,2024",
+    role: "Mechanical",
+    date: " 12:18 PM · Sep 10",
     content:
-      'The interactive lessons and practical exercises truly set this platform apart. Iam seeing real progress every single day.',
-    image:WOLImage4
-
-   
+      'The interactive lessons and practical exercises truly set this platform apart. I am seeing real progress every day.',
+    image: WOLImage4
   },
   {
     id: 5,
     name: 'Courtney Henry',
-     role:"Human Resource",
-     date:" 2:15 PM . November 24,2024",
+    role: "Human Resource",
+    date: " 2:15 PM · Nov 24",
     content:
-      'The interactive lessons and practical exercises truly set this platform apart. Iam seeing real progress every single day.',
-    image:WOLImage5
-
-  
+      'The interactive lessons and practical exercises truly set this platform apart. I am seeing real progress every day.',
+    image: WOLImage5
   },
   {
     id: 6,
     name: 'Darrell Steward',
-     role:"Designer",
-     date:" 03:55 PM . December 10,2024",
+    role: "Designer",
+    date: " 03:55 PM · Dec 10",
     content:
-      'Fantastic resources and a truly supportive environment. Ihave learned more here than I ever thought possible.',
-    image:WOLImage6
-
-
+      'Fantastic resources and a truly supportive environment. I have learned more here than I ever thought possible.',
+    image: WOLImage6
   },
 ];
 
+// Create rows with duplicated testimonials to prevent stuttering
+const createRepeatedArray = (items: TestimonialCardProps[], count: number) => {
+  const result: TestimonialCardProps[] = [];
+  for (let i = 0; i < count; i++) {
+    items.forEach((item) => {
+      result.push({
+        ...item,
+        id: item.id + (i * items.length * 100) // Create unique IDs for React keys
+      });
+    });
+  }
+  return result;
+};
+
+// Create rows with 5 repetitions of each set to ensure smooth animation
+const firstRow = createRepeatedArray(testimonials.slice(0, 2), 5);
+const secondRow = createRepeatedArray(testimonials.slice(2, 4), 5);
+const thirdRow = createRepeatedArray(testimonials.slice(4, 6), 5);
+const fourthRow = createRepeatedArray([testimonials[0], testimonials[3]], 5);
+
+const ReviewCard = ({
+  img,
+  name,
+  role,
+  content,
+  date,
+}: {
+  img: string;
+  name: string;
+  role: string;
+  content: string;
+  date: string;
+}) => {
+  return (
+    <figure
+      className={cn(
+        "relative h-full w-fit sm:w-64 cursor-pointer overflow-hidden rounded-xl border p-4 mb-8",
+        // light styles
+        "border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05]",
+        // dark styles
+        "dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]",
+        // shadow and transition
+        "shadow-sm hover:shadow-md transition-all duration-300"
+      )}
+    >
+      <div className="flex flex-row items-center gap-2">
+        <img className="rounded-full" width="32" height="32" alt="" src={img} />
+        <div className="flex flex-col">
+          <figcaption className="text-sm font-medium dark:text-white">
+            {name}
+          </figcaption>
+          <p className="text-xs font-medium dark:text-white/40">{role}</p>
+        </div>
+      </div>
+      <blockquote className="mt-2 text-sm">{content}</blockquote>
+      <p className="mt-2 text-xs text-gray-500">{date}</p>
+    </figure>
+  );
+};
+
 const WallOfLove: React.FC = () => {
   return (
-    <section className="flex justify-center items-center w-full  mt-5 lg:h-[700px] xl:h-[800px] 2xl:h-[900px] 3xl:h-[800px] ">
-      <div className="flex flex-col items-center lg:w-[90%] lg:h-[90%] xl:w-[90%] xl:h-[90%] 2xl:w-[90%] 2xl:h-[90%] 3xl:w-[90%] 3xl:h-[90%] mx-auto px-4 ">
-        <h2 className="text-6xl font-mont font-semibold text-center mb-12 text-gray-800">Wall of love</h2>
-        <div className="flex flex-wrap justify-around lg:w-[80%] lg:h-[75%] xl:w-[80%] xl:h-[75%] 2xl:w-[80%] 2xl:h-[75%] 3xl:w-[75%] 3xl:h-[70%] ">
-          {testimonials.map((testimonial) => (
-            <div
-              key={testimonial.id}
-              className="flex flex-col justify-between 3xl:gap-4 bg-white lg:h-[45%] lg:w-[32%] xl:h-[45%] xl:w-[32%]  2xl:h-[45%] 2xl:w-[32%] 3xl:h-[45%] 3xl:w-[32%] border border-[#8A63FF] p-6 rounded-2xl"
-              // Approximate height and width based on the image
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  {/* You can add a profile picture here if desired */}
-                  <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center text-blue-800 font-semibold text-lg mr-3">
-                    <img src={testimonial.image} alt="" />
-                  </div>
-                 <div className="flex justify-between w-[350px] ">
-                   <div>
-                    <p className="font-semibold text-black flex flex-col">{testimonial.name} <span className='text-[#82828299] text-sm'>{testimonial.role}</span></p>
-                  
-                  </div>
-                
-                 </div>
-                </div>
-                {/* <svg
-                  className="w-6 h-6 text-blue-400"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.13l-6.17-8.084-4.717 8.084H1.858l7.228-8.26L1.233 2.25H4.53L9.58 9.493L13.24 2.25h4.904zM10.875 17.56L9.697 15.656l-5.617-8.73H5.85L11.5 15.424l1.178 1.906l5.617 8.73h-1.18z" />
-                </svg> */}
-                {/* <img  src={vector}/> */}
-              </div>
-              <p className="text-black font-mont font-medium leading-relaxed lg:text-xs xl:text-sm 2xl:text-[16px] 3xl:text-[16px] flex-grow mb-4">{testimonial.content}</p>
-              
-              <p className='lg:text-[10px] xl:text-xs text-sm text-black font-mont font-medium'>{testimonial.date}</p>
-            </div>
-            
-          ))}
+    <section className="py-16 bg-white">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-mont font-medium text-gray-900 mb-4">
+            Wall of Love
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            See what our students and community members are saying about their experience with Edifai.
+          </p>
+        </div>
+
+        <div className="relative flex h-[600px] w-full flex-row items-center justify-center gap-4 overflow-hidden [perspective:300px]">
+          <div
+            className="flex flex-row items-center gap-6"
+            style={{
+              transform:
+                "translateX(-100px) translateY(0px) translateZ(-100px) rotateX(20deg) rotateY(-10deg) rotateZ(20deg)",
+            }}
+          >
+            <Marquee pauseOnHover vertical className="[--duration:40s]">
+              {firstRow.map((review) => (
+                <ReviewCard key={review.id} img={review.image} name={review.name} role={review.role} content={review.content} date={review.date} />
+              ))}
+            </Marquee>
+            <Marquee reverse pauseOnHover className="[--duration:45s]" vertical>
+              {secondRow.map((review) => (
+                <ReviewCard key={review.id} img={review.image} name={review.name} role={review.role} content={review.content} date={review.date} />
+              ))}
+            </Marquee>
+            <Marquee reverse pauseOnHover className="[--duration:50s]" vertical>
+              {thirdRow.map((review) => (
+                <ReviewCard key={review.id} img={review.image} name={review.name} role={review.role} content={review.content} date={review.date} />
+              ))}
+            </Marquee>
+            <Marquee pauseOnHover className="[--duration:42s]" vertical>
+              {fourthRow.map((review) => (
+                <ReviewCard key={review.id} img={review.image} name={review.name} role={review.role} content={review.content} date={review.date} />
+              ))}
+            </Marquee>
+          </div>
+
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-white"></div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-white"></div>
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-white"></div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-white"></div>
         </div>
       </div>
     </section>

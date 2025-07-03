@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Clock, HelpCircle, Plus, Minus } from 'lucide-react'; // All icons from lucide-react
+import { Star } from 'lucide-react'; // Only import Star since that's what we're using
 import courseService, { IMentor } from '@/services/courseService';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import img1 from "../Assets/vickram-varma.png";
 
 // --- Data Interfaces ---
 interface Mentor {
@@ -32,7 +31,7 @@ const mentors: Mentor[] = [
     experience: "2 Years",
     rating: 5,
     reviews: 200,
-    image: img1
+    image: "/mentors/vikram.jpg"
   },
   
   {
@@ -42,7 +41,7 @@ const mentors: Mentor[] = [
     experience: "1 Years",
     rating: 5,
     reviews: 200,
-    image: "https://via.placeholder.com/150"
+    image: "/mentors/prem.jpg"
   }
 ];
 
@@ -89,17 +88,59 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
   );
 };
 
-// --- Main Combined Component ---
+// --- Main Component ---
 const TopMentors: React.FC = () => {
   const [mentors, setMentors] = useState<IMentor[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const navigate = useNavigate();
+
+  // Check device type
+  useEffect(() => {
+    const checkDeviceType = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setDeviceType('mobile');
+      } else if (width >= 768 && width < 1024) {
+        setDeviceType('tablet');
+      } else {
+        setDeviceType('desktop');
+      }
+    };
+    
+    // Initial check
+    checkDeviceType();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkDeviceType);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkDeviceType);
+  }, []);
 
   // Define a type for extended mentor data to handle additional fields
   type ExtendedMentor = IMentor & {
     specialization?: string;
     courses?: any[];
     reviews?: any[];
+  };
+
+  // Function to get mentor profile image
+  const getMentorProfileImage = (mentorName: string): string => {
+    // Convert name to lowercase and remove spaces for filename
+    const formattedName = mentorName.toLowerCase().split(' ')[0];
+    
+    // Check for specific mentors and return their images
+    if (formattedName.includes('vikram')) {
+      return '/mentors/vikram.png';
+    } else if (formattedName.includes('ganesh')) {
+      return '/mentors/ganesh.png';
+    } else if (formattedName.includes('prem')) {
+      return '/mentors/prem.png';
+    }
+    
+    // Default fallback image
+    return '/placeholder-avatar.jpg';
   };
 
   useEffect(() => {
@@ -135,65 +176,73 @@ const TopMentors: React.FC = () => {
     fetchMentors();
   }, []);
 
+  // Determine if tablet-specific adjustments are needed
+  const isTablet = deviceType === 'tablet';
+  const isMobile = deviceType === 'mobile';
+
   return (
-    <div className=" font-mont 2">
+    <div className="font-mont pb-10 md:pb-16 lg:pb-20">
       {/* --- Top Mentors Section --- */}
-      <section className="lg:py-10 xl:py-16 2xl:py-20 h-[80vh] 2xl:h-[90vh] 3xl:h-[80vh]">
-        <div className="w-[70%] h-[60vh] mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className={`py-10 ${isTablet ? 'md:py-12' : 'md:py-16'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Header Section */}
-          <div className="mb-12 h-[20%]">
-            <h2 className="lg:text-4xl xl:text-[56px] font-mont font-medium text-gray-900 mb-4">
+          <div className={`mb-8 ${isTablet ? 'md:mb-10' : 'md:mb-12'}`}>
+            <h2 className={`text-3xl ${isTablet ? 'md:text-4xl' : 'lg:text-4xl xl:text-[56px]'} font-mont font-medium text-gray-900 mb-3 md:mb-4`}>
               Our Top Mentors At Edifai
             </h2>
-            <p className="text-base text-gray-500 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-sm md:text-base text-gray-500 max-w-3xl mx-auto leading-relaxed">
               Welcome to our platform, enhancing your skills. Welcome to our platform, enhancing your skills.
             </p>
           </div>
 
-          {/* Mentor Cards Grid */}
+          {/* Mentor Cards - Single Row with Circular Images */}
           {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <div className="flex justify-center items-center py-8 md:py-10">
+              <div className="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
           ) : mentors.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap- 3xl:gap-12  place-content-center w-[60%] m-auto">
-              {mentors.map((mentor) => {
+            <div className={`flex flex-wrap ${isMobile ? 'justify-center' : 'justify-center'} gap-8 md:gap-12 lg:gap-16`}>
+              {mentors.slice(0, 4).map((mentor) => { // Limit to 4 mentors for better display
                 // Cast to extended type to access additional fields
                 const extendedMentor = mentor as ExtendedMentor;
+                // Get mentor profile image from /public/mentors/ directory
+                const profileImage = getMentorProfileImage(mentor.name);
+                
                 return (
                   <div
                     key={mentor._id}
-                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden w-[100%] h-[100%]"
+                    className="flex flex-col items-center cursor-pointer transition-transform duration-300 hover:scale-105"
                     onClick={() => navigate(`/mentor/${mentor._id}`)}
                   >
-                    <div>
-                      <img
-                        src={mentor.avatar || "/placeholder-avatar.jpg"}
-                        alt={mentor.name}
-                        className=" w-full lg:h-48 xl:h-56 3xl:h-80 2xl:h-72   object-fill rounded-xl "
-                      />
+                    {/* Circular Profile Image */}
+                    <div className="mb-4 relative">
+                      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                        <img
+                          src={profileImage}
+                          alt={mentor.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback if image fails to load
+                            e.currentTarget.src = "/placeholder-avatar.jpg";
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="lg:p-2 xl:p-4 text-start">
-                      <h3 className="lg:text-base xl:text-xl 2xl:text-2xl 3xl:text-[30px] font-mont font-medium text-gray-900 mb-2">
+                    
+                    {/* Mentor Info */}
+                    <div className="text-center">
+                      <h3 className="text-xl font-medium text-gray-900 mb-1">
                         {mentor.name}
                       </h3>
-                      <p className="text-[1.15rem] text-gray-500 mb-3 ">{extendedMentor.specialization || mentor.expertise?.[0] || 'Instructor'}</p>
-                      <div className="flex items-center justify-start gap-2 text-gray-600 text-sm mb-4 ">
-                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
-                          {mentor.courseCount || 0} {(mentor.courseCount || 0) === 1 ? 'Course' : 'Courses'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <StarRating rating={mentor.rating} />
-                        <span className="text-sm text-gray-500">({mentor.studentCount || 0})</span>
-                      </div>
+                      <p className="text-gray-500 mb-2">{extendedMentor.specialization || mentor.expertise?.[0] || 'Instructor'}</p>
+                      
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="text-center py-16">
+            <div className="text-center py-8 md:py-10 bg-gray-50 rounded-lg max-w-2xl mx-auto">
               <h3 className="text-xl font-semibold">No mentors found</h3>
               <p className="text-gray-500 mt-2">
                 Check back later for updates on our mentor team

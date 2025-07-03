@@ -61,7 +61,6 @@ const ContinueLearning: React.FC = () => {
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Continue Learning</h2>
       {loading ? (
         <div className="flex justify-center items-center h-40">
           <p className="text-gray-500">Loading courses...</p>

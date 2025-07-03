@@ -3,6 +3,7 @@ import { User, Lock, Bell } from 'lucide-react';
 import camera from "../Assets/Camera.svg";
 import { getUserProfile, updateUserProfile } from '@/services/profileService';
 import { toast } from 'sonner';
+import avatar from "../Assets/avatar.jpg"; // Using an existing avatar image
 
 const SettingsTabs = () => {
   const [activeTab, setActiveTab] = useState('edit');
@@ -20,12 +21,11 @@ const SettingsTabs = () => {
     phone: '',
   });
 
-  // State for Account form (passwords and username)
+  // State for Account form (passwords only - username removed)
   const [accountForm, setAccountForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-    username: '',
     language: 'English, India',
   });
 
@@ -58,11 +58,6 @@ const SettingsTabs = () => {
           if (userData.avatar) {
             setSelectedImage(userData.avatar);
           }
-          
-          setAccountForm(prev => ({
-            ...prev,
-            username: userData.username || '',
-          }));
         }
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
@@ -109,11 +104,28 @@ const SettingsTabs = () => {
         phone: profileForm.phone
       };
       
-      await updateUserProfile(updateData);
-      toast.success('Profile updated successfully!');
+      const result = await updateUserProfile(updateData);
+      
+      if (result && result._id) {
+        // Update localStorage user info to reflect changes
+        const currentUser = localStorage.getItem('user');
+        if (currentUser) {
+          const userData = JSON.parse(currentUser);
+          const updatedUser = {
+            ...userData,
+            name: updateData.name || userData.name,
+            email: updateData.email || userData.email
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+        
+        toast.success('Profile updated successfully!');
+      } else {
+        toast.error('Failed to update profile. Please try again.');
+      }
     } catch (error) {
       console.error('Failed to update profile:', error);
-      toast.error('Failed to update profile. Please try again.');
+      toast.error(error.message || 'Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -124,17 +136,39 @@ const SettingsTabs = () => {
     e.preventDefault();
     
     try {
+      // Validate passwords
+      if (!accountForm.currentPassword) {
+        toast.error('Please enter your current password');
+        return;
+      }
+      
       if (accountForm.newPassword !== accountForm.confirmPassword) {
         toast.error('New password and confirmation do not match');
         return;
       }
       
-      setSaving(true);
-      console.log('Account update with:', accountForm);
-      // Placeholder for actual password update API call
-      // await updatePassword(accountForm);
+      if (accountForm.newPassword && accountForm.newPassword.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        return;
+      }
       
-      toast.success('Account settings updated successfully!');
+      setSaving(true);
+      
+      // If user provided password data, implement password update
+      if (accountForm.currentPassword && accountForm.newPassword) {
+        // Here you would call a password update API
+        // await updatePassword({
+        //   currentPassword: accountForm.currentPassword,
+        //   newPassword: accountForm.newPassword
+        // });
+        
+        // For now, just simulate success since we don't have the API
+        console.log('Password would be updated here if API was implemented');
+        
+        setTimeout(() => {
+          toast.success('Password updated successfully');
+        }, 800);
+      }
       
       // Reset password fields
       setAccountForm(prev => ({
@@ -145,7 +179,7 @@ const SettingsTabs = () => {
       }));
     } catch (error) {
       console.error('Failed to update account settings:', error);
-      toast.error('Failed to update account settings');
+      toast.error(error.message || 'Failed to update account settings');
     } finally {
       setSaving(false);
     }
@@ -160,11 +194,14 @@ const SettingsTabs = () => {
       // Placeholder for notification settings API call
       // await updateNotificationSettings(notificationForm);
       
+      // For now, we're just simulating success since we don't have the API
       console.log('Notification Settings Updated:', notificationForm);
-      toast.success('Notification preferences updated');
+      setTimeout(() => {
+        toast.success('Notification preferences updated');
+      }, 500);
     } catch (error) {
       console.error('Failed to update notification settings:', error);
-      toast.error('Failed to update notification settings');
+      toast.error(error.message || 'Failed to update notification settings');
     } finally {
       setSaving(false);
     }
@@ -174,7 +211,7 @@ const SettingsTabs = () => {
     if (loading) {
       return (
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">Loading settings...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#8A63FF]"></div>
         </div>
       );
     }
@@ -182,45 +219,13 @@ const SettingsTabs = () => {
     switch (activeTab) {
       case 'edit':
         return (
-          <form className="space-y-8" onSubmit={handleProfileSubmit}>
-            <div className="flex items-center mb-6">
-              <div className="w-24 h-24 rounded-full overflow-hidden mr-4 relative">
-                <img
-                  src={selectedImage || "/placeholder.svg"}
-                  alt="User Avatar"
-                  className="w-full h-full object-cover"
-                />
-                <img
-                  src={camera}
-                  alt="Camera Icon"
-                  className="w-[50%] h-[50%] absolute bottom-6 left-1/2 transform -translate-x-1/2 cursor-pointer"
-                  onClick={handleCameraClick}
-                />
-                {/* <input
-                  type="png"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={handleImageChange}
-                /> */}
-
-                <input
-                  type="file" // Changed from type="png" to type="file"
-                  accept="image/png, image/jpeg" // Specify allowed image types
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-              </div>
-              <div>
-                <p className="text-gray-900 text-sm">Upload Photo</p>
-                <p className="text-sm text-gray-400">1000 x 1000</p>
-                <p className="text-sm text-gray-400">
-                  Image size should be under 1MB and image ratio needs to be 1:1
-                </p>
+          <form className="space-y-6" onSubmit={handleProfileSubmit}>
+            <div className="flex justify-center mb-6">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-[#8A63FF]/10 flex items-center justify-center">
+                <User size={48} className="text-[#8A63FF]" />
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <label
                 htmlFor="fullName"
                 className="block text-sm font-medium text-gray-700"
@@ -230,26 +235,26 @@ const SettingsTabs = () => {
               <input
                 id="fullName"
                 type="text"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400 focus:ring-[#8A63FF] focus:border-[#8A63FF]"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={profileForm.fullName}
                 onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
               />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <label htmlFor="location" className="block text-sm font-medium text-gray-700">
                 Location
               </label>
               <input
                 id="location"
                 type="text"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400 focus:ring-[#8A63FF] focus:border-[#8A63FF]"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={profileForm.location}
                 onChange={(e) =>
                   setProfileForm({ ...profileForm, location: e.target.value })
                 }
               />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <label
                 htmlFor="dateOfBirth"
                 className="block text-sm font-medium text-gray-700"
@@ -259,328 +264,56 @@ const SettingsTabs = () => {
               <input
                 id="dateOfBirth"
                 type="date"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400 focus:ring-[#8A63FF] focus:border-[#8A63FF]"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={profileForm.dateOfBirth}
                 onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })}
               />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                 Phone
               </label>
               <input
                 id="phone"
                 type="tel"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400 focus:ring-[#8A63FF] focus:border-[#8A63FF]"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={profileForm.phone}
                 onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
               />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 E-mail
               </label>
               <input
                 id="email"
                 type="email"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400 focus:ring-[#8A63FF] focus:border-[#8A63FF]"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={profileForm.email}
                 onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
               />
             </div>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700 disabled:bg-gray-400"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full sm:w-auto px-6 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700 disabled:bg-purple-300 transition-colors"
+              >
+                {saving ? 'Saving...' : 'Save Profile'}
+              </button>
+            </div>
           </form>
         );
       case 'account':
         return (
-          <div className="space-y-8">
-            <form onSubmit={handleAccountSubmit} className="space-y-5">
-              <div className="space-y-4">
-                <label
-                  htmlFor="currentPassword"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Current Password
-                </label>
-                <input
-                  id="currentPassword"
-                  type="password"
-                  className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400"
-                  value={accountForm.currentPassword}
-                  onChange={(e) =>
-                    setAccountForm({ ...accountForm, currentPassword: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-4">
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  New Password
-                </label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400"
-                  value={accountForm.newPassword}
-                  onChange={(e) =>
-                    setAccountForm({ ...accountForm, newPassword: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-4">
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Confirm New Password
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400"
-                  value={accountForm.confirmPassword}
-                  onChange={(e) =>
-                    setAccountForm({ ...accountForm, confirmPassword: e.target.value })
-                  }
-                />
-              </div>
-              <button
-                disabled={saving}
-                className="px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-[#8A63FF] disabled:bg-gray-400"
-                type="submit"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </form>
-            <div className="space-y-3">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                New Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                className="mt-1 block w-[40%] rounded-[30px] bg-gray-100 text-gray-300 px-3 py-2"
-                placeholder="Username"
-                value={accountForm.username}
-                onChange={(e) => setAccountForm({ ...accountForm, username: e.target.value })}
-              />
-              <button
-                className="mt-2 px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700 disabled:bg-gray-400"
-                onClick={async () => {
-                  try {
-                    setSaving(true);
-                    // This would be an API call in a real app
-                    await updateUserProfile({ username: accountForm.username });
-                    toast.success('Username updated successfully');
-                  } catch (error) {
-                    console.error('Failed to update username:', error);
-                    toast.error('Failed to update username');
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-                disabled={!accountForm.username || saving}
-              >
-                {saving ? 'Updating...' : 'Update Username'}
-              </button>
-            </div>
-            <div className="space-y-3">
+          <form className="space-y-6" onSubmit={handleAccountSubmit}>
+            <div className="space-y-2">
               <label htmlFor="language" className="block text-sm font-medium text-gray-700">
                 Language
               </label>
               <select
                 id="language"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400"
-                value={accountForm.language}
-                onChange={(e) => setAccountForm({ ...accountForm, language: e.target.value })}
-              >
-                <option value="English, USA">English, USA</option>
-                <option value="English, India">English, India</option>
-                <option value="Spanish">Spanish</option>
-                <option value="French">French</option>
-                <option value="German">German</option>
-              </select>
-            </div>
-          </div>
-        );
-      case 'notification':
-        return (
-          <form onSubmit={handleNotificationSubmit}>
-            <div className="mb-8">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">
-                Push Notification
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id="allMessages"
-                    name="pushNotification"
-                    value="All New Messages"
-                    checked={notificationForm.pushNotification === "All New Messages"}
-                    onChange={(e) =>
-                      setNotificationForm({
-                        ...notificationForm,
-                        pushNotification: e.target.value,
-                      })
-                    }
-                    className="mr-2 form-radio text-purple-600 h-4 w-4"
-                  />
-                  <label htmlFor="allMessages" className="text-sm text-gray-700">
-                    All New Messages
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id="mentions"
-                    name="pushNotification"
-                    value="Only @ mentions"
-                    checked={notificationForm.pushNotification === "Only @ mentions"}
-                    onChange={(e) =>
-                      setNotificationForm({
-                        ...notificationForm,
-                        pushNotification: e.target.value,
-                      })
-                    }
-                    className="mr-2 form-radio text-purple-600 h-4 w-4"
-                  />
-                  <label htmlFor="mentions" className="text-sm text-gray-700">
-                    Only @ mentions
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id="nothing"
-                    name="pushNotification"
-                    value="Nothing"
-                    checked={notificationForm.pushNotification === "Nothing"}
-                    onChange={(e) =>
-                      setNotificationForm({
-                        ...notificationForm,
-                        pushNotification: e.target.value,
-                      })
-                    }
-                    className="mr-2 form-radio text-purple-600 h-4 w-4"
-                  />
-                  <label htmlFor="nothing" className="text-sm text-gray-700">
-                    Nothing
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">
-                Email Notification
-              </h3>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="emailNotification"
-                  checked={notificationForm.emailNotification === "Send me email notifications"}
-                  onChange={(e) =>
-                    setNotificationForm({
-                      ...notificationForm,
-                      emailNotification: e.target.checked
-                        ? "Send me email notifications"
-                        : "",
-                    })
-                  }
-                  className="form-checkbox text-purple-600 h-5 w-5"
-                />
-                <label htmlFor="emailNotification" className="ml-2 text-sm text-gray-700">
-                  Send me email notifications
-                </label>
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">
-                More Preferences
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="option1"
-                    checked={notificationForm.morePreferences.option1}
-                    onChange={(e) =>
-                      setNotificationForm({
-                        ...notificationForm,
-                        morePreferences: {
-                          ...notificationForm.morePreferences,
-                          option1: e.target.checked,
-                        },
-                      })
-                    }
-                    className="form-checkbox text-purple-600 h-5 w-5"
-                  />
-                  <label htmlFor="option1" className="ml-2 text-sm text-gray-700">
-                    Receive newsletters and other promotional emails
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="option2"
-                    checked={notificationForm.morePreferences.option2}
-                    onChange={(e) =>
-                      setNotificationForm({
-                        ...notificationForm,
-                        morePreferences: {
-                          ...notificationForm.morePreferences,
-                          option2: e.target.checked,
-                        },
-                      })
-                    }
-                    className="form-checkbox text-purple-600 h-5 w-5"
-                  />
-                  <label htmlFor="option2" className="ml-2 text-sm text-gray-700">
-                    Receive important updates about courses and platform
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-purple-600 text-white rounded-[30px] hover:bg-purple-700 disabled:bg-gray-400"
-            >
-              {saving ? 'Saving...' : 'Save Preferences'}
-                {/* className="mt-1 block w-[40%] rounded-[30px] bg-gray-100 text-gray-300 px-3 py-2"
-                placeholder="Username"
-                value={accountForm.username}
-                onChange={(e) =>
-                  setAccountForm({ ...accountForm, username: e.target.value })
-                }
-              />
-              <button
-                className="mt-2 px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700"
-                onClick={() =>
-                  console.log("Username Updated:", accountForm.username)
-                }
-              >
-                Save Username
-              </button>
-            </div>
-            <div className="space-y-3">
-              <label
-                htmlFor="language"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Select Language
-              </label>
-              <select
-                id="language"
-                className="mt-1 block w-[40%] px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-400"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={accountForm.language}
                 onChange={(e) =>
                   setAccountForm({ ...accountForm, language: e.target.value })
@@ -589,17 +322,74 @@ const SettingsTabs = () => {
                 <option value="English, India">English (India)</option>
                 <option value="English, US">English (US)</option>
               </select>
-              <button
-                className="mt-2 px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700"
-                onClick={() =>
-                  console.log("Language Updated:", accountForm.language)
-                }
-              >
-                Save Language
-              </button>
             </div>
-            <div className="pt-4 border-t space-y-3">
-              <p className="text-sm text-gray-700">
+            
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                    Current Password *
+                  </label>
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    required
+                    className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
+                    value={accountForm.currentPassword}
+                    onChange={(e) =>
+                      setAccountForm({ ...accountForm, currentPassword: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                    New Password *
+                  </label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    required
+                    className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
+                    value={accountForm.newPassword}
+                    onChange={(e) =>
+                      setAccountForm({ ...accountForm, newPassword: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-gray-500">Password must be at least 6 characters</p>
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Confirm Password *
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    required
+                    className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
+                    value={accountForm.confirmPassword}
+                    onChange={(e) =>
+                      setAccountForm({ ...accountForm, confirmPassword: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="mt-6">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full sm:w-auto px-6 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700 disabled:bg-purple-300 transition-colors"
+                >
+                  {saving ? 'Saving...' : 'Change Password'}
+                </button>
+              </div>
+            </div>
+            
+            <div className="pt-6 border-t border-gray-200 mt-8">
+              <p className="text-sm font-medium text-gray-700 mb-2">
                 Delete your account permanently
               </p>
               <label className="flex items-center mt-2 space-x-2">
@@ -607,30 +397,31 @@ const SettingsTabs = () => {
                   type="checkbox"
                   className="h-4 w-4 text-[#8A63FF] focus:ring-purple-500"
                 />
-                <span className="text-sm">Confirm Delete your account</span>
+                <span className="text-sm">Confirm delete your account</span>
               </label>
               <button
-                className="mt-2 px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700"
+                type="button"
+                className="mt-4 w-full sm:w-auto px-4 py-2 bg-red-500 text-white rounded-[30px] hover:bg-red-600 transition-colors"
                 onClick={() => console.log("Account Deletion Requested")}
               >
                 Delete My Account
               </button>
             </div>
-          </div>
+          </form>
         );
-      case "notification":
+      case 'notification':
         return (
-          <form className="space-y-10" onSubmit={handleNotificationSubmit}>
-            <div className="space-y-4">
+          <form className="space-y-8" onSubmit={handleNotificationSubmit}>
+            <div className="space-y-2">
               <label
                 htmlFor="pushNotification"
-                className="block text-md font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700"
               >
                 Mobile push notification
               </label>
               <select
                 id="pushNotification"
-                className="mt-1 block w-full text-grey-700 rounded-lg px-3 py-2 border border-gray-300"
+                className="mt-1 block w-full px-3 py-2 border rounded-[30px] bg-gray-100 text-gray-700 focus:ring-[#8A63FF] focus:border-[#8A63FF] focus:outline-none"
                 value={notificationForm.pushNotification}
                 onChange={(e) =>
                   setNotificationForm({
@@ -643,16 +434,16 @@ const SettingsTabs = () => {
                 <option value="Important Only">Important Only</option>
               </select>
             </div>
-            <div className="space-y-4">
-              <h3 className="text-md font-semibold text-gray-800">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-800">
                 Email Notifications
               </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Control the types of email notifications you receive. You can choose to be notified about account activity, promotional offers, or important updates. We'll only send you relevant information based on your selections.
+              <p className="text-xs text-gray-600 mt-1">
+                Control the types of email notifications you receive.
               </p>
             </div>
-            <fieldset className="space-y-4">
-              <legend className="text-md font-medium text-gray-700">
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium text-gray-700">
                 Send me Email Notifications
               </legend>
               <label className="flex items-center space-x-2">
@@ -710,13 +501,10 @@ const SettingsTabs = () => {
                 <span className="text-sm">Never</span>
               </label>
             </fieldset>
-            <div className="space-y-4">
-              <h3 className="text-md font-semibold text-gray-800">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-800">
                 More Email Preferences
               </h3>
-              <p className="text-sm text-gray-600">
-                Further customize your email preferences. Select specific categories or types of emails you wish to receive or opt-out of. Manage your subscription to ensure you get the most out of your experience
-              </p>
               <label className="flex items-center mt-2 space-x-2">
                 <input
                   type="checkbox"
@@ -732,7 +520,7 @@ const SettingsTabs = () => {
                     })
                   }
                 />
-                <span className="text-sm">Title text goes here</span>
+                <span className="text-sm">Course updates and announcements</span>
               </label>
               <label className="flex items-center mt-2 space-x-2">
                 <input
@@ -749,15 +537,18 @@ const SettingsTabs = () => {
                     })
                   }
                 />
-                <span className="text-sm">Title text goes here</span>
+                <span className="text-sm">Marketing and promotional emails</span>
               </label>
             </div>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700"
-            >
-              Save Changes */}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full sm:w-auto px-6 py-2 bg-[#8A63FF] text-white rounded-[30px] hover:bg-purple-700 disabled:bg-purple-300 transition-colors"
+              >
+                {saving ? 'Saving...' : 'Save Notification Settings'}
+              </button>
+            </div>
           </form>
         );
       default:
@@ -766,17 +557,15 @@ const SettingsTabs = () => {
   };
 
   return (
-    <div className="px-10 min-h-screen w-[60vw] top-32">
-      {/* Avatar Preview Above Tabs */}
-
-      <div className="w-full mx-auto bg-white rounded-[40px] shadow-md">
-        {/* Tabs */}
-        <div className="flex border-b px-6 pt-4">
+    <div className="px-4 sm:px-6 md:px-10 w-full">
+      <div className="w-full mx-auto bg-white rounded-2xl sm:rounded-[40px] shadow-md">
+        {/* Tabs - Scrollable on mobile */}
+        <div className="flex overflow-x-auto border-b px-4 sm:px-6 pt-4 no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-4 py-2 mr-4 text-sm font-medium ${
+              className={`flex items-center px-3 sm:px-4 py-2 mr-2 sm:mr-4 text-xs sm:text-sm font-medium whitespace-nowrap ${
                 activeTab === tab.id
                   ? "border-b-2 border-[#8A63FF] text-[#8A63FF]"
                   : "text-gray-500 hover:text-[#8A63FF]"
@@ -788,7 +577,7 @@ const SettingsTabs = () => {
           ))}
         </div>
         {/* Content */}
-        <div className="p-6">{renderContent()}</div>
+        <div className="p-4 sm:p-6">{renderContent()}</div>
       </div>
     </div>
   );

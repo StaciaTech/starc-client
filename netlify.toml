@@ -22,6 +22,10 @@
 [context.production.environment]
   VITE_API_URL = "https://server.edifai.in"
 
+# Development branch context
+[context.develop.environment]
+  VITE_API_URL = "https://server.edifai.in"
+
 # Deploy Preview context: all deploys generated from a pull/merge request will
 # inherit these settings.
 [context.deploy-preview.environment]

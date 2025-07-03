@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import aboutvideo from "../Assets/about-video/Backend web development - a complete overview.mp4";
+
 export default function TeamShipSection() {
   const videoRef = useRef(null);
   const [showVideo, setShowVideo] = useState(false);
@@ -13,19 +14,19 @@ export default function TeamShipSection() {
   };
 
   return (
-    <section className="px-6 md:px-20 py-16 bg-white text-gray-800 ">
-      <div className="w-[100%] items-center justify-center ">
+    <section className="px-4 sm:px-6 md:px-10 lg:px-20 py-8 sm:py-12 md:py-16 bg-white text-gray-800">
+      <div className="w-full max-w-7xl mx-auto">
         {/* Text Block */}
-        <div className="flex justify-between gap-10  m-auto w-[80%]  ">
-          <h2 className="lg:text-xl xl:text-xl 3xl:text-4xl md:text-4xl font-mont font-medium leading-tight">
-            The best software <br></br>teams ship quickly and often.
+        <div className="flex flex-col sm:flex-row justify-between gap-6 sm:gap-8 md:gap-10 mx-auto w-full sm:w-[90%] md:w-[85%] lg:w-[80%] mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-xl xl:text-xl 3xl:text-4xl font-mont font-medium leading-tight mb-4 sm:mb-0">
+            The best software <br className="hidden sm:block" />teams ship quickly and often.
           </h2>
-          <div className="px-20 items-start lg:w-[70%] 3xl:w-[50%] flex justify-center flex-col  ">
-            <p className="text-gray-900 font-mont lg:text-sm 3xl:text-lg pr-10 pb-2">
+          <div className="w-full sm:w-1/2 md:w-[60%] lg:w-[70%] 3xl:w-[50%] flex flex-col justify-center">
+            <p className="text-gray-900 font-mont text-sm sm:text-base lg:text-sm 3xl:text-lg pr-0 sm:pr-6 md:pr-10 pb-2">
               With its intuitive interface and powerful features, Stellar
               empowers businesses to leverage technology for growth.
             </p>
-            <div className=" gap-4 items-center pt-5 lg:text-sm">
+            <div className="pt-3 sm:pt-5 lg:text-sm">
               <button
                 onClick={handlePlay}
                 className="bg-[#8A63FF] text-white font-mont py-2 px-5 rounded-full hover:bg-[#7A53EF] transition"
@@ -35,35 +36,33 @@ export default function TeamShipSection() {
             </div>
           </div>
         </div>
-        <br />
-        <br />
+        
         {/* Video Block */}
-        <div className="w-full flex justify-center items-center">
-          <div className="flex flex-col space-y-4 relative rounded-2xl overflow-hidden shadow-lg xl:h-[60vh] 2xl:h-[50vh] 3xl:h-[70vh] 
-          w-[80%]   ">
+        <div className="w-full flex justify-center items-center mt-4 sm:mt-6">
+          <div className="flex flex-col space-y-4 relative rounded-2xl overflow-hidden shadow-lg w-full sm:w-[90%] md:w-[85%] lg:w-[80%] aspect-video">
             {!showVideo && (
-              <div className="relative w-full h-full  flex justify-center  border border-black  ">
+              <div className="relative w-full h-full flex justify-center border border-gray-200 rounded-xl">
                 <img
                   src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTV0uO6brHoskULOyasOMXWHXxK_f83yTTCfQ&s"
                   alt="Team Thumbnail"
-                  className="object-cover rounded-xl w-full"
+                  className="object-cover rounded-xl w-full h-full"
                 />
 
                 <button
                   onClick={handlePlay}
-                  className="absolute inset-0  lg:text-sm xl:text-xl 2xl:text-3xl 3xl:text-4xl flex items-center justify-center bg-black/40 text-white font-medium  rounded-xl"
+                  className="absolute inset-0 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 3xl:text-4xl flex items-center justify-center bg-black/40 text-white font-medium rounded-xl"
                 >
                   ▶ Play Video
                 </button>
               </div>
             )}
             {showVideo && (
-              <div>
+              <div className="w-full h-full aspect-video">
                 <video
                   ref={videoRef}
                   src={aboutvideo}
                   controls
-                  className="w-full  object-cover rounded-xl"
+                  className="w-full h-full object-cover rounded-xl"
                 />
               </div>
             )}
@@ -71,7 +70,7 @@ export default function TeamShipSection() {
         </div>
       </div>
 
-      <p className="text-center text-gray-900 font-mont mt-10 text-lg">
+      <p className="text-center text-gray-900 font-mont mt-6 sm:mt-8 md:mt-10 text-sm sm:text-base md:text-lg">
         Experience the Stellar difference and unlock the true potential of your
         online
       </p>

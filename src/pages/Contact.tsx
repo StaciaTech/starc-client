@@ -1,44 +1,152 @@
+import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Phone, MapPin } from "lucide-react"; // Removed Check as it's not used in the form
+import { Mail, Phone, MapPin, Send } from "lucide-react";
 import heros from "../Assets/hero.png";
 import PurpleBox from "@/components/PurpleBox";
 import WallOfLove from "../components/WallOfLove";
 import contactProfie from "../Assets/sarabesh.png";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import api from "../lib/api";
+
+// The email address where form submissions will be sent
+const CONTACT_EMAIL = "contact@edifai.com";
+
 const Contact = () => {
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: ""
+  });
+  
+  // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form validation state
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: ""
+  });
+
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Handle input change
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user types
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { ...errors };
+    
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+      valid = false;
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      valid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+      valid = false;
+    }
+    
+    if (!formData.subject.trim()) {
+      newErrors.subject = "Subject is required";
+      valid = false;
+    }
+    
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+      valid = false;
+    }
+    
+    setErrors(newErrors);
+    return valid;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const response = await api.post("/api/contact", {
+        ...formData,
+        recipientEmail: CONTACT_EMAIL
+      });
+      
+      if (response.data.success) {
+        setSubmitSuccess(true);
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          message: ""
+        });
+        toast.success("Your message has been sent successfully!");
+      } else {
+        toast.error("Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("An error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="2xl:h-sreen w-full bg-white">
-      <div className="2xl:w-full ">
-        <Navbar />
-      </div>
-      {/* Hero Section */}
-      <section className="relative from-purple-50 to-white overflow-hidden xl:h-[520px] 2xl:h-[630px] 3xl:h-[738px] ">
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
+      
+      {/* Hero Section - Moved further up with reduced spacing */}
+      <section className="relative overflow-hidden pt-16 pb-4">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
-          {/* Optional: Subtle noise texture or pattern */}
           <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgeT0iMSIgcj0iMSIgZmlsbD0iIzAwMDAwMDMzIi8+PC9zdmc+')] bg-repeat"></div>
         </div>
-        <div className="relative z-10 flex flex-col justify-center items-center lg:pt-5 xl:pt-5 2xl:pt-5 3xl:pt-10">
-          <div className="lg:w-[628px] lg:h-[424px] xl:w-[728px] xl:h-[504px] 2xl:w-[828px] 2xl:h-[604px] 3xl:w-[1028px] 3xl:h-[694px] flex flex-col justify-center  ">
-            <div className="flex justify-center w-full">
-              <img
+        
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="relative w-full max-w-3xl mx-auto mb-2">
+              {/* <img
                 src={heros}
                 alt="Hero"
-                className="lg:w-[60%] xl:w-[56%] 2xl:w-[53%] 3xl:w-[50%] absolute top-[10px] lg:pt-6 xl:pt-12  2xl:pt-10 3xl:pt-8"
-              />
+                className="w-[60%] mx-auto"
+              /> */}
             </div>
-            <div className=" flex flex-col justify-center items-center mx-auto lg:mt-32 xl:mt-36 2xl:mt-32 3xl:mt-20 text-center lg:h-[160px] xl:h-[160px]  2xl:h-[223px] xl:w-[100%] 2xl:w-[100%] 3xl:w-[100%] ">
-              <span className="lg:w-[100px] lg:h-[20px] xl:w-[115px] xl:h-[25px] 2xl:w-[120px] 2xl:h-[32px] 3xl:w-[123px] 3xl:h-[35px]  flex justify-center items-center bg-[#8A63FF] text-white lg:text-[7px] xl:text-[8px]  2xl:text-[10px] 3xl:text-xs font-semibold  rounded-full mb-2 ">
+            
+            <div className="max-w-2xl mx-auto">
+              <span className="inline-flex items-center justify-center px-4 py-1.5 text-xs font-semibold bg-[#8A63FF] text-white rounded-full mb-2">
                 EDIFAI COURSE
               </span>
-              <h1 className=" xl:text-4xl 2xl:text-5xl lg:text-3xl font-bold text-gray-900 mb-4 ">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
                 Contact Us
               </h1>
-              <p className="lg:text-[12px] xl:text-sm 2xl:text-base 3xl:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto ">
+              <p className="text-base text-gray-600 leading-relaxed max-w-xl mx-auto">
                 Connect with the Edifai team for personalized assistance. Whether
-                you have questions about our programs, need technical support.
+                you have questions about our programs, need technical support, or want to explore
+                partnership opportunities, we're here to help.
               </p>
             </div>
           </div>
@@ -46,217 +154,300 @@ const Contact = () => {
       </section>
 
       {/* Contact Section */}
-      <section className="w-full lg:h-[598px] xl:h-[698px] 2xl:h-[798px] 3xl:h-[70vh] items-center flex justify-center">
-        <div className="flex w-full justify-around">
-          {/* Left: Contact Info */}
-          <div className="lg:w-[370px] lg:h-[550px] xl:w-[398px] xl:h-[650px] xl:mx-16 2xl:w-[458px] 2xl:h-[700px] 3xl:w-[558px] 3xl:h-[740px]  3xl:mx-10 ">
-            <span className="2xl:w-[97px] 2xl:h-[20px]">
-              <p className="text-[#8A63FF] mb-5 lg:text-[1.5rem]  font-semibold xl:text-xs 2xl:text-sm">
-                Edifai
+      <section className="py-8 sm:py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+            {/* Left: Contact Info */}
+            <div className="w-full lg:w-1/2">
+              <span>
+                <p className="text-[#8A63FF] font-semibold text-sm sm:text-base mb-2">
+                  Edifai
+                </p>
+              </span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-black mb-4 sm:mb-6">
+                Contact Us
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 sm:mb-8">
+                Have questions or need assistance with our courses? We're here to
+                help you every step of the way. Reach out to us for any inquiries,
+                and our team will be glad to provide the support you need promptly
+                and efficiently.
               </p>
-            </span>
-            <h2 className="lg:text-2xl xl:text-3xl 2xl:text-5xl font-normal text-black mb-6">
-              Contact Us
-            </h2>
-            <p className="text-lg text-gray-600 mb-8 lg:text-sm xl:text-sm 2xl:text-lg">
-              Have questions or need assistance with our courses? We're here to
-              help you every step of the way. Reach out to us for any inquiries,
-              and our team will be glad to provide the support you need promptly
-              and efficiently.
-            </p>
 
-            <h3 className=" lg:texl-base xl:text-lg  2xl:text-xl 3xl:text-2xl font-mont text-gray-900 mb-4">
-              How we can help
-            </h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-mont text-gray-900 mb-4">
+                How we can help
+              </h3>
 
-            <ul className="space-y-4 text-gray-700 text-lg  pl-5">
-              <li className="flex items-center gap-2 lg:text-[13px] xl:text-sm 2xl:text-base 3xl:text-lg">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#8A63FF]">
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </span>{" "}
-                Answer your course-related questions
-              </li>
-              <li className="flex items-center gap-2 lg:text-[13px] xl:text-sm 2xl:text-base 3xl:text-lg">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#8A63FF]">
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </span>{" "}
-                Provide technical support and troubleshooting
-              </li>
-              <li className="flex items-center gap-2 lg:text-[13px] xl:text-sm 2xl:text-base 3xl:text-lg">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#8A63FF]">
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </span>{" "}
-                Assist with enrollment and program details
-              </li>
-            </ul>
+              <ul className="space-y-4 text-gray-700 pl-2 mb-8">
+                <li className="flex items-center gap-3">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#8A63FF] flex-shrink-0">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                  <span className="text-sm sm:text-base">Answer your course-related questions</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#8A63FF] flex-shrink-0">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                  <span className="text-sm sm:text-base">Provide technical support and troubleshooting</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#8A63FF] flex-shrink-0">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </span>
+                  <span className="text-sm sm:text-base">Assist with enrollment and program details</span>
+                </li>
+              </ul>
 
-            <div className=" lg:mt-8 xl:mt-16 pl-2 gap-x-2  flex ">
-              <img
-                src={contactProfie}
-                alt=""
-                className="lg:h-10 lg:w-10 xl:h-12 xl:w-12 2xl:h-14 2xl:w-14 3xl:h-16 3xl:w-16 rounded-[50%]"
-              />
-              <div className="flex flex-col w-[50%]">
-                <p className="lg:text-[13px] xl:text-sm 2xl:text-base 3xl:text-lg ">
-                  Name
-                </p>
-                <p className="lg:text-[13px] xl:text-sm 2xl:text-base 3xl:text-lg">
-                  Mr Sarabesh Sriram, CEO at <span className="text-blue-500">Stacia</span>
-                </p>
-              </div>
-            </div>
-
-            {/* <h3 className="text-2xl font-bold text-gray-900 mt-8 mb-4 pl-2">Note</h3> */}
-            <p className="text-gray-600 lg:text-[13px]  xl:text-sm 2xl:text-base 3xl:text-lg mt-12">
-              We are committed to ensuring your learning experience is smooth
-              and successful. Our dedicated support staff is available to
-              address all your concerns, providing timely and helpful solutions
-              to help you thrive in your journey.
-            </p>
-          </div>
-
-          {/* Right: Contact Form */}
-          <div className="lg:justify-start xl:justify-center flex flex-col justify-center items-center bg-white p-4 rounded-xl  lg:h-[288px] lg:w-[288px] xl:mx-16 xl:h-[350px] xl:w-[350px] 2xl:w-[458px] 2xl:h-[420px] 3xl:mx-10  3xl:w-[558px] 3xl:h-[498px]  shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
-            {" "}
-            {/* Changed bg-gray-50 to bg-white */}
-            <div className="flex justify-start  lg:h-[35px] lg:w-[255px] xl:w-[300px] 2xl:w-[400px] 3xl:w-[496px]">
-              <h3 className="lg:text-xs xl:text-sm 2xl:text-lg 3xl:text-xl font-mont text-gray-900 mb-6">
-                Access the Edifai Template:
-              </h3>{" "}
-            </div>
-            {/* Updated title */}
-            <form className="lg:space-y-3  xl:space-y-6  lg:h-[187px] lg:w-[255px] xl:h-[237px] xl:w-[300px] 2xl:w-[400px] 2xl:h-[287px] 3xl:h-[337px] 3xl:w-[496px] ">
-              <div className="flex justify-center lg:h-[30px] xl:h-[40px] 2xl:h-[43px] 3xl:h-[47px] w-full ">
-                {" "}
-                {/* Added grid for side-by-side inputs */}
-                <div className="mx-1 w-[50%] h-full  rounded-xl">
-                  <Input
-                    type="text"
-                    placeholder="Name"
-                    className="w-full h-full p-3 lg:text-[10px] xl:text-xs 2xl:text-sm 3xl:text-lg border-none outline-none bg-[#F7F8FA] font-mont rounded-xl focus:ring-2 focus:ring-purple-600 "
-                  />
-                  {/* Removed Check icon */}
-                </div>
-                <div className="mx-1 w-[50%] h-full  rounded-xl">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full h-full p-3 lg:text-[10px] xl:text-xs 2xl:text-sm 3xl:text-lg border-none outline-none font-mont bg-[#F7F8FA] rounded-xl focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  />
-                  {/* Removed Check icon */}
+              <div className="flex items-center gap-4 mb-8">
+                <img
+                  src={contactProfie}
+                  alt="CEO Profile"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover"
+                />
+                <div>
+                  <p className="text-sm sm:text-base font-medium">Name</p>
+                  <p className="text-sm sm:text-base">
+                    Mr Sarabesh Sriram, CEO at <span className="text-blue-500">Stacia</span>
+                  </p>
                 </div>
               </div>
-              <Textarea
-                placeholder="" // Placeholder in image looks like a general message or larger input area
-                rows={5}
-                className="w-full lg:h-[105px] xl:h-[105px] 2xl:h-[125px] 3xl:h-[146px] p-3 border-none outline-none font-mont bg-[#F7F8FA] rounded-xl focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-              ></Textarea>
-              <Button
-                type="submit"
-                className="w-full lg:h-[22px] xl:h-[32px] 2xl:h-[43px] 3xl:h-[47px] bg-[#8A63FF] hover:bg-purple-700 text-white py-3 rounded-xl text-xs font-mont"
-              >
-                Sign Up
-              </Button>
-              <p className="lg:text-[10px] xl:text-xs 2xl:text-sm font-mont text-gray-500 lg:mt-0 xl:mt-4 text-center">
-                Section can be added here (description or information){" "}
-                {/* Updated text */}
+
+              <p className="text-sm sm:text-base text-gray-600">
+                We are committed to ensuring your learning experience is smooth
+                and successful. Our dedicated support staff is available to
+                address all your concerns, providing timely and helpful solutions
+                to help you thrive in your journey.
               </p>
-            </form>
-            {/* </div> */}
+            </div>
+
+            {/* Right: Contact Form - Now Functional with Email Sending */}
+            <div className="w-full lg:w-1/2 mt-8 lg:mt-0">
+              <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-100">
+                <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-6">Send us a message</h3>
+                
+                {submitSuccess ? (
+                  <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-md mb-6">
+                    <p>Thank you for your message! We'll get back to you soon.</p>
+                    <button 
+                      className="mt-3 text-white bg-primary hover:bg-primary-dark px-4 py-2 rounded-md"
+                      onClick={() => setSubmitSuccess(false)}
+                    >
+                      Send another message
+                    </button>
+                  </div>
+                ) : (
+                  <form className="space-y-4" onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name
+                        </label>
+                        <Input 
+                          id="name"
+                          name="name"
+                          placeholder="Your name" 
+                          className={`w-full ${errors.name ? 'border-red-500' : ''}`}
+                          value={formData.name}
+                          onChange={handleChange}
+                        />
+                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                      </div>
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email Address
+                        </label>
+                        <Input 
+                          id="email"
+                          name="email"
+                          type="email" 
+                          placeholder="Your email" 
+                          className={`w-full ${errors.email ? 'border-red-500' : ''}`}
+                          value={formData.email}
+                          onChange={handleChange}
+                        />
+                        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                        Subject
+                      </label>
+                      <Input 
+                        id="subject"
+                        name="subject"
+                        placeholder="How can we help you?" 
+                        className={`w-full ${errors.subject ? 'border-red-500' : ''}`}
+                        value={formData.subject}
+                        onChange={handleChange}
+                      />
+                      {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                        Message
+                      </label>
+                      <Textarea 
+                        id="message"
+                        name="message"
+                        placeholder="Your message here..." 
+                        className={`w-full min-h-[120px] ${errors.message ? 'border-red-500' : ''}`}
+                        value={formData.message}
+                        onChange={handleChange}
+                      />
+                      {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-[#8A63FF] hover:bg-[#7A53EF]"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Send Message
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Contact Cards Section */}
-      <section className="py-16 w-full lg:h-[350px] xl:h-[380px] 2xl:h-[420px] flex ">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:w-[80%] 2xl:w-[80%] flex items-center justify-between ">
-          <div className="bg-white p-1 border rounded-xl h-[256px] flex justify-center items-center lg:w-[30%] lg:h-[90%] xl:w-[30%] xl:h-[90%] 2xl:h-[90%] 2xl:w-[30%]">
-            <div className="bg-[#F7F8FA]  p-6 rounded-xl  text-center h-full w-full flex  flex-col justify-center items-center">
-              <div className="bg-white w-fit p-4 rounded-full inline-flex items-center justify-center mb-4">
-                <Mail className="lg:w-5 lg:h-8 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7 3xl:w-8 3xl:h-8  text-purple-600" />
+      <section className="py-12 sm:py-16 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white p-1 border rounded-xl shadow-sm">
+              <div className="bg-[#F7F8FA] p-6 rounded-xl text-center h-full">
+                <div className="bg-white w-16 h-16 mx-auto p-4 rounded-full flex items-center justify-center mb-4">
+                  <Mail className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">
+                  Message Us
+                </h3>
+                <p className="text-gray-600">
+                  {CONTACT_EMAIL}
+                </p>
               </div>
-              <h3 className="lg:text-base xl:text-lg 2xl:text-[21px]  font-medium text-gray-900 mb-2">
-                Message Us
-              </h3>
-              <p className="text-gray-600 lg:text-sm xl:text-base 2xl:text-[16px]   3xl:text-xl">
-                contactus@staciacorp.com
-              </p>
             </div>
-          </div>
 
-          <div className="bg-white p-1 border rounded-xl h-[256px] flex justify-center items-center lg:w-[30%] lg:h-[90%] xl:w-[30%] xl:h-[90%] 2xl:h-[90%] 2xl:w-[30%]">
-            <div className="bg-[#F7F8FA]  p-6 rounded-xl  text-center h-full w-full flex  flex-col justify-center items-center">
-              <div className="bg-white p-4 rounded-full inline-flex items-center justify-center mb-4">
-                <Phone className="lg:w-5 lg:h-8 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7 3xl:w-8 3xl:h-8 text-purple-600" />
+            <div className="bg-white p-1 border rounded-xl shadow-sm">
+              <div className="bg-[#F7F8FA] p-6 rounded-xl text-center h-full">
+                <div className="bg-white w-16 h-16 mx-auto p-4 rounded-full flex items-center justify-center mb-4">
+                  <Phone className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">
+                  Call Us!
+                </h3>
+                <p className="text-gray-600">
+                  +91 936-303-4150
+                </p>
               </div>
-              <h3 className="lg:text-base xl:text-lg 2xl:text-[21px] font-medium text-gray-900 mb-2">
-                Call Us!
-              </h3>
-              <p className="text-gray-600 lg:text-sm xl:text-base 2xl:text-[16px]  3xl:text-xl">
-                +91 936-303-4150
-              </p>
             </div>
-          </div>
 
-          <div className="bg-white p-1 border rounded-xl h-[256px] flex justify-center items-center lg:w-[30%] lg:h-[90%] xl:w-[30%] xl:h-[90%] 2xl:h-[90%] 2xl:w-[30%]">
-            <div className="bg-[#F7F8FA]  p-6 rounded-xl  text-center h-full w-full flex  flex-col justify-center items-center">
-              <div className="bg-white p-4 rounded-full inline-flex items-center justify-center mb-4">
-                <MapPin className="lg:w-5 lg:h-8 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7 3xl:w-8 3xl:h-8 text-purple-600" />
+            <div className="bg-white p-1 border rounded-xl shadow-sm sm:col-span-2 lg:col-span-1">
+              <div className="bg-[#F7F8FA] p-6 rounded-xl text-center h-full">
+                <div className="bg-white w-16 h-16 mx-auto p-4 rounded-full flex items-center justify-center mb-4">
+                  <MapPin className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">
+                  Address
+                </h3>
+                <p className="text-gray-600">
+                  Ground Floor, C-53, Guindy Industrial Estate, Chennai
+                </p>
               </div>
-              <h3 className="lg:text-base xl:text-lg 2xl:text-[21px] font-medium text-gray-900 mb-2">
-                Address
-              </h3>
-              <p className="text-gray-600 lg:text-sm xl:text-base 2xl:text-[16px]   3xl:text-xl">
-                Ground Floor, C-53, Guindy Industrial Estate, Chennai
-              </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Map Section */}
+      <section className="py-12 sm:py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 mb-4">
+              Find Us
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Visit our office or reach out to us online. We're always happy to hear from you.
+            </p>
+          </div>
+          <div className="rounded-xl overflow-hidden shadow-md h-[300px] sm:h-[400px] lg:h-[500px]">
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3887.4246883036!2d80.20613427482571!3d13.008857714490618!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a526787e0576281%3A0x7e54ef33cacc8b0!2sGuindy%20Industrial%20Estate%2C%20SIDCO%20Industrial%20Estate%2C%20Guindy%2C%20Chennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1715436500000!5m2!1sen!2sin" 
+              width="100%" 
+              height="100%" 
+              style={{ border: 0 }} 
+              allowFullScreen 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+
       <WallOfLove />
+      
       {/* CTA Section */}
-      <div className="flex justify-center items-center h-[450px] ">
+      <div className="py-12 sm:py-16 flex justify-center">
         <PurpleBox />
       </div>
+      
       <Footer />
     </div>
   );
 };
+
 export default Contact;

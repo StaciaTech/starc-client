@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo, useMemo } from 'react';
 import { getUserProfile, getUserActivity } from '@/services/profileService';
 import ContinueLearning from './ContinueLearning';
-import { Search, Bell, Heart, LayoutDashboard, Award, TrendingUp } from 'lucide-react';
+import { Search, Bell, Heart, LayoutDashboard, Award, TrendingUp, BookOpen } from 'lucide-react';
 import DashboardCard from './DashboardCard';
 
 // Import assets
@@ -14,7 +14,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: string;
+  role?: string;
 }
 
 interface UserActivity {
@@ -50,6 +50,7 @@ const DashboardOverview: React.FC = memo(() => {
   const [activity, setActivity] = useState<UserActivity | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasActivity, setHasActivity] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +65,14 @@ const DashboardOverview: React.FC = memo(() => {
         
         setUser(userProfileData);
         setActivity(userActivityData);
+        
+        // Check if user has any activity data
+        setHasActivity(
+          userActivityData.coursesEnrolled > 0 || 
+          userActivityData.learningHours > 0 ||
+          userActivityData.certificatesEarned > 0 ||
+          (userActivityData.recentActivity && userActivityData.recentActivity.length > 0)
+        );
       } catch (err) {
         console.error('Error fetching profile data:', err);
         setError('Failed to fetch profile data');
@@ -107,196 +116,150 @@ const DashboardOverview: React.FC = memo(() => {
   }
 
   return (
-    // <div className="h-[80vh] lg:ml-3 xl:ml-0 overflow-y-auto lg:w-[530px] xl:w-[700px] 2xl:w-[775px] 3xl:w-[1008px]  py-1" style={{ scrollbarWidth: "none" }} >
-    //   <h1 className="text-3xl font-bold text-[#8A63FF] lg:mb-3 xl:mb-6">Hello {userName} 👋</h1>
+    <div className="w-full max-w-full mx-auto px-2 sm:px-4 py-4 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#8A63FF] mb-4 md:mb-6 truncate">Hello {userName} 👋</h1>
 
-    //   <div className="flex justify-between items-center">
-    //     {/* Achieve with Purpose Card */}
-    //     <div
-    //       className="bg-purple-600 text-white p-6 rounded-[30px] shadow-md flex flex-col justify-between col-span-1 bg-cover bg-center"
-    //       style={{ backgroundImage: `url(${awardbg})` }}
-    //     >
-    //       <div>
-    //         <h2 className="text-xl font-bold mb-2">Achieve with purpose</h2>
-    //         <p className="text-purple-200 text-sm mb-4">
-    //           Track your progress and complete courses to earn certificates.
-    //         </p>
-    //       </div>
-    //       <div className="flex items-center justify-between">
-    //         <div className="text-3xl font-bold lg:text-xl xl:text-2xl 2xl:text-3xl 3xl:text-3xl">
-    //           {certificatesEarned}/{coursesEnrolled || 1}
-    //         </div>
-    //         <img src={trophy} alt="Trophy" className="h-20 w-20 lg:h-16 lg:w-16 xl:h-20 xl:w-20 2xl:h-24 2xl:w-24 3xl:h-28 3xl:w-28" />
-    //       </div>
-    //       <button className="mt-4 bg-white text-purple-600 px-4 py-2 rounded-full font-semibold hover:bg-gray-100 w-[10vw]">
-    //         Start Now
-    //       </button>
-    //     </div>
-
-     // absolute top-28 bg-gray-100
-    <div className="h-[80vh] lg:ml-3 xl:ml-0 overflow-y-auto lg:w-[530px] xl:w-[700px] 2xl:w-[775px] 3xl:w-[1008px]  py-1" style={{ scrollbarWidth: "none" }} >
-      <h1 className="text-3xl font-bold text-[#8A63FF] lg:mb-3 xl:mb-6">Hello {userName} 👋</h1>
-
-      <div className="flex justify-between items-center ">
-        {/* Achieve with Purpose Card */}
-        <div
-          className=" relative object-fill lg:h-[150px] lg:w-[322px] xl:h-[185px] xl:w-[300px] 2xl:h-[223px] 2xl:w-[372px] 3xl:h-[243px] 3xl:w-[412px] text-white lg:p-3 xl:p-3 2xl:p-4 rounded-[30px]   lg:m-1 xl:m-2  flex flex-col justify-center items-center  bg-cover bg-center  "
-        // style={{ backgroundImage: `url(${awardbg})` }}
-        // style={{  backgroundImage: `url('/awardbg.png')` }}
-        >
-
-          {/* <div className=''>
-           <img src={awardbg} className=""/>
-         </div> */}
-
-          <img src={awardbg} className="" />
-
-          <div className="absolute pl-8 pr-4">
-            <div className=''>
-              <h2 className="lg:text-sm xl:text-lg 2xl:text-xl font-bold mb-2">Achieve with purpose</h2>
-              <p className="text-purple-200 lg:text-[10px] xl:text-[12px] 2xl:text-xs">
-                Achieve with purpose Achieve with purpose Achieve with purpose.
-              </p>
+      {hasActivity ? (
+        <>
+          {/* Stats Cards Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {/* Purpose Card */}
+            <div className="bg-purple-600 relative rounded-xl overflow-hidden shadow-lg text-white p-3 sm:p-4 col-span-1 h-auto aspect-[4/3] sm:aspect-auto">
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${awardbg})`, opacity: 0.8 }}></div>
+              <div className="relative z-10 h-full flex flex-col justify-between">
+                <div>
+                  <h2 className="text-base sm:text-lg md:text-xl font-bold mb-1 sm:mb-2 line-clamp-1">Achieve with purpose</h2>
+                  <p className="text-purple-100 text-xs sm:text-sm mb-2 line-clamp-2">
+                    Track your progress and complete courses to earn certificates.
+                  </p>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-2 sm:mb-3">
+                    <div className="text-xl sm:text-2xl font-bold">{certificatesEarned}/{coursesEnrolled || 1}</div>
+                    <img src={trophy} alt="Trophy" className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain" />
+                  </div>
+                  <div className="w-full bg-white/30 rounded-full h-1.5 mb-2 sm:mb-3">
+                    <div 
+                      className="bg-white h-1.5 rounded-full" 
+                      style={{ width: `${(certificatesEarned/(coursesEnrolled || 1))*100}%` }}
+                    ></div>
+                  </div>
+                  <button className="bg-white text-purple-600 text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5 rounded-full font-medium hover:bg-gray-100 w-auto truncate">
+                    Start Now
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex items-start justify-center lg:h-[50px] xl:h-[60px] 2xl:h-[70px] 3xl:h-[60px]  ">
-              <div className="flex justify-start text-3xl font-bold lg:text-[20px] xl:text-[22px] xl:w-[148px]  2xl:text-[20px] 2xl:w-[198px] 3xl:text-[23px] 3xl:w-[218px] 3xl:h-[30px] lg:mt-2 xl:mt-4">{certificatesEarned}/{coursesEnrolled || 1}</div>
 
-              <img src={trophy} alt="Trophy" className="relative lg:left-9 lg:bottom-3  xl:left-4 xl:bottom-7 2xl:left-4 2xl:bottom-6 3xl:left-2 3xl:bottom-8 lg:h-16 lg:w-16 xl:h-[106px] xl:w-[106px] 2xl:h-[126px] 2xl:w-[126px] 3xl:h-[146px] 3xl:w-[146px]" />
-            </div>
-            <div className="w-[50%] bg-gray-300 rounded-full h-2 mb-2">
-              <div
-                className="bg-white lg:h-[6px] xl:h-[7px] 2xl:h-[7px] 3xl:h-[8px] w-full rounded-full"
-                style={{ width: `${20}%` }}
-              ></div>
-            </div>
-            <button className="lg:mt-2 xl:mt-2 bg-white text-[#8A63FF] lg:px-2 xl:px-4 xl:py-1 2xl:py-2 rounded-full font-semibold  hover:bg-gray-100 lg:text-[8px] lg:h-[22px] lg:w-[70px] xl:text-[10px] xl:h-[24px] xl:w-[90px]  2xl:text-[12px] 2xl:h-[28px] 2xl:w-[100px] 3xl:text-[14px] 3xl:h-[35px] 3xl:w-[122px]">
-              Start Now
-            </button>
+            {/* Stats Cards */}
+            <div className="flex flex-col space-y-3 sm:space-y-4">
+              {/* Learning Hours Card */}
+              <div className="bg-white rounded-xl shadow p-3 sm:p-4 flex items-center space-x-3 sm:space-x-4 h-[4.5rem]">
+                <div className="p-2 bg-gradient-to-b from-[#868CFF] to-[#8A63FF] rounded-full flex-shrink-0">
+                  <img src={hour} alt="Hour Icon" className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-gray-600 text-xs sm:text-sm truncate">Learning Hour</p>
+                  <p className="text-base sm:text-lg md:text-xl font-bold flex items-baseline">
+                    {learningHours} <span className="text-xs text-gray-500 ml-1 truncate">(This week)</span>
+                  </p>
+                </div>
+              </div>
 
+              {/* Certificates Card */}
+              <div className="bg-white rounded-xl shadow p-3 sm:p-4 flex items-center space-x-3 sm:space-x-4 h-[4.5rem]">
+                <div className="p-2 bg-gradient-to-b from-[#868CFF] to-[#8A63FF] rounded-full flex-shrink-0">
+                  <img src={earned} alt="Earned Icon" className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-gray-600 text-xs sm:text-sm truncate">Certificates</p>
+                  <p className="text-base sm:text-lg md:text-xl font-bold">{certificatesEarned}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Courses Progress Card */}
+            <div className="bg-white rounded-xl shadow p-3 sm:p-4 col-span-1 sm:col-span-2 lg:col-span-1">
+              <div className="flex flex-col items-center">
+                <h3 className="text-gray-700 text-sm font-medium mb-2 sm:mb-3 truncate">Courses Enrolled</h3>
+                
+                {/* Circular Progress Indicator */}
+                <div className="relative h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 mb-3 sm:mb-4">
+                  {/* Background Circle */}
+                  <svg className="absolute w-full h-full" viewBox="0 0 100 100">
+                    <circle
+                      className="stroke-gray-200"
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      strokeWidth="10"
+                      fill="none"
+                    />
+                  </svg>
+                  
+                  {/* Progress Circle */}
+                  <svg className="absolute w-full h-full rotate-[-90deg]" viewBox="0 0 100 100">
+                    <circle
+                      className="stroke-[#8A63FF]"
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      strokeWidth="10"
+                      strokeDasharray="282.7"
+                      strokeDashoffset={282.7 - (282.7 * progress) / 100}
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                  </svg>
+                  
+                  {/* Center Text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-bold text-gray-800">
+                      {coursesEnrolled}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Legend */}
+                <div className="flex justify-center space-x-4 sm:space-x-8 w-full">
+                  <div className="flex items-center">
+                    <div className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-[#8A63FF] mr-1 sm:mr-2"></div>
+                    <span className="text-xs sm:text-sm text-gray-600">Completed</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-gray-200 mr-1 sm:mr-2"></div>
+                    <span className="text-xs sm:text-sm text-gray-600">Pending</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Continue Learning Section */}
+          <div className="mt-6 sm:mt-8">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Continue Learning</h2>
+            <ContinueLearning />
+          </div>
+        </>
+      ) : (
+        // No activity state
+        <div className="bg-white rounded-xl shadow-md p-6 sm:p-8 text-center mt-4">
+          <div className="flex justify-center mb-4">
+            <BookOpen className="h-16 w-16 text-[#8A63FF]/30" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Learning Activity</h2>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            You haven't enrolled in any courses yet. Start your learning journey by exploring our courses.
+          </p>
+          <a 
+            href="/course" 
+            className="inline-block bg-[#8A63FF] hover:bg-[#7A53EF] text-white font-medium px-6 py-3 rounded-full transition-colors"
+          >
+            Browse Courses
+          </a>
         </div>
-
-
-        {/* Learning Stats */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-          <div className="bg-white p-6 rounded-[30px] shadow-md flex items-center space-x-4">
-            <div className="lg:py-1 lg:px-1 xl:py-2 xl:px-2 2xl:py-3 2xl:px-3 3xl:py-4 3xl:px-4 bg-gradient-to-b from-[#868CFF] to-[#8A63FF] rounded-full">
-              <img src={hour} alt="Hour Icon" className='lg:h-5 lg:w-5 xl:h-6 xl:w-6 2xl:h-8 2xl:w-8' />
-            </div>
-            <div>
-              <p className="text-gray-600 lg:text-xs xl:text-sm 2xl:text-base">Learning Hour </p>
-              <p className="text-2xl font-bold">
-                {learningHours} <span className="text-sm text-gray-500">(This week)</span>
-              </p>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-[30px] shadow-md flex items-center space-x-4">
-            <div className="lg:py-1 lg:px-1 xl:py-2 xl:px-2 2xl:py-3 2xl:px-3 3xl:py-4 3xl:px-4 bg-gradient-to-b from-[#868CFF] to-[#8A63FF] rounded-full">
-              <img src={earned} alt="Earned Icon" className='lg:h-5 lg:w-5 xl:h-6 xl:w-6 2xl:h-8 2xl:w-8' />
-            </div>
-            <div>
-              <p className="text-gray-600 lg:text-xs xl:text-sm 2xl:text-base">Certificates Earned</p>
-              <p className="text-2xl font-bold">{certificatesEarned}</p> */}
-
-
-               <div className="flex flex-col justify-between items-center gap-3 lg:m-1 xl:m-3 ">
-          <div className="bg-white 2xl:p-4 3xl:p-4 rounded-[20px] shadow-md flex items-center justify-center space-x-4 border border- lg:h-[65px] lg:w-[150px] xl:h-[80px] xl:w-[188px] 2xl:h-[90px] 2xl:w-[198px] 3xl:h-[106px] 3xl:w-[258px] ">
-            <div className="lg:py-1 lg:px-1 xl:py-2 xl:px-2 2xl:py-3 2xl:px-2 3xl:py-4 3xl:px-4  bg-gradient-to-b from-[#868CFF] to-[#8A63FF] rounded-full ">
-              <img src={hour} alt="Hour Icon" className='lg:h-4 lg:w-4 xl:h-5 xl:w-5 2xl:h-5 2xl:w-5 3xl:h-6 3xl:w-6' />
-            </div>
-            <div className='flex flex-col justify-center lg:w-[50%] xl:w-[50%]  2xl:w-[60%]  3xl:w-[60%] '>
-              <p className="text-gray-600 lg:text-[10px] xl:text-[12px] 2xl:text-xs 3xl:text-base">Learning Hour </p>
-              <p className="lg:text-sm xl:text-lg 2xl:text-xl 3xl:text-2xl font-bold">
-                {learningHours} <span className="lg:text-[8px] xl:text-[10px] 2xl:text-[10px] 3xl:text-sm text-gray-500">(This week)</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white 2xl:p-4 3xl:p-4 rounded-[20px] shadow-md flex items-center justify-center space-x-4 border border- lg:h-[65px] lg:w-[150px] xl:h-[80px] xl:w-[188px] 2xl:h-[90px] 2xl:w-[198px] 3xl:h-[106px] 3xl:w-[258px] ">
-            <div className="lg:py-1 lg:px-1 xl:py-2 xl:px-2 2xl:py-3 2xl:px-2 3xl:py-4 3xl:px-4  bg-gradient-to-b from-[#868CFF] to-[#8A63FF] rounded-full">
-              <img src={earned} alt="Earned Icon" className='lg:h-4 lg:w-4 xl:h-5 xl:w-5 2xl:h-5 2xl:w-5 3xl:h-6 3xl:w-6' />
-            </div>
-            <div className='flex flex-col justify-center lg:w-[50%] xl:w-[50%]  2xl:w-[60%]  3xl:w-[60%] '>
-              <p className="text-gray-600  lg:text-[10px] xl:text-[12px] 2xl:text-xs 3xl:text-base">Certificates</p>
-              <p className="lg:text-sm xl:text-lg 2xl:text-xl 3xl:text-2xl font-bold">{certificatesEarned}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Courses Enrolled Progress */}
-
-        <div className="flex flex-col items-center justify-center lg:m-1 xl:m-2 p-4 lg:h-[150px] lg:w-[150px] xl:h-[190px] xl:w-[190px] 2xl:h-[220px] 2xl:w-[220px] 3xl:h-[230px] 3xl:w-[250px] 3xl:mt-3  bg-white rounded-[20px] shadow-md   ">
-          {/* Circular Progress Bar Container */}
-          <div className="relative lg:h-[100px] lg:w-[100px]  xl:h-[125px] xl:w-[125px]  2xl:h-[140px] 2xl:w-[140px] 3xl:h-[166px] 3xl:w-[166px]  flex justify-center items-center ">
-            {/* Background Circle (Gray for Pending) */}
-            <svg className="absolute l w-full h-full" viewBox="0 0 100 100">
-              <circle
-                className="stroke-gray-300"
-                cx="50"
-                cy="50"
-                r="45"
-                strokeWidth="10"
-                fill="none"
-              />
-            </svg>
-            {/* Progress Circle (Purple for Completed) */}
-            <svg className="absolute w-full h-full" viewBox="0 0 100 100">
-              <circle
-                className="stroke-[#8A63FF]"
-                cx="50"
-                cy="50"
-                r="45"
-                strokeWidth="10"
-                fill="none"
-                strokeDasharray="283"
-                strokeDashoffset={283 * (1 - progress / 100)}
-                strokeLinecap="round"
-                transform="rotate(-90 50 50)"
-              />
-            </svg>
-            {/* Center Text */}
-            <div className="absolute flex flex-col items-center justify-center lg:h-[48px] lg:w-[48px] xl:h-[78px] xl:w-[78px] 2xl:h-[98px] 2xl:w-[98px] 3xl:h-[108px] 3xl:w-[108px]  rounded-full shadow-2xl ">
-              <span className="text-gray-500  lg:text-[7px] xl:text-[8px] 2xl:text-[8px] 3xl:text-[9px]">
-                Courses Enrolled
-              </span>
-              <span className="lg:text-[20px] xl:text-[22px] 2xl:text-[22px] 3xl:text-[26px] font-bold">
-               {coursesEnrolled}
-              </span>
-            </div>
-          </div>
-          {/* Legend */}
-          <div className="flex space-x-3  mt-3 px-2 ">
-            <div className="flex items-center">
-              <div className=" lg:w-3 lg:h-3 xl:w-4 xl:h-4 2xl:w-6 2xl:h-6 3xl:w-6 3xl:h-6 bg-[#8A63FF] rounded-full mr-1 "></div>
-              <span className=" lg:text-[9px] xl:text-[11px] 2xl:text-[12px] 3xl:text-[13px]">
-                Completed
-              </span>
-            </div>
-            <div className="flex items-center ">
-              <div className="lg:w-3 lg:h-3 xl:w-4 xl:h-4 2xl:w-6 2xl:h-6 3xl:w-6 3xl:h-6 bg-gray-300 rounded-full mr-1 sm:mr-2   "></div>
-              <span className="lg:text-[9px] xl:text-[11px] 2xl:text-[12px] 3xl:text-[13px]">
-                Pending
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Continue Learning Section - Now using the dedicated component */}
-      <ContinueLearning />
-
-
-      {/* <div className="w-full">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Continue Learning</h2>
-        <div className="flex flex-wrap justify-between p-1 " >
-          {filteredCourses.map((course) => (
-            <div onClick={() => handleSelectedCourse(course)}>
-
-              <DashboardCard key={course.id} course={course} />
-            </div>
-          ))}
-        </div>
-      </div> */}
+      )}
     </div>
   );
 });

@@ -1,14 +1,17 @@
 import axios from 'axios';
 import { handleApiError } from '@/utils/apiUtils';
+import { getAuthHeader } from '@/utils/authUtils';
 
 // Fallback API URL in case proxy fails
 const FALLBACK_API_URL = 'https://server.edifai.in';
 
 interface Section {
   id: string;
+  _id?: string;
   title: string;
   content: string;
   generatedContent?: string;
+  videoUrl?: string;
 }
 
 interface Subchapter {
@@ -170,6 +173,46 @@ const courseStructureService = {
       return response.data.data;
     } catch (error) {
       throw handleApiError(error, 'Error updating course structure');
+    }
+  },
+
+  // Add a new chapter to a course structure
+  addChapter: async (courseId: string, chapter: Chapter): Promise<Chapter> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+
+      const response = await axios.post(
+        `${API_URL}/courses/${courseId}/structure/chapters`,
+        chapter,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      throw handleApiError(error, 'Error adding new chapter');
+    }
+  },
+
+  // Delete a chapter
+  deleteChapter: async (courseId: string, chapterId: string): Promise<any> => {
+    try {
+      const response = await axios.delete(
+        `${FALLBACK_API_URL}/api/courses/${courseId}/structure/chapters/${chapterId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      return response.data.data;
+    } catch (error) {
+      throw handleApiError(error, 'Failed to delete chapter');
     }
   }
 };

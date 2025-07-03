@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   IQuiz, 
@@ -16,12 +16,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Check, AlertCircle, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, AlertCircle, Clock, Maximize, Minimize } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const QuizAttempt: React.FC = () => {
   const { quizId, courseId } = useParams<{ quizId: string; courseId: string }>();
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const [quiz, setQuiz] = useState<IQuiz | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -31,6 +33,8 @@ const QuizAttempt: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [quizResult, setQuizResult] = useState<IQuizResult | null>(null);
   const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+  const [fullScreenWarning, setFullScreenWarning] = useState<boolean>(false);
   
   // Load quiz data
   useEffect(() => {
@@ -54,6 +58,44 @@ const QuizAttempt: React.FC = () => {
     
     fetchQuiz();
   }, [quizId]);
+
+  // Request full screen when quiz loads
+  useEffect(() => {
+    if (!loading && quiz && !quizCompleted) {
+      requestFullScreen();
+    }
+  }, [loading, quiz, quizCompleted]);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      const isCurrentlyFullScreen = !!(
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (document as any).mozFullScreenElement || 
+        (document as any).msFullscreenElement
+      );
+
+      setIsFullScreen(isCurrentlyFullScreen);
+      
+      // Show warning if exited fullscreen during quiz
+      if (!isCurrentlyFullScreen && !quizCompleted && quiz) {
+        setFullScreenWarning(true);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullScreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullScreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullScreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullScreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullScreenChange);
+    };
+  }, [quiz, quizCompleted]);
   
   // Timer countdown
   useEffect(() => {
@@ -72,6 +114,49 @@ const QuizAttempt: React.FC = () => {
     
     return () => clearInterval(timer);
   }, [quiz, quizCompleted, timeRemaining]);
+
+  // Request full screen
+  const requestFullScreen = () => {
+    if (containerRef.current) {
+      try {
+        if (containerRef.current.requestFullscreen) {
+          containerRef.current.requestFullscreen();
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          (containerRef.current as any).webkitRequestFullscreen();
+        } else if ((containerRef.current as any).mozRequestFullScreen) {
+          (containerRef.current as any).mozRequestFullScreen();
+        } else if ((containerRef.current as any).msRequestFullscreen) {
+          (containerRef.current as any).msRequestFullscreen();
+        }
+        setFullScreenWarning(false);
+      } catch (err) {
+        console.error('Error requesting fullscreen:', err);
+        toast.error('Failed to enter fullscreen mode. Please try again.');
+      }
+    }
+  };
+
+  // Exit full screen
+  const exitFullScreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    } else if ((document as any).mozCancelFullScreen) {
+      (document as any).mozCancelFullScreen();
+    } else if ((document as any).msExitFullscreen) {
+      (document as any).msExitFullscreen();
+    }
+  };
+
+  // Toggle fullscreen
+  const toggleFullScreen = () => {
+    if (isFullScreen) {
+      exitFullScreen();
+    } else {
+      requestFullScreen();
+    }
+  };
   
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -172,6 +257,10 @@ const QuizAttempt: React.FC = () => {
   
   // Handle quiz completion
   const handleFinishQuiz = () => {
+    // Exit fullscreen when finishing the quiz
+    if (isFullScreen) {
+      exitFullScreen();
+    }
     navigate(`/course/${courseId}/learning`);
   };
   
@@ -264,7 +353,7 @@ const QuizAttempt: React.FC = () => {
   // Render loading state
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[50vh]">
+      <div className="flex justify-center items-center h-[50vh]" ref={containerRef}>
         <Spinner className="h-8 w-8" />
       </div>
     );
@@ -272,13 +361,17 @@ const QuizAttempt: React.FC = () => {
   
   // Render quiz completion screen
   if (quizCompleted && quizResult) {
-    return renderQuizCompletion();
+    return (
+      <div ref={containerRef} className="min-h-screen p-4 bg-gray-50">
+        {renderQuizCompletion()}
+      </div>
+    );
   }
   
   // Render quiz not found
   if (!quiz) {
     return (
-      <div className="text-center p-8">
+      <div className="text-center p-8" ref={containerRef}>
         <h2 className="text-xl font-semibold mb-2">Quiz Not Found</h2>
         <p className="text-gray-600 mb-4">The quiz you're looking for doesn't exist or you don't have access to it.</p>
         <Button onClick={() => navigate(`/course/${courseId}/learning`)}>
@@ -292,132 +385,159 @@ const QuizAttempt: React.FC = () => {
   const currentQuestion = getCurrentQuestion();
   
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold">{quiz.title}</h1>
-          <div className="flex items-center">
-            <Clock className="h-5 w-5 mr-2 text-orange-500" />
-            <span className="font-medium">{formatTime(timeRemaining)}</span>
+    <div ref={containerRef} className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {fullScreenWarning && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>
+              <div className="flex items-center justify-between">
+                <span>This quiz requires fullscreen mode. Please enter fullscreen to continue.</span>
+                <Button size="sm" onClick={requestFullScreen} className="ml-2 bg-red-600 hover:bg-red-700">
+                  Enter Fullscreen
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <h1 className="text-2xl font-bold">{quiz.title}</h1>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 mr-2 text-orange-500" />
+                <span className="font-medium">{formatTime(timeRemaining)}</span>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 px-2" 
+                onClick={toggleFullScreen}
+                title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
+          
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-gray-600">
+              Question {currentQuestionIndex + 1} of {quiz.questions.length}
+            </p>
+            <p className="text-gray-600">
+              Progress: {calculateProgress()}%
+            </p>
+          </div>
+          
+          <Progress value={calculateProgress()} className="w-full h-2" />
         </div>
         
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-gray-600">
-            Question {currentQuestionIndex + 1} of {quiz.questions.length}
-          </p>
-          <p className="text-gray-600">
-            Progress: {calculateProgress()}%
-          </p>
-        </div>
-        
-        <Progress value={calculateProgress()} className="w-full h-2" />
-      </div>
-      
-      {currentQuestion && (
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {currentQuestion.questionText}
-            </h2>
-            
-            <div className="my-6">
-              {currentQuestion.options.map((option, index) => (
-                <div key={index} className="flex items-start mb-4 p-3 border border-gray-200 rounded-md hover:bg-gray-50">
-                  {currentQuestion.options.length === 2 ? (
-                    // Radio buttons for questions with only 2 options (likely true/false)
-                    <RadioGroup
-                      value={answers[currentQuestionIndex]?.[0] || ''}
-                      onValueChange={handleRadioSelection}
-                      className="w-full"
-                    >
-                      <div className="flex items-center">
-                        <RadioGroupItem value={index.toString()} id={`option-${index}`} className="mr-2" />
+        {currentQuestion && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {currentQuestion.questionText}
+              </h2>
+              
+              <div className="my-6">
+                {currentQuestion.options.map((option, index) => (
+                  <div key={index} className="flex items-start mb-4 p-3 border border-gray-200 rounded-md hover:bg-gray-50">
+                    {currentQuestion.options.length === 2 ? (
+                      // Radio buttons for questions with only 2 options (likely true/false)
+                      <RadioGroup
+                        value={answers[currentQuestionIndex]?.[0] || ''}
+                        onValueChange={handleRadioSelection}
+                        className="w-full"
+                      >
+                        <div className="flex items-center">
+                          <RadioGroupItem value={index.toString()} id={`option-${index}`} className="mr-2" />
+                          <label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                            {option.optionText}
+                          </label>
+                        </div>
+                      </RadioGroup>
+                    ) : (
+                      // Checkboxes for questions with multiple options
+                      <div className="flex items-start">
+                        <Checkbox
+                          id={`option-${index}`}
+                          checked={answers[currentQuestionIndex]?.includes(index.toString()) || false}
+                          onCheckedChange={(checked) => handleAnswerSelection(index, checked as boolean)}
+                          className="mr-2 mt-1"
+                        />
                         <label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
                           {option.optionText}
                         </label>
                       </div>
-                    </RadioGroup>
-                  ) : (
-                    // Checkboxes for questions with multiple options
-                    <div className="flex items-start">
-                      <Checkbox
-                        id={`option-${index}`}
-                        checked={answers[currentQuestionIndex]?.includes(index.toString()) || false}
-                        onCheckedChange={(checked) => handleAnswerSelection(index, checked as boolean)}
-                        className="mr-2 mt-1"
-                      />
-                      <label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                        {option.optionText}
-                      </label>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevQuestion}
+            disabled={currentQuestionIndex === 0}
+            className="flex items-center"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Previous
+          </Button>
+          
+          {currentQuestionIndex < quiz.questions.length - 1 ? (
+            <Button
+              onClick={handleNextQuestion}
+              disabled={!isQuestionAnswered(currentQuestionIndex)}
+              className="bg-[#8A63FF] hover:bg-[#7A53EF] flex items-center"
+            >
+              Next
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmitQuiz}
+              disabled={!isQuestionAnswered(currentQuestionIndex) || isSubmitting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Quiz'
+              )}
+            </Button>
+          )}
+        </div>
+        
+        <div className="mt-8">
+          <Separator />
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              {quiz.questions.map((_, index) => (
+                <Button
+                  key={index}
+                  variant={isQuestionAnswered(index) ? "default" : "outline"}
+                  size="sm"
+                  className={
+                    index === currentQuestionIndex
+                      ? "ring-2 ring-[#8A63FF] " + (isQuestionAnswered(index) ? "bg-[#8A63FF]" : "")
+                      : isQuestionAnswered(index)
+                      ? "bg-[#8A63FF] hover:bg-[#7A53EF]"
+                      : ""
+                  }
+                  onClick={() => setCurrentQuestionIndex(index)}
+                >
+                  {index + 1}
+                </Button>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePrevQuestion}
-          disabled={currentQuestionIndex === 0}
-          className="flex items-center"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
-        
-        {currentQuestionIndex < quiz.questions.length - 1 ? (
-          <Button
-            onClick={handleNextQuestion}
-            disabled={!isQuestionAnswered(currentQuestionIndex)}
-            className="bg-[#8A63FF] hover:bg-[#7A53EF] flex items-center"
-          >
-            Next
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmitQuiz}
-            disabled={!isQuestionAnswered(currentQuestionIndex) || isSubmitting}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            {isSubmitting ? (
-              <>
-                <Spinner className="mr-2 h-4 w-4" />
-                Submitting...
-              </>
-            ) : (
-              'Submit Quiz'
-            )}
-          </Button>
-        )}
-      </div>
-      
-      <div className="mt-8">
-        <Separator />
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-4">
-            {quiz.questions.map((_, index) => (
-              <Button
-                key={index}
-                variant={isQuestionAnswered(index) ? "default" : "outline"}
-                size="sm"
-                className={
-                  index === currentQuestionIndex
-                    ? "ring-2 ring-[#8A63FF] " + (isQuestionAnswered(index) ? "bg-[#8A63FF]" : "")
-                    : isQuestionAnswered(index)
-                    ? "bg-[#8A63FF] hover:bg-[#7A53EF]"
-                    : ""
-                }
-                onClick={() => setCurrentQuestionIndex(index)}
-              >
-                {index + 1}
-              </Button>
-            ))}
           </div>
         </div>
       </div>

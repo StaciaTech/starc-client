@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import aspectRatio from '@tailwindcss/aspect-ratio';
 
 export default {
 	darkMode: ["class"],
@@ -84,11 +85,31 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				marquee: {
+					'0%': { transform: 'translateX(0%)' },
+					'100%': { transform: 'translateX(-100%)' }
+				},
+				'marquee-reverse': {
+					'0%': { transform: 'translateX(-100%)' },
+					'100%': { transform: 'translateX(0%)' }
+				},
+				'marquee-vertical': {
+					'0%': { transform: 'translateY(0%)' },
+					'100%': { transform: 'translateY(-100%)' }
+				},
+				'marquee-vertical-reverse': {
+					'0%': { transform: 'translateY(-100%)' },
+					'100%': { transform: 'translateY(0%)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'marquee': 'marquee 30s linear infinite',
+				'marquee-reverse': 'marquee-reverse 30s linear infinite',
+				'marquee-vertical': 'marquee-vertical 30s linear infinite',
+				'marquee-vertical-reverse': 'marquee-vertical-reverse 30s linear infinite'
 			},
 			screens:{
 				"3xl":"1920px",
@@ -96,5 +117,7 @@ export default {
 			}
 		}
 	},
-	plugins: [],
+	plugins: [
+		aspectRatio,
+	],
 } satisfies Config;

@@ -18,7 +18,6 @@ import SettingsPage from "./pages/SettingsPage";
 import WishlistPage from "./pages/WishlistPage";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
-import BooksPage from "./pages/BooksPage";
 import LoginPage from "./pages/LoginPage";
 
 // Components
@@ -28,6 +27,7 @@ import LearningModule from "./components/LearningModule";
 import LearningOverview from "./components/LearningOverview";
 import SubmissionSuccess from "./components/SubmissionSuccess";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import QuizAttempt from './components/QuizAttempt';
 
 // Admin pages
@@ -35,6 +35,7 @@ import AdminCoursePage from './pages/AdminCoursePage';
 import AdminCourseStructurePage from './pages/AdminCourseStructurePage';
 import AdminCourseDetails from './pages/AdminCourseDetails';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
+import CourseAssignmentsPage from './pages/CourseAssignmentsPage';
 
 // Services
 import authService from "./services/authService";
@@ -174,12 +175,6 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
-  // Admin Route Component (redirects to home if not admin)
-  const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-    const { isAuthenticated, user } = useAuth();
-    return isAuthenticated && user?.role === 'admin' ? children : <Navigate to="/LoginPage" />;
-  };
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -198,7 +193,6 @@ const App: React.FC = () => {
                 <Route path="/Contact" element={<Contact />} />
                 <Route path="/course" element={<Course />} />
                 <Route path="/book" element={<Book />} />
-                <Route path="/books" element={<BooksPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<SettingsPage />} />
@@ -209,6 +203,7 @@ const App: React.FC = () => {
                 <Route path="/course/:id/learn" element={<ProtectedRoute><LearningModule /></ProtectedRoute>} />
                 <Route path="/course/:id/learning" element={<LearningModule />} />
                 <Route path="/course/:courseId/quiz/:quizId" element={<QuizAttempt />} />
+                <Route path="/course/:courseId/assignments" element={<ProtectedRoute><CourseAssignmentsPage /></ProtectedRoute>} />
 
                 {/* Success Routes */}
                 <Route path="/submit/success" element={<SubmissionSuccess />} />

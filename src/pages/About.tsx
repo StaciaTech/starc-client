@@ -64,32 +64,32 @@ const About = () => {
       </section> */}
 
       {/* Our Values Section (custom design) */}
-      <section className="relative overflow-hidden flex justify-center px-20 py-24 w-full   ">
-        <div className="flex  lg:w-[900px] lg:h-[475px] xl:w-[1100px] xl:h-[575px] 2xl:w-[1400px] 2xl:h-[675px] 3xl:h-[775px] 3xl:w-[1565px]">
+      <section className="relative overflow-hidden flex justify-center px-4 sm:px-8 md:px-12 lg:px-20 py-12 sm:py-16 md:py-20 lg:py-24 w-full">
+        <div className="flex flex-col md:flex-row lg:w-[900px] lg:h-[475px] xl:w-[1100px] xl:h-[575px] 2xl:w-[1400px] 2xl:h-[675px] 3xl:h-[775px] 3xl:w-[1565px]">
           {/* Left:Text Content--*/}
           <div
-            className="w-full flex flex-col justify-start items-start lg:w-1/2  xl:w-1/2 2xl:w-1/2  3xl:h-full 3xl:w-1/2  "
+            className="w-full md:w-1/2 flex flex-col justify-start items-start mb-8 md:mb-0"
             style={{
               fontFamily: "mont-regular",
             }}
           >
-            <div className="flex flex-col justify-start w-[80%]">
-              <span className="text-[#8A63FF] text-lg  w-full  flex   lg:text-[10px] xl:text-[12px] 2xl:text-[1.5rem]  font-semibold font-mont mb-4">
+            <div className="flex flex-col justify-start w-full sm:w-[90%] md:w-[80%]">
+              <span className="text-[#8A63FF] text-base sm:text-lg w-full flex font-semibold font-mont mb-2 sm:mb-4">
                 Our Values
               </span>
-              <h2 className=" text-xl lg:text-xl xl:text-3xl 2xl:text-5xl 3xl:mr-20   3xl:leading-relaxed font-mont font-semibold xl:py-1 text-black-900 mb-4 leading-snug   lg:mr-16 ">
+              <h2 className="text-xl sm:text-2xl lg:text-xl xl:text-3xl 2xl:text-5xl font-mont font-semibold xl:py-1 text-black-900 mb-2 sm:mb-4 leading-snug">
                 Our team shares <br /> values to{" "}
                 <span className="text-[#8A63FF]">Success</span>
               </h2>
-              <p className="text-gray-600   lg:text-sm xl:text-lg 2xl:text-xl mt-4  ">
+              <p className="text-gray-600 text-sm sm:text-base lg:text-sm xl:text-lg 2xl:text-xl mt-2 sm:mt-4">
                 At Edifai, we are driven by a commitment to excellence,
                 integrity, and continuous improvement.
               </p>
-              <ul className="space-y-6   lg:text-[12px] 2xl:text-xl 3xl:mr-6  lg:mr-12 pt-5  w-full  ">
-                <li className="flex items-center gap-4 ">
-                  <span className="inline-flex items-center justify-center 3xl:w-6 3xl:h-6  rounded-full bg-[#8A63FF] lg:w-4 lg:h-4  ">
+              <ul className="space-y-3 sm:space-y-6 text-sm sm:text-base lg:text-[12px] 2xl:text-xl pt-3 sm:pt-5 w-full">
+                <li className="flex items-center gap-2 sm:gap-4">
+                  <span className="inline-flex items-center justify-center w-4 h-4 3xl:w-6 3xl:h-6 rounded-full bg-[#8A63FF]">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 sm:w-4 sm:h-4 text-white"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -102,14 +102,14 @@ const About = () => {
                       />
                     </svg>
                   </span>
-                  <span className="text-black font-mont ">
+                  <span className="text-black font-mont">
                     Learn today, lead tomorrow
                   </span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center 3xl:w-6 3xl:h-6 rounded-full bg-[#8A63FF] lg:w-4 lg:h-4">
+                <li className="flex items-center gap-2 sm:gap-3">
+                  <span className="inline-flex items-center justify-center w-4 h-4 3xl:w-6 3xl:h-6 rounded-full bg-[#8A63FF]">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 sm:w-4 sm:h-4 text-white"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -131,23 +131,21 @@ const About = () => {
           </div>
 
           {/*--Right: Responsive Image Container--*/}
-          <div className="w-1/2 relative flex justify-center items-center lg:mt-0 ">
+          <div className="w-full md:w-1/2 relative flex justify-center items-center">
             <div className="relative w-full aspect-[16/10]">
-              {/* World Map Background */}
-
-              <div className="flex justify-start">
-                {/* Main Image */}
+              {/* Main Image */}
+              <div className="flex justify-center md:justify-start">
                 <img
                   src={woman}
                   alt="Team"
-                  className="lg:w-[290px] lg:h-[179px]  xl:w-[330px] xl:h-[199px] 2xl:w-[454px] 2xl:h-[284px] 3xl:top-[14%] 3xl:left-[30%] 3xl:w-[584px] 3xl:h-[364px] rounded-xl shadow-lg z-10 "
+                  className="w-[220px] h-[150px] sm:w-[250px] sm:h-[170px] lg:w-[290px] lg:h-[179px] xl:w-[330px] xl:h-[199px] 2xl:w-[454px] 2xl:h-[284px] 3xl:w-[584px] 3xl:h-[364px] rounded-xl shadow-lg z-10"
                 />
 
                 {/* Overlapping Image */}
                 <img
                   src={woman}
                   alt="Team 2"
-                  className="absolute lg:w-[220px] lg:h-[149px] lg:left-[25%] lg:top-[35%]  xl:w-[250px] xl:h-[160px] xl:left-[25%] xl:top-[30%] 2xl:top-[35%] 2xl:left-[25%] 2xl:h-[200px] 2xl:w-[328px] 2xl:bottom-[21%] 2xl:right-[10%] 3xl:top-[40%] 3xl:left-[28%] 3xl:h-[245px] 3xl:w-[428px] 3xl:bottom-[21%] 3xl:right-[10%] rounded-xl shadow-lg border-4 border-white z-20"
+                  className="absolute w-[180px] h-[120px] sm:w-[200px] sm:h-[140px] lg:w-[220px] lg:h-[149px] top-[30%] left-[25%] sm:top-[30%] sm:left-[25%] lg:top-[35%] lg:left-[25%] xl:w-[250px] xl:h-[160px] xl:top-[30%] xl:left-[25%] 2xl:top-[35%] 2xl:left-[25%] 2xl:h-[200px] 2xl:w-[328px] 3xl:top-[40%] 3xl:left-[28%] 3xl:h-[245px] 3xl:w-[428px] rounded-xl shadow-lg border-4 border-white z-20"
                 />
               </div>
             </div>
@@ -155,38 +153,38 @@ const About = () => {
           <img
             src={world}
             alt="World Map"
-            className="absolute lg:w-[55%] lg:left-[35%] xl:w-[60%] xl:left-[32%]  2xl:w-[60%] 2xl:top-[22%] 2xl:left-[30%] 3xl:top-[25%] 3xl:left-[30%] 3xl:w-[60%] h-full object-contain  z-0"
+            className="absolute w-[80%] sm:w-[70%] md:w-[65%] lg:w-[55%] top-[40%] sm:top-[35%] md:top-[30%] left-[10%] sm:left-[20%] md:left-[25%] lg:left-[35%] xl:w-[60%] xl:left-[32%] 2xl:w-[60%] 2xl:top-[22%] 2xl:left-[30%] 3xl:top-[25%] 3xl:left-[30%] 3xl:w-[60%] h-full object-contain z-0"
           />
         </div>
       </section>
 
       {/* Learn Today, Lead Tomorrow Section */}
-      <section className="py-20 bg-white 3xl:gap-20  flex  justify-center ">
-        <div className="  lg:w-[1100px] xl:w-[1000px]  2xl:w-[1400px]  3xl:w-[1565px]    flex justify-center ">
+      <section className="py-12 sm:py-16 md:py-20 bg-white flex justify-center">
+        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[1100px] xl:w-[1000px] 2xl:w-[1400px] 3xl:w-[1565px] flex flex-col md:flex-row justify-center">
           {/* Left: Text Content */}
-          <div className=" lg:w-[500px]  xl:w-[600px] 2xl:w-[726px]  3xl:w-[900px] 3xl:py-18 pt-10 pl-20 ">
-            <h2 className="text-xl lg:text-4xl 2xl:text-5xl  w-[80%]  md:text-5xl font-mont font-medium text-gray-900 mb-8 leading-tight">
+          <div className="w-full md:w-1/2 lg:w-[500px] xl:w-[600px] 2xl:w-[726px] 3xl:w-[900px] pt-5 sm:pt-10 px-4 sm:px-8 md:px-12 lg:pl-20 mb-8 md:mb-0">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl w-full sm:w-[90%] md:w-[80%] font-mont font-medium text-gray-900 mb-6 sm:mb-8 leading-tight">
               "Learn today, lead tomorrow"
             </h2>
             
-            <div className="flex  justify-between lg:w-[80%] xl:w-[80%]  2xl:w-[50%]  3xl:w-[90%] ">
-              <div className="text-center   ">
-                <div className="text-4xl 3xl:text-5xl  font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">
+            <div className="flex justify-between w-full sm:w-[90%] md:w-[80%] lg:w-[80%] xl:w-[80%] 2xl:w-[50%] 3xl:w-[90%]">
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl md:text-4xl 3xl:text-5xl font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">
                   200+
                 </div>
-                <div className="text-black font-semibold 3xl:p-2">People</div>
+                <div className="text-black text-sm sm:text-base font-semibold 3xl:p-2">People</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl  3xl:text-5xl font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">
+                <div className="text-2xl sm:text-3xl md:text-4xl 3xl:text-5xl font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">
                   50+
                 </div>
-                <div className="text-black font-semibold 3xl:p-2">Courses</div>
+                <div className="text-black text-sm sm:text-base font-semibold 3xl:p-2">Courses</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl  3xl:text-5xl font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">
+                <div className="text-2xl sm:text-3xl md:text-4xl 3xl:text-5xl font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">
                   20+
                 </div>
-                <div className="text-black font-semibold 3xl:p-2">
+                <div className="text-black text-sm sm:text-base font-semibold 3xl:p-2">
                   Experience Staff
                 </div>
               </div>
@@ -194,18 +192,14 @@ const About = () => {
           </div>
 
           {/* Right: Description */}
-          <div className="lg:w-[500px] lg-px-10 lg:p-2  xl:w-[300px]  2xl:w-[706px] 3xl:w-[706px]  3xl:text-[20px] px-10">
-            <div className="w-[203px]">
-              <span className="text-3xl text-[#8A63FF] font-mont font-bold mb-4  flex justify-between">
-                Edifai{" "}
-                <span>
-                  {" "}
-                  {/* <img src={group} alt="R image" /> */}
-                </span>
+          <div className="w-full md:w-1/2 lg:w-[500px] xl:w-[300px] 2xl:w-[706px] 3xl:w-[706px] px-4 sm:px-8 md:px-10">
+            <div className="w-[150px] sm:w-[203px]">
+              <span className="text-2xl sm:text-3xl text-[#8A63FF] font-mont font-bold mb-2 sm:mb-4 flex justify-between">
+                Edifai
               </span>
             </div>
             <p
-              className="text-lg text-gray-900  font-mont leading-relaxed"
+              className="text-base sm:text-lg text-gray-900 font-mont leading-relaxed"
               style={{
                 fontFamily: "mont-regular",
               }}
@@ -222,51 +216,53 @@ const About = () => {
           </div>
         </div>
       </section>
+
       {/* Achievements Section */}
-      <section className="py-20 flex justify-center bg-white w-full  ">
-        <div className="  3xl:w-[1596px] 2xl:w-[1200px] xl:w-[1000px] lg:w-[900px]">
-          <div className="text-center lg:mb-8 xl:mb-12 ">
+      <section className="py-12 sm:py-16 md:py-20 flex justify-center bg-white w-full">
+        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[900px] xl:w-[1000px] 2xl:w-[1200px] 3xl:w-[1596px]">
+          <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
             <h2
-              className="text-4xl font-mont font-medium text-gray-900 pr-[80%] mb- 3xl:text-[40px] 2xl:text-[30px] xl:text-[30px]  "
+              className="text-2xl sm:text-3xl md:text-4xl font-mont font-medium text-gray-900 mb-2 sm:mb-3 md:mb-4 xl:text-[30px] 2xl:text-[30px] 3xl:text-[40px]"
               style={{
                 fontFamily: "mont-regular",
               }}
-            >Achievements
+            >
+              Achievements
             </h2>
-            <p className="text-l text-gray-600 pr-48  p-1 3xl:text-xl 2xl:text-sm xl:text-[10px] lg:text-[10px] ">
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 pr-0 sm:pr-12 md:pr-24 lg:pr-48 3xl:text-xl 2xl:text-sm xl:text-[10px] lg:text-[10px]">
               Our commitment to excellence has led us to achieve significant
               milestones along our journey. Here are some of our notable
               achievements:
             </p>
           </div>
 
-          <div className="flex flex-wrap  3xl:p-10 2xl:p-10   ">
+          <div className="flex flex-col md:flex-row flex-wrap 3xl:p-10 2xl:p-10">
             {/* left side */}
-            <div className="w-1/2 space-y-10 mb-5">
-              <div className="flex flex-col space-y-4 items-start 3xl:w-[683px]  2xl:w-[400px]  ">
-                <div className="w-11 h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0 ">
-                  <img src={trust} />{" "}
+            <div className="w-full md:w-1/2 space-y-8 sm:space-y-10 mb-5">
+              <div className="flex flex-col space-y-3 sm:space-y-4 items-start 3xl:w-[683px] 2xl:w-[400px]">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0">
+                  <img src={trust} alt="Trust icon" />
                 </div>
-                <div className="">
-                  <h3 className="font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
+                <div>
+                  <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
                     Trusted by Thousands
                   </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
+                  <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
                     Our platform has earned the confidence of a vast and growing
                     community of learners worldwide, a testament to our quality
                     and reliability.
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col items-start space-y-4  3xl:w-[683px] 2xl:w-[400px]">
-                <div className="w-11 h-11 3xl:mb-5 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <img src={award} />{" "}
+              <div className="flex flex-col items-start space-y-3 sm:space-y-4 3xl:w-[683px] 2xl:w-[400px]">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0">
+                  <img src={award} alt="Award icon" />
                 </div>
                 <div>
-                  <h3 className="font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]  ">
+                  <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
                     Award-Winning Courses
                   </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]  ">
+                  <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
                     Recognized for their exceptional content and innovative
                     teaching methodologies.
                   </p>
@@ -275,30 +271,30 @@ const About = () => {
             </div>
 
             {/* right side */}
-            <div className="w-1/2 space-y-10   ">
-              <div className="flex flex-col space-y-4 items-start 3xl:w-[683px]  2xl:w-[400px] ">
-                <div className="w-11 h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0 ">
-                  <img src={positive} />{" "}
+            <div className="w-full md:w-1/2 space-y-8 sm:space-y-10">
+              <div className="flex flex-col space-y-3 sm:space-y-4 items-start 3xl:w-[683px] 2xl:w-[400px]">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0">
+                  <img src={positive} alt="Positive icon" />
                 </div>
-                <div className="">
-                  <h3 className=" font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
+                <div>
+                  <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
                     Positive Student Feedback
                   </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
+                  <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
                     Consistently receiving high praise, our students commend us
                     for our effective instruction.
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col 3xl:mb-5 items-start space-y-5 ">
-                <div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <img src={indus} />{" "}
+              <div className="flex flex-col items-start space-y-3 sm:space-y-4 3xl:mb-5">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <img src={indus} alt="Industry icon" />
                 </div>
                 <div>
-                  <h3 className="font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
+                  <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
                     Industry Partnerships
                   </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px] ">
+                  <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
                     We collaborate with leading companies and organizations,
                     ensuring our curriculum remains cutting-edge.
                   </p>
@@ -310,15 +306,15 @@ const About = () => {
       </section>
 
       {/* Stats Section--- */}
-      <section className="py-10 bg-white">
-        <div className="w-[70%] mx-auto px-4 sm:px-6 lg:px-8 ">
-          <div className="flex justify-center lg:grid-cols-4 gap-10  bg-white p-6 ">
+      <section className="py-8 sm:py-10 bg-white">
+        <div className="w-[90%] sm:w-[80%] md:w-[70%] mx-auto px-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-6 sm:gap-8 md:gap-10 bg-white p-4 sm:p-6">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center  w-1/3 ">
-                <div className="text-4xl lg:text-5xl font-mont font-medium  text-center pl-6 text-[#6E51E0] mb-2">
+              <div key={index} className="text-center w-full sm:w-1/3">
+                <div className="text-3xl sm:text-4xl lg:text-5xl font-mont font-medium text-center text-[#6E51E0] mb-2">
                   {stat.number}
                 </div>
-                <div className="text-gray-600 text-center text-wrap font-mont ">
+                <div className="text-gray-600 text-sm sm:text-base text-center text-wrap font-mont">
                   {stat.label}
                 </div>
               </div>
@@ -329,18 +325,18 @@ const About = () => {
       </section>
 
       {/* Our Goals Section */}
-      <section className="py-20 flex justify-center bg-white w-full  ">
-        <div className="  3xl:w-[1596px] 2xl:w-[1200px] xl:w-[1000px] lg:w-[900px]">
-          <div className="text-center lg:mb-8 xl:mb-12 ">
+      <section className="py-12 sm:py-16 md:py-20 flex justify-center bg-white w-full">
+        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[900px] xl:w-[1000px] 2xl:w-[1200px] 3xl:w-[1596px]">
+          <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
             <h2
-              className="text-4xl font-mont font-bold text-gray-900 text-left mb-[1rem] 3xl:text-[40px] 2xl:text-[30px] xl:text-[30px]  "
+              className="text-2xl sm:text-3xl md:text-4xl font-mont font-bold text-gray-900 text-left mb-2 sm:mb-3 md:mb-4 xl:text-[30px] 2xl:text-[30px] 3xl:text-[40px]"
               style={{
                 fontFamily: "mont-regular",
               }}
             >
               Our Goals
             </h2>
-            <p className="text-l text-gray-600 pr-40 text-left p-1 3xl:text-xl 2xl:text-sm xl:text-[10px] lg:text-[10px] ">
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 pr-0 sm:pr-10 md:pr-20 lg:pr-40 text-left 3xl:text-xl 2xl:text-sm xl:text-[10px] lg:text-[10px]">
               At Skillbridge, our goal is to empower individuals from all
               backgrounds to thrive in the world of design and development. We
               believe that education should be accessible and transformative,
@@ -349,173 +345,70 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 justify-between  gap-y-[3rem] gap-x-[3rem]  3xl:p-10 2xl:p-10 ">
-            {/* left side */}
-            {/* <div className=" space-y-10 mb-5"> */}
-              <div className="flex flex-col space-y-4 items-start 3xl:w-[683px]  2xl:w-[400px]  ">
-                <div className="w-11 h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0 ">
-                  <img src={provide} />{" "}
-                </div>
-                <div className="">
-                  <h3 className="font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
-                    Provide Practical Skills:
-                  </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
-                    Equip learners with real-world, hands-on abilities directly
-                    applicable to industry demands.
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 sm:gap-y-[3rem] gap-x-4 sm:gap-x-[3rem] 3xl:p-10 2xl:p-10">
+            <div className="flex flex-col space-y-3 sm:space-y-4 items-start 3xl:w-[683px] 2xl:w-[400px]">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0">
+                <img src={provide} alt="Provide icon" />
               </div>
-              <div className="flex flex-col items-start space-y-4  3xl:w-[683px] 2xl:w-[400px]">
-                <div className="w-11 h-11 3xl:mb-5 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <img src={foster} />{" "}
-                </div>
-                <div>
-                  <h3 className="font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]  ">
-                    Foster Creative Problem-Solving:
-                  </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]  ">
-                    Cultivate innovative thinking and the capacity to tackle
-                    complex challenges with unique.
-                  </p>
-                </div>
+              <div>
+                <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
+                  Provide Practical Skills:
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
+                  Equip learners with real-world, hands-on abilities directly
+                  applicable to industry demands.
+                </p>
               </div>
-            {/* </div> */}
-
-            {/* right side */}
-            {/* <div className=" space-y-10   "> */}
-              {/* <div className="flex flex-col space-y-4  ">
-                <div className="w-11  bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0 ">
-                  <img src={promote} />
-                </div>
-                <div className="">
-                  <h3 className=" font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
-                    Promote Collaboration and Community:
-                  </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
-                    Build a supportive network where learners can connect, share
-                    knowledge.
-                  </p>
-                </div>
-              </div> */}
-              <div className="space-y-4  ">
-                  <img src={promote} className="w-11 " />
-                <div className="">
-                  <h3 className=" font-mont font-medium text-gray-900 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
-                    Promote Collaboration and Community:
-                  </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
-                    Build a supportive network where learners can connect, share
-                    knowledge.
-                  </p>
-                </div>
+            </div>
+            <div className="flex flex-col items-start space-y-3 sm:space-y-4 3xl:w-[683px] 2xl:w-[400px]">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl 3xl:mb-5 flex items-center justify-center flex-shrink-0">
+                <img src={foster} alt="Foster icon" />
               </div>
-              <div className="flex flex-col items-start space-y-4 ">
-                <div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <img src={promote} />{" "}
-                </div>
-                <div>
-                  <h3 className="font-mont font-medium text-gray-900 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px] ">
-                    Stay Ahead of the Curve:
-                  </h3>
-                  <p className="text-gray-600 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px] ">
-                    Ensure our curriculum remains cutting-edge, incorporating
-                    the latest trends to keep learners competitive.
-                  </p>
-                </div>
+              <div>
+                <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
+                  Foster Creative Problem-Solving:
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
+                  Cultivate innovative thinking and the capacity to tackle
+                  complex challenges with unique.
+                </p>
               </div>
-            {/* </div> */}
+            </div>
+            <div className="flex flex-col space-y-3 sm:space-y-4 items-start">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <img src={promote} alt="Promote icon" />
+              </div>
+              <div>
+                <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
+                  Promote Collaboration and Community:
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
+                  Build a supportive network where learners can connect, share
+                  knowledge.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col items-start space-y-3 sm:space-y-4">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <img src={stay} alt="Stay icon" />
+              </div>
+              <div>
+                <h3 className="font-mont font-medium text-gray-900 text-lg sm:text-xl md:text-2xl 3xl:mb-5 3xl:text-[36px] 2xl:text-[26px] lg:text-[15px]">
+                  Stay Ahead of the Curve:
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
+                  Ensure our curriculum remains cutting-edge, incorporating
+                  the latest trends to keep learners competitive.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Mission Section */}
-      {/* <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Mission</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              To empower individuals worldwide with the knowledge and skills they need to succeed in the digital age.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
-              <Card key={index} className="text-center p-8 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-0">
-                  <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <value.icon className="w-8 h-8 text-purple-600" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-4 text-gray-900">
-                    {value.title}
-                  </h3>
-                  <p className="text-gray-600">
-                    {value.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
-      {/* Team Section */}
-      {/* <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
-            <p className="text-xl text-gray-600">
-              Passionate educators and technologists working to transform learning
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <Card key={index} className="text-center overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="aspect-square overflow-hidden">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">
-                    {member.name}
-                  </h3>
-                  <p className="text-purple-600 font-medium mb-4">
-                    {member.role}
-                  </p>
-                  <p className="text-gray-600 text-sm">
-                    {member.bio}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
-      {/* CTA Section */}
-      {/* <section className="py-20 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <h2 className="text-4xl font-bold mb-6">
-            Ready to Start Your Journey?
-          </h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join millions of learners who are already transforming their careers with Nexora.
-          </p>
-          <Button
-            size="lg"
-            className="bg-white text-purple-700 hover:bg-gray-100 px-10 py-4 text-lg font-bold rounded-xl"
-          >
-            Get Started Today
-          </Button>
-        </div>
-      </section> */}
       <StarcTeam />
       <WallOfLove />
-      <div className="flex justify-center">
+      <div className="flex justify-center px-4">
         <PurpleBox />
       </div>
       <Footer />
