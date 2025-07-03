@@ -178,7 +178,7 @@ const Recard: React.FC<CardProps> = ({ course }) => {
 
   // Apply different styling for books vs courses
   const cardStyle = isBookOrPDF
-    ? "bg-white rounded-xl flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer w-full sm:w-[180px] md:w-[200px] lg:w-[220px] xl:w-[240px] 2xl:w-[250px] h-full border border-gray-100"
+    ? "bg-white rounded-xl flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer w-full max-w-[280px] h-[420px] border border-gray-100"
     : "bg-white rounded-xl flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer w-full sm:w-[180px] md:w-[200px] lg:w-[220px] xl:w-[240px] 2xl:w-[280px] h-full border border-gray-100";
 
   // Only show badges that are NOT "AI Generated"
@@ -191,7 +191,7 @@ const Recard: React.FC<CardProps> = ({ course }) => {
           src={getImage()}
           alt={course.title}
           className={isBookOrPDF 
-            ? "w-full h-48 sm:h-52 md:h-56 object-cover rounded-t-xl" 
+            ? "w-full h-[180px] object-cover rounded-t-xl" 
             : "w-full h-40 sm:h-44 object-cover rounded-t-xl"
           }
           loading="lazy"
@@ -202,11 +202,11 @@ const Recard: React.FC<CardProps> = ({ course }) => {
           </div>
         )}
         {isBookOrPDF && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
             <div className="flex items-center">
-              <BookOpen className="w-3 h-3 text-white mr-1 shrink-0" />
-              <span className="text-xs font-medium text-white truncate">
-                {course.topic || course.category || "STARC Learning Resource"}
+              <BookOpen className="w-4 h-4 text-white mr-1 shrink-0" />
+              <span className="text-sm font-medium text-white truncate">
+                {course.topic || course.category || "STARC Resource"}
               </span>
             </div>
           </div>
@@ -214,32 +214,58 @@ const Recard: React.FC<CardProps> = ({ course }) => {
       </div>
 
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2 text-sm sm:text-base">
+        <h3 className="font-semibold text-gray-800 text-lg mb-2 line-clamp-2">
           {course.title}
         </h3>
-        <p className="text-gray-500 text-xs mb-2">By STARC team</p>
+        <p className="text-gray-500 text-sm mb-2">By {"STARC team"}</p>
 
-        {renderRating()}
+        <div className="flex items-center mb-3">
+          {[...Array(5)].map((_, i) => (
+            <Star 
+              key={i}
+              size={16}
+              className={`${i < Math.floor(course.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+            />
+          ))}
+          <span className="text-gray-500 ml-1 text-sm">({course.rating.toFixed(1)})</span>
+        </div>
 
-        <div className="mt-2 flex items-center text-xs text-gray-500 space-x-3">
-          <div className="flex items-center">
-            <Users size={14} className="mr-1" />
-            <span>{course.students.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center">
-            <Clock size={14} className="mr-1" />
-            <span>{course.duration}</span>
-          </div>
+        <div className="flex items-center text-sm text-gray-500 space-x-4 mb-3">
+          {isBookOrPDF ? (
+            <>
+              <div className="flex items-center">
+                <Users size={16} className="mr-1" />
+                <span>{course.students.toLocaleString()}</span>
+              </div>
+              {course.pages && (
+                <div className="flex items-center">
+                  <BookOpen size={16} className="mr-1" />
+                  <span>{course.pages} pages</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center">
+                <Users size={14} className="mr-1" />
+                <span>{course.students.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center">
+                <Clock size={14} className="mr-1" />
+                <span>{course.duration}</span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center">
           {course.price === 0 ? (
-            <span className="text-green-600 font-bold text-sm">Free</span>
+            <span className="text-green-600 font-bold text-lg">Free</span>
           ) : (
             <div className="flex flex-col">
-              <span className="text-[#8A63FF] font-bold text-base">${course.price.toFixed(2)}</span>
+              <span className="text-[#8A63FF] font-bold text-lg">${course.price.toFixed(2)}</span>
               {course.originalPrice > course.price && (
-                <span className="text-gray-400 line-through text-xs">
+                <span className="text-gray-400 line-through text-sm">
                   ${course.originalPrice.toFixed(2)}
                 </span>
               )}

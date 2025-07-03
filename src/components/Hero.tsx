@@ -76,7 +76,8 @@ const Hero: React.FC = () => {
       <div className="absolute bottom-20 left-1/4 w-24 h-24 sm:bottom-40 sm:left-1/3 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-52 xl:h-52 2xl:w-56 2xl:h-56 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center py-16 sm:pt-8 md:pt-5 lg:pt-0 xl:pt-0 2xl:pt-0 3xl:pt-0">
-        <div className="relative w-full max-w-[920px] sm:max-w-[500px] md:max-w-[550px] lg:max-w-[500px] xl:max-w-[500px] 2xl:max-w-[500px] 3xl:max-w-[100px] flex flex-col justify-center items-center">
+        <div className="relative w-full max-w-[1200px] sm:max-w-[500px] md:max-w-[550px] lg:max-w-[500px] xl:max-w-[500px] 2xl:max-w-[500px] 3xl:max-w-[600px] flex flex-col justify-center items-center">
+
           
           {/* Hero Image - Size capped for desktop */}
           <motion.div 
@@ -88,8 +89,8 @@ const Hero: React.FC = () => {
             <img
               src={heroImage}
               alt="Hero"
-              className="w-full h-auto object-contain pt-45 sm:pt-32 md:pt-40 lg:pt-40 xl:pt-44 2xl:pt-44 
-                         scale-[1.4] sm:scale-[1.3] md:scale-[1.4] lg:scale-[1.45] xl:scale-[1.5] 2xl:scale-[1.5] 
+              className="w-full h-auto object-contain pt-45 sm:pt-32 md:pt-40 lg:pt-40 xl:pt-44 2xl:pt-44 3xl:pt-44
+                         scale-[1.4] sm:scale-[1.3] md:scale-[1.4] lg:scale-[1.45] xl:scale-[1.5] 2xl:scale-[1.5] 3xl:scale-[1.5]
                          absolute top-12 left-0 lg:top-0 xl:top-0 z-0"
               loading="eager"
             />
@@ -118,7 +119,7 @@ const Hero: React.FC = () => {
             </motion.span>
             
             {/* Title with Typing Animation - Size capped for desktop */}
-            <div className="min-h-[4rem] sm:min-h-[6rem] lg:min-h-[8rem] xl:min-h-[8rem] 2xl:min-h-[8rem] 
+            <div className="min-h-[4rem] sm:min-h-[6rem] lg:min-h-[8rem] xl:min-h-[8rem] 2xl:min-h-[8rem] 3xl:min-h-[8rem]
                            mb-2 sm:mb-3 md:mb-4 lg:mb-5 xl:mb-5 px-2 lg:px-4">
               <TypingAnimation
                 key={`${currentSlide}-${resetTyping}`}

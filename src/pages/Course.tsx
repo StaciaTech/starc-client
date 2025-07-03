@@ -305,27 +305,7 @@ const Course: React.FC = () => {
       badge: "STARC",
       type: "book"
     },
-    {
-      id: "4",
-      title: "Advanced Python Programming",
-      author: "STARC Development Team",
-      topic: "Programming",
-      coverImage: "https://images.unsplash.com/photo-1555952494-efd681c7e3f9?w=300&h=400&fit=crop",
-      driveUrl: "https://docs.google.com/document/d/1IzaS0SFQFqY7swvCB9ZGFA2OCgFbEt4OgAYu_-kwP2s/edit?usp=sharing",
-      rating: 4.9,
-      pages: 350,
-      description: "Master advanced Python concepts and best practices for professional development.",
-      category: "development",
-      instructor: "STARC Development Team",
-      students: 1800,
-      price: 0,
-      originalPrice: 45.99,
-      duration: "Self-paced",
-      lessons: 20,
-      level: "advanced",
-      badge: "STARC",
-      type: "book"
-    }
+    
   ];
 
   useEffect(() => {
@@ -541,7 +521,7 @@ const Course: React.FC = () => {
             </div>
             
             {/* Course Cards Grid - full width on mobile, adjusted for larger screens */}
-            <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] md:pl-4 lg:pl-10 px-2 md:px-4 overflow-auto gap-3 md:gap-4" style={{scrollbarWidth:'none'}}>
+            <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] md:pl-4 lg:pl-10 px-2 md:px-4 overflow-auto gap-5 md:gap-6" style={{scrollbarWidth:'none'}}>
               {filteredCourses.length > 0 ? (
                 filteredCourses.map((course, index) => (
                   <div  
@@ -559,7 +539,11 @@ const Course: React.FC = () => {
                         navigate('/carddetail', { state: { course } });
                       }
                     }}
-                    className="flex justify-center w-full xs:w-[45%] sm:w-[45%] md:w-[30%] lg:w-[30%] xl:w-[30%] 2xl:w-[30%] 3xl:w-[30%]"
+                    className={`flex justify-center ${
+                      mode === "unsupervised" 
+                        ? "w-full sm:w-[45%] md:w-[30%] lg:w-[30%] xl:w-[30%] 2xl:w-[30%]" 
+                        : "w-full xs:w-[45%] sm:w-[45%] md:w-[30%] lg:w-[30%] xl:w-[30%] 2xl:w-[30%]"
+                    }`}
                   >
                     <Recard course={course} key={index} />
                   </div>

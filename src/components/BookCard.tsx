@@ -54,9 +54,7 @@ const BookCard: React.FC<BookCardProps> = ({ book }) => {
           <h3 className="font-medium text-base text-gray-900 mb-1 line-clamp-1">
             {book.title}
           </h3>
-          <p className="text-xs text-gray-500 mb-2 line-clamp-1">
-            by {book.author}
-          </p>
+          
           <div className="flex items-center text-xs">
             <div className="flex mr-1">
               {[...Array(5)].map((_, i) => (
