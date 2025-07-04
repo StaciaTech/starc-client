@@ -781,8 +781,39 @@ const LearningModule: React.FC = () => {
               </TabsList>
               
               <TabsContent value="content" className="mt-4">
-                <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown>{selectedSection.content}</ReactMarkdown>
+                <div className="prose prose-lg max-w-none bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+                  <ReactMarkdown 
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-xl font-bold text-gray-800 mt-6 mb-3" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-lg font-bold text-gray-700 mt-5 mb-2" {...props} />,
+                      p: ({node, ...props}) => <p className="my-4 text-gray-700 leading-relaxed" {...props} />,
+                      ul: ({node, ...props}) => <ul className="my-4 pl-6 list-disc space-y-2" {...props} />,
+                      ol: ({node, ...props}) => <ol className="my-4 pl-6 list-decimal space-y-2" {...props} />,
+                      li: ({node, ...props}) => <li className="text-gray-700 pl-2" {...props} />,
+                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-300 pl-4 my-4 italic text-gray-600" {...props} />,
+                      code: ({node, className, ...props}) => {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return (
+                          <code 
+                            className={
+                              match
+                                ? `bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto text-sm font-mono language-${match[1]}`
+                                : `bg-gray-100 text-purple-700 px-1 py-0.5 rounded text-sm font-mono`
+                            }
+                            {...props}
+                          />
+                        )
+                      },
+                      a: ({node, ...props}) => <a className="text-purple-600 hover:text-purple-800 underline" {...props} />,
+                      table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
+                      th: ({node, ...props}) => <th className="bg-gray-100 border border-gray-300 px-4 py-2 text-left font-semibold" {...props} />,
+                      td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
+                      img: ({node, ...props}) => <img className="mx-auto my-6 rounded-lg shadow-md max-w-full h-auto" {...props} />
+                    }}
+                  >
+                    {selectedSection.content}
+                  </ReactMarkdown>
                 </div>
               </TabsContent>
               
@@ -809,9 +840,40 @@ const LearningModule: React.FC = () => {
       return (
         <div className="h-full overflow-y-auto">
           <div className="pb-6">
-            <h2 className="text-2xl font-semibold mb-4">{selectedSection.title}</h2>
-            <div className="prose prose-sm max-w-none">
-              <ReactMarkdown>{selectedSection.content}</ReactMarkdown>
+            <h2 className="text-2xl font-semibold mb-6 text-gray-800 pb-2 border-b border-gray-200">{selectedSection.title}</h2>
+            <div className="prose prose-lg max-w-none bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+              <ReactMarkdown 
+                components={{
+                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="text-xl font-bold text-gray-800 mt-6 mb-3" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="text-lg font-bold text-gray-700 mt-5 mb-2" {...props} />,
+                  p: ({node, ...props}) => <p className="my-4 text-gray-700 leading-relaxed" {...props} />,
+                  ul: ({node, ...props}) => <ul className="my-4 pl-6 list-disc space-y-2" {...props} />,
+                  ol: ({node, ...props}) => <ol className="my-4 pl-6 list-decimal space-y-2" {...props} />,
+                  li: ({node, ...props}) => <li className="text-gray-700 pl-2" {...props} />,
+                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-300 pl-4 my-4 italic text-gray-600" {...props} />,
+                  code: ({node, className, ...props}) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    return (
+                      <code 
+                        className={
+                          match
+                            ? `bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto text-sm font-mono language-${match[1]}`
+                            : `bg-gray-100 text-purple-700 px-1 py-0.5 rounded text-sm font-mono`
+                        }
+                        {...props}
+                      />
+                    )
+                  },
+                  a: ({node, ...props}) => <a className="text-purple-600 hover:text-purple-800 underline" {...props} />,
+                  table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
+                  th: ({node, ...props}) => <th className="bg-gray-100 border border-gray-300 px-4 py-2 text-left font-semibold" {...props} />,
+                  td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
+                  img: ({node, ...props}) => <img className="mx-auto my-6 rounded-lg shadow-md max-w-full h-auto" {...props} />
+                }}
+              >
+                {selectedSection.content}
+              </ReactMarkdown>
             </div>
           </div>
         </div>
@@ -883,8 +945,39 @@ const LearningModule: React.FC = () => {
                 <span className="ml-2">Loading content...</span>
             </div>
             ) : selectedSectionContent ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>{selectedSectionContent}</ReactMarkdown>
+              <div className="prose prose-lg max-w-none dark:prose-invert bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+                <ReactMarkdown 
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold text-gray-800 mt-6 mb-3" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-bold text-gray-700 mt-5 mb-2" {...props} />,
+                    p: ({node, ...props}) => <p className="my-4 text-gray-700 leading-relaxed" {...props} />,
+                    ul: ({node, ...props}) => <ul className="my-4 pl-6 list-disc space-y-2" {...props} />,
+                    ol: ({node, ...props}) => <ol className="my-4 pl-6 list-decimal space-y-2" {...props} />,
+                    li: ({node, ...props}) => <li className="text-gray-700 pl-2" {...props} />,
+                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-300 pl-4 my-4 italic text-gray-600" {...props} />,
+                    code: ({node, className, ...props}) => {
+                      const match = /language-(\w+)/.exec(className || '');
+                      return (
+                        <code 
+                          className={
+                            match
+                              ? `bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto text-sm font-mono language-${match[1]}`
+                              : `bg-gray-100 text-purple-700 px-1 py-0.5 rounded text-sm font-mono`
+                          }
+                          {...props}
+                        />
+                      )
+                    },
+                    a: ({node, ...props}) => <a className="text-purple-600 hover:text-purple-800 underline" {...props} />,
+                    table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full border-collapse border border-gray-300" {...props} /></div>,
+                    th: ({node, ...props}) => <th className="bg-gray-100 border border-gray-300 px-4 py-2 text-left font-semibold" {...props} />,
+                    td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
+                    img: ({node, ...props}) => <img className="mx-auto my-6 rounded-lg shadow-md max-w-full h-auto" {...props} />
+                  }}
+                >
+                  {selectedSectionContent}
+                </ReactMarkdown>
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
@@ -1243,7 +1336,7 @@ const LearningModule: React.FC = () => {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <Spinner className="h-8 w-8 border-2 border-primary" />
-            <span className="ml-2">Loading course content...</span>
+            <span className="ml-2 text-gray-600">Loading course content...</span>
           </div>
         ) : error ? (
           <div className="text-center text-red-500 p-8">

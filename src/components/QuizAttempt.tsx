@@ -10,7 +10,6 @@ import {
 } from '@/services/quizService';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -175,30 +174,6 @@ const QuizAttempt: React.FC = () => {
   const getCurrentQuestion = (): IQuizQuestion | null => {
     if (!quiz) return null;
     return quiz.questions[currentQuestionIndex];
-  };
-  
-  // Handle answer selection
-  const handleAnswerSelection = (optionIndex: number, checked: boolean) => {
-    const question = getCurrentQuestion();
-    if (!question) return;
-    
-    setAnswers(prev => {
-      const currentAnswers = prev[currentQuestionIndex] || [];
-      
-      if (checked) {
-        // Add option to selected answers
-        return {
-          ...prev,
-          [currentQuestionIndex]: [...currentAnswers, optionIndex.toString()]
-        };
-      } else {
-        // Remove option from selected answers
-        return {
-          ...prev,
-          [currentQuestionIndex]: currentAnswers.filter(a => a !== optionIndex.toString())
-        };
-      }
-    });
   };
   
   // Handle radio selection (single answer)
@@ -441,38 +416,22 @@ const QuizAttempt: React.FC = () => {
               </h2>
               
               <div className="my-6">
-                {currentQuestion.options.map((option, index) => (
-                  <div key={index} className="flex items-start mb-4 p-3 border border-gray-200 rounded-md hover:bg-gray-50">
-                    {currentQuestion.options.length === 2 ? (
-                      // Radio buttons for questions with only 2 options (likely true/false)
-                      <RadioGroup
-                        value={answers[currentQuestionIndex]?.[0] || ''}
-                        onValueChange={handleRadioSelection}
-                        className="w-full"
-                      >
-                        <div className="flex items-center">
-                          <RadioGroupItem value={index.toString()} id={`option-${index}`} className="mr-2" />
-                          <label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                            {option.optionText}
-                          </label>
-                        </div>
-                      </RadioGroup>
-                    ) : (
-                      // Checkboxes for questions with multiple options
-                      <div className="flex items-start">
-                        <Checkbox
-                          id={`option-${index}`}
-                          checked={answers[currentQuestionIndex]?.includes(index.toString()) || false}
-                          onCheckedChange={(checked) => handleAnswerSelection(index, checked as boolean)}
-                          className="mr-2 mt-1"
-                        />
+                <RadioGroup
+                  value={answers[currentQuestionIndex]?.[0] || ''}
+                  onValueChange={handleRadioSelection}
+                  className="w-full space-y-4"
+                >
+                  {currentQuestion.options.map((option, index) => (
+                    <div key={index} className="flex items-start p-3 border border-gray-200 rounded-md hover:bg-gray-50">
+                      <div className="flex items-center w-full">
+                        <RadioGroupItem value={index.toString()} id={`option-${index}`} className="mr-2" />
                         <label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
                           {option.optionText}
                         </label>
                       </div>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </RadioGroup>
               </div>
             </CardContent>
           </Card>
