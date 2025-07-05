@@ -24,10 +24,10 @@ const Contact = () => {
     subject: "",
     message: ""
   });
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form validation state
   const [errors, setErrors] = useState({
     name: "",
@@ -42,7 +42,7 @@ const Contact = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear error when user types
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
@@ -53,12 +53,12 @@ const Contact = () => {
   const validateForm = () => {
     let valid = true;
     const newErrors = { ...errors };
-    
+
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
       valid = false;
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
       valid = false;
@@ -66,17 +66,17 @@ const Contact = () => {
       newErrors.email = "Email is invalid";
       valid = false;
     }
-    
+
     if (!formData.subject.trim()) {
       newErrors.subject = "Subject is required";
       valid = false;
     }
-    
+
     if (!formData.message.trim()) {
       newErrors.message = "Message is required";
       valid = false;
     }
-    
+
     setErrors(newErrors);
     return valid;
   };
@@ -84,17 +84,17 @@ const Contact = () => {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const response = await api.post("/api/contact", {
         ...formData,
         recipientEmail: CONTACT_EMAIL
       });
-      
+
       if (response.data.success) {
         setSubmitSuccess(true);
         setFormData({
@@ -119,13 +119,13 @@ const Contact = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
-      
+
       {/* Hero Section - Moved further up with reduced spacing */}
       <section className="relative overflow-hidden pt-16 pb-4">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgeT0iMSIgcj0iMSIgZmlsbD0iIzAwMDAwMDMzIi8+PC9zdmc+')] bg-repeat"></div>
         </div>
-        
+
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="relative w-full max-w-3xl mx-auto mb-2">
@@ -135,7 +135,7 @@ const Contact = () => {
                 className="w-[60%] mx-auto"
               /> */}
             </div>
-            
+
             <div className="max-w-2xl mx-auto">
               <span className="inline-flex items-center justify-center px-4 py-1.5 text-xs font-semibold bg-[#8A63FF] text-white rounded-full mb-2">
                 EDIFAI COURSE
@@ -261,11 +261,11 @@ const Contact = () => {
             <div className="w-full lg:w-1/2 mt-8 lg:mt-0">
               <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-6">Send us a message</h3>
-                
+
                 {submitSuccess ? (
                   <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-md mb-6">
                     <p>Thank you for your message! We'll get back to you soon.</p>
-                    <button 
+                    <button
                       className="mt-3 text-white bg-primary hover:bg-primary-dark px-4 py-2 rounded-md"
                       onClick={() => setSubmitSuccess(false)}
                     >
@@ -279,10 +279,10 @@ const Contact = () => {
                         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                           Full Name
                         </label>
-                        <Input 
+                        <Input
                           id="name"
                           name="name"
-                          placeholder="Your name" 
+                          placeholder="Your name"
                           className={`w-full ${errors.name ? 'border-red-500' : ''}`}
                           value={formData.name}
                           onChange={handleChange}
@@ -293,11 +293,11 @@ const Contact = () => {
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                           Email Address
                         </label>
-                        <Input 
+                        <Input
                           id="email"
                           name="email"
-                          type="email" 
-                          placeholder="Your email" 
+                          type="email"
+                          placeholder="Your email"
                           className={`w-full ${errors.email ? 'border-red-500' : ''}`}
                           value={formData.email}
                           onChange={handleChange}
@@ -305,39 +305,39 @@ const Contact = () => {
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                       </div>
                     </div>
-                    
+
                     <div>
                       <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
                         Subject
                       </label>
-                      <Input 
+                      <Input
                         id="subject"
                         name="subject"
-                        placeholder="How can we help you?" 
+                        placeholder="How can we help you?"
                         className={`w-full ${errors.subject ? 'border-red-500' : ''}`}
                         value={formData.subject}
                         onChange={handleChange}
                       />
                       {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
                     </div>
-                    
+
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                         Message
                       </label>
-                      <Textarea 
+                      <Textarea
                         id="message"
                         name="message"
-                        placeholder="Your message here..." 
+                        placeholder="Your message here..."
                         className={`w-full min-h-[120px] ${errors.message ? 'border-red-500' : ''}`}
                         value={formData.message}
                         onChange={handleChange}
                       />
                       {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
                     </div>
-                    
-                    <Button 
-                      type="submit" 
+
+                    <Button
+                      type="submit"
                       className="w-full bg-[#8A63FF] hover:bg-[#7A53EF]"
                       disabled={isSubmitting}
                     >
@@ -426,7 +426,7 @@ const Contact = () => {
           </div>
           <div className="rounded-xl overflow-hidden shadow-md h-[300px] sm:h-[400px] lg:h-[500px]">
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3887.4246883036!2d80.20613427482571!3d13.008857714490618!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a526787e0576281%3A0x7e54ef33cacc8b0!2sGuindy%20Industrial%20Estate%2C%20SIDCO%20Industrial%20Estate%2C%20Guindy%2C%20Chennai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1715436500000!5m2!1sen!2sin" 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62195.10268659817!2d80.19006637134662!3d13.023319844569414!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a52673f17ff4aff%3A0x4b21f693e45a5fc1!2sStacia%20Corp!5e0!3m2!1sen!2sin!4v1751715035609!5m2!1sen!2sin"
               width="100%" 
               height="100%" 
               style={{ border: 0 }} 
@@ -434,17 +434,18 @@ const Contact = () => {
               loading="lazy" 
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
+            {/* <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62195.10268659817!2d80.19006637134662!3d13.023319844569414!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a52673f17ff4aff%3A0x4b21f693e45a5fc1!2sStacia%20Corp!5e0!3m2!1sen!2sin!4v1751715035609!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> */}
           </div>
         </div>
       </section>
 
       <WallOfLove />
-      
+
       {/* CTA Section */}
       <div className="py-12 sm:py-16 flex justify-center">
         <PurpleBox />
       </div>
-      
+
       <Footer />
     </div>
   );

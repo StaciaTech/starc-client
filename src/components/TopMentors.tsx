@@ -181,7 +181,8 @@ const TopMentors: React.FC = () => {
   const isMobile = deviceType === 'mobile';
 
   return (
-    <div className="font-mont pb-10 md:pb-16 lg:pb-20">
+     <div className="font-mont ">   
+     {/* pb-10 md:pb-16 lg:pb-20 */}
       {/* --- Top Mentors Section --- */}
       <section className={`py-10 ${isTablet ? 'md:py-12' : 'md:py-16'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -211,8 +212,8 @@ const TopMentors: React.FC = () => {
                 return (
                   <div
                     key={mentor._id}
-                    className="flex flex-col items-center cursor-pointer transition-transform duration-300 hover:scale-105"
-                    onClick={() => navigate(`/mentor/${mentor._id}`)}
+                    className="flex flex-col items-center  transition-transform duration-300 hover:scale-105"
+                    // onClick={() => navigate(`/mentor/${mentor._id}`)}
                   >
                     {/* Circular Profile Image */}
                     <div className="mb-4 relative">

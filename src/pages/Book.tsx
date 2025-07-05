@@ -6,6 +6,8 @@ import { Book as BookIcon, BookOpen, ChevronRight, Search } from "lucide-react";
 import BookCard, { type Book as BookType } from "@/components/BookCard";
 import heroimage from "../Assets/Vector.png"; // Import the same hero image used in Course page
 
+import { Link } from "react-router-dom";
+
 const Book: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,7 +39,7 @@ const Book: React.FC = () => {
   ];
 
   // Filter books by search term
-  const filteredBooks = books.filter(book => 
+  const filteredBooks = books.filter(book =>
     book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.topic.toLowerCase().includes(searchTerm.toLowerCase())
@@ -46,7 +48,7 @@ const Book: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       {/* Hero Section - Exactly matching the Course page */}
       <section className="relative bottom-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -123,7 +125,7 @@ const Book: React.FC = () => {
                   <option>Newest</option>
                 </select>
               </div>
-              
+
               <div>
                 <label
                   htmlFor="topic"
@@ -160,7 +162,7 @@ const Book: React.FC = () => {
                   Available Books {filteredBooks.length > 0 && `(${filteredBooks.length})`}
                 </h2>
               </div>
-              
+
               {filteredBooks.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {filteredBooks.map((book) => (
@@ -186,12 +188,12 @@ const Book: React.FC = () => {
           <p className="text-gray-700 mb-5">
             Our collection is constantly growing. Check back regularly for new books and educational materials.
           </p>
-          <Button className="bg-[#8A63FF] hover:bg-[#7A53EF]">
-            Contact STARC Team
+          <Button asChild className="bg-[#8A63FF] hover:bg-[#7A53EF] px-4 py-2 rounded-md text-white">
+            <Link to="/contact">Contact Edifai Team</Link>
           </Button>
         </div>
       </section>
-      
+
       <Footer />
     </div>
   );

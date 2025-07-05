@@ -318,7 +318,7 @@ export default function CoursesSection() {
 
         {/* Category Pills - Enhanced mobile scrolling */}
         <div className="relative mb-6 sm:mb-8">
-          <div className="flex overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center sm:gap-2 no-scrollbar">
+          <div className="flex  overflow-x-auto pb-3 pt-3  scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center sm:gap-2 no-scrollbar">
             {categories.map((category) => (
               <motion.button
                 key={category.id}

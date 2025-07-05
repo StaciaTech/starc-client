@@ -65,7 +65,7 @@ const WhyChoose: React.FC = () => {
                   <video
                     className="absolute top-0 left-0 w-full h-full object-cover"
                     poster={star} // Use image as poster until video loads
-                    controls
+                    loop
                     preload="metadata"
                     onLoadedData={() => setVideoLoaded(true)}
                     onError={(e) => {
