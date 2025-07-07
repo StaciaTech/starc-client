@@ -1,16 +1,80 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import aboutvideo from "../Assets/about-video/Backend web development - a complete overview.mp4";
+import { Play, Pause, RotateCcw, RotateCw } from "lucide-react";
 
 export default function TeamShipSection() {
-  const videoRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [showVideo, setShowVideo] = useState(false);
-  const defaultVideoURL = { aboutvideo }; // Default video URL
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const handlePlay = () => {
     setShowVideo(true);
     setTimeout(() => {
-      videoRef.current?.play();
+      if (videoRef.current) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
     }, 100);
+  };
+
+  const handleTogglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!videoRef.current || !duration) return;
+    const bar = e.currentTarget;
+    const clickX = e.nativeEvent.offsetX;
+    const newTime = (clickX / bar.clientWidth) * duration;
+    videoRef.current.currentTime = newTime;
+  };
+
+  const handleSkip = (seconds: number) => {
+    if (videoRef.current) {
+      let newTime = videoRef.current.currentTime + seconds;
+      if (newTime < 0) newTime = 0;
+      if (newTime > duration) newTime = duration;
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
+  // update progress and times
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const updateProgress = () => {
+      setProgress((video.currentTime / video.duration) * 100);
+      setCurrentTime(video.currentTime);
+      setDuration(video.duration);
+    };
+
+    video.addEventListener("timeupdate", updateProgress);
+    video.addEventListener("loadedmetadata", updateProgress);
+    return () => {
+      video.removeEventListener("timeupdate", updateProgress);
+      video.removeEventListener("loadedmetadata", updateProgress);
+    };
+  }, [showVideo]);
+
+  // format time nicely
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00";
+    const min = Math.floor(seconds / 60);
+    const sec = Math.floor(seconds % 60);
+    return `${min}:${sec < 10 ? "0" : ""}${sec}`;
   };
 
   return (
@@ -36,7 +100,7 @@ export default function TeamShipSection() {
             </div>
           </div>
         </div>
-        
+
         {/* Video Block */}
         <div className="w-full flex justify-center items-center mt-4 sm:mt-6">
           <div className="flex flex-col space-y-4 relative rounded-2xl overflow-hidden shadow-lg w-full sm:w-[90%] md:w-[85%] lg:w-[80%] aspect-video">
@@ -47,7 +111,6 @@ export default function TeamShipSection() {
                   alt="Team Thumbnail"
                   className="object-cover rounded-xl w-full h-full"
                 />
-
                 <button
                   onClick={handlePlay}
                   className="absolute inset-0 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 3xl:text-4xl flex items-center justify-center bg-black/40 text-white font-medium rounded-xl"
@@ -56,14 +119,66 @@ export default function TeamShipSection() {
                 </button>
               </div>
             )}
+
             {showVideo && (
-              <div className="w-full h-full aspect-video">
+              <div
+                className="relative w-full h-full aspect-video rounded-xl overflow-hidden"
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+              >
                 <video
                   ref={videoRef}
                   src={aboutvideo}
-                  controls
                   className="w-full h-full object-cover rounded-xl"
                 />
+
+                {/* Play/Pause */}
+                {hovered && (
+                  <button
+                    onClick={handleTogglePlay}
+                    className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition text-white rounded-xl"
+                  >
+                    {isPlaying ? <Pause size={60} /> : <Play size={60} />}
+                  </button>
+                )}
+
+                {/* Progress Bar with seeking */}
+                {hovered && (
+                  <div
+                    className="absolute bottom-2 left-0 right-0 h-2 bg-gray-300 rounded-full mx-4 overflow-hidden cursor-pointer"
+                    onClick={handleSeek}
+                  >
+                    <div
+                      className="h-full bg-[#8A63FF] transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                )}
+
+                {/* Timer in bottom-right */}
+                {hovered && (
+                  <div className="absolute bottom-4 right-4 text-xs text-white bg-black/50 px-2 py-1 rounded">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+                )}
+
+                {/* 10 sec skip controls */}
+                {hovered && (
+                  <>
+                    <button
+                      className="absolute bottom-4 left-4 text-white bg-black/50 p-2 rounded-full hover:bg-black/70 transition"
+                      onClick={() => handleSkip(-10)}
+                    >
+                      <RotateCcw size={20} /> -10s
+                    </button>
+                    <button
+                      className="absolute bottom-4 left-20 text-white bg-black/50 p-2 rounded-full hover:bg-black/70 transition"
+                      onClick={() => handleSkip(10)}
+                    >
+                      <RotateCw size={20} /> +10s
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -71,8 +186,7 @@ export default function TeamShipSection() {
       </div>
 
       <p className="text-center text-gray-900 font-mont mt-6 sm:mt-8 md:mt-10 text-sm sm:text-base md:text-lg">
-        Experience the Stellar difference and unlock the true potential of your
-        online
+        Experience the Stellar difference and unlock the true potential of your online
       </p>
     </section>
   );

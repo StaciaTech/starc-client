@@ -198,7 +198,7 @@ const App: React.FC = () => {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/learning/overview" element={<LearningOverview />} />
+                <Route path="/learning/overview" element={<LearningOverview />}  />
                 <Route path="/course/:id" element={<ProtectedRoute><CardDetail /></ProtectedRoute>} />
                 <Route path="/course/:id/learn" element={<ProtectedRoute><LearningModule /></ProtectedRoute>} />
                 <Route path="/course/:id/learning" element={<LearningModule />} />
