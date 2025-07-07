@@ -6,6 +6,8 @@ import { Book as BookIcon, BookOpen, ChevronRight, Search } from "lucide-react";
 import BookCard, { type Book as BookType } from "@/components/BookCard";
 import heroimage from "../Assets/Vector.png"; // Import the same hero image used in Course page
 
+import { Link } from "react-router-dom";
+
 const Book: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -287,8 +289,8 @@ const Book: React.FC = () => {
             Our collection is constantly growing. Check back regularly for new
             books and educational materials.
           </p>
-          <Button className="bg-[#8A63FF] hover:bg-[#7A53EF]">
-            Contact STARC Team
+          <Button asChild className="bg-[#8A63FF] hover:bg-[#7A53EF] px-4 py-2 rounded-md text-white">
+            <Link to="/contact">Contact Edifai Team</Link>
           </Button>
         </div>
       </section>
