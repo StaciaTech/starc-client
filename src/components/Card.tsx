@@ -179,7 +179,7 @@ const Recard: React.FC<CardProps> = ({ course }) => {
   // Apply different styling for books vs courses
   const cardStyle = isBookOrPDF
     ? "bg-white rounded-xl flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer w-full max-w-[280px] h-[420px] border border-gray-100"
-    : "bg-white rounded-xl flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer w-full sm:w-[180px] md:w-[200px] lg:w-[220px] xl:w-[240px] 2xl:w-[280px] h-full border border-gray-100";
+    : "bg-white rounded-xl flex flex-col shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer w-full sm:w-[180px] md:w-[200px] lg:w-[220px] xl:w-[240px] 2xl:w-[380px]  h-full border border-gray-100";
 
   // Only show badges that are NOT "AI Generated"
   const displayBadge = course.badge && course.badge !== "AI Generated";

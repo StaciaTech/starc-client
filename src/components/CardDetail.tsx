@@ -1,3 +1,5 @@
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import WallOfLove from './WallOfLove';
 import PurpleBox from './PurpleBox';
@@ -19,7 +21,7 @@ import { IoArrowBack } from 'react-icons/io5'; // Importing the left arrow icon
 import Navbar from './Navbar';
 import SubmissionSuccess from './SubmissionSuccess';
 import courseService, { ICourse } from '@/services/courseService';
-import { getEnrolledCourses } from '@/services/profileService';
+import { getEnrolledCourses, getUserCourseDetails } from '@/services/profileService';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -31,6 +33,7 @@ const CardDetail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
+  const [hasStartedLearning, setHasStartedLearning] = useState<boolean>(false); // New state for tracking if learning has started
   const [checkingEnrollment, setCheckingEnrollment] = useState<boolean>(true);
 
   useEffect(() => {
@@ -57,13 +60,32 @@ const CardDetail: React.FC = () => {
         console.log('Course data fetched successfully:', courseData);
         setCourse(courseData);
         
-        // Check if user is already enrolled
+        // Check if user is already enrolled and their progress
         try {
           setCheckingEnrollment(true);
           const enrolledCourses = await getEnrolledCourses();
           const enrolled = enrolledCourses.some((course: any) => course.id === id);
           console.log('User enrollment status:', enrolled ? 'Enrolled' : 'Not enrolled');
           setIsEnrolled(enrolled);
+
+          if (enrolled) {
+            // Fetch user progress to determine if they've started learning
+            try {
+              const userCourseDetails = await getUserCourseDetails(id);
+              console.log('User course details:', userCourseDetails);
+              // Consider the user as having started learning if progress > 0 or any sections are completed
+              const hasProgress = userCourseDetails && (
+                (userCourseDetails.progress && userCourseDetails.progress > 0) ||
+                (userCourseDetails.completedSections && userCourseDetails.completedSections.length > 0) ||
+                (userCourseDetails.completedQuizzes && userCourseDetails.completedQuizzes.length > 0)
+              );
+              setHasStartedLearning(hasProgress);
+              console.log('Has started learning:', hasProgress);
+            } catch (progressErr) {
+              console.error('Error fetching user progress:', progressErr);
+              setHasStartedLearning(false); // Default to false if progress can't be fetched
+            }
+          }
         } catch (enrollmentErr) {
           console.error('Error checking enrollment status:', enrollmentErr);
           // If we can't check enrollment, assume not enrolled
@@ -103,14 +125,42 @@ const CardDetail: React.FC = () => {
     navigate('/course');
   };
 
-  // Add this function to handle continue learning
+  // Handle continue or start learning
   const handleContinueLearning = () => {
     navigate(`/course/${id}/learn`);
   };
 
-  // Add this function to navigate to assignments
+  // Handle navigation to assignments
   const handleViewAssignments = () => {
     navigate(`/course/${id}/assignments`);
+  };
+
+  // Helper function for direct enrollment
+  const handleDirectEnroll = async () => {
+    try {
+      const courseId = window.location.pathname.split('/').pop();
+      if (!courseId) return;
+      
+      await courseService.enrollInCourse(courseId);
+      toast.success("Successfully enrolled in course!");
+      window.location.href = `/course/${courseId}/learn`;
+    } catch (error: any) {
+      console.error("Error enrolling in course:", error);
+      
+      // Check if this is the "already enrolled" error
+      if (error.response && error.response.status === 400 && 
+          error.response.data && error.response.data.message === 'User already enrolled in this course') {
+        toast.info("You're already enrolled in this course. Redirecting to learning page...");
+        
+        // Wait a moment to show the message before redirecting
+        const courseId = window.location.pathname.split('/').pop();
+        setTimeout(() => {
+          window.location.href = `/course/${courseId}/learn`;
+        }, 1500);
+      } else {
+        toast.error("Failed to enroll in course. Please try again.");
+      }
+    }
   };
 
   if (loading) {
@@ -119,6 +169,7 @@ const CardDetail: React.FC = () => {
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center">
+            <Spinner />
             <p className="mt-4 text-gray-600">Loading course details...</p>
           </div>
         </div>
@@ -135,12 +186,12 @@ const CardDetail: React.FC = () => {
             <div className="text-red-500 text-xl mb-4">
               {error || 'Course not found'}
             </div>
-            <button
+            <Button
               onClick={handleGoBack}
               className="bg-[#8A63FF] text-white px-4 py-2 rounded-lg hover:bg-[#6D28D9] transition"
             >
               Go Back
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -176,7 +227,7 @@ const CardDetail: React.FC = () => {
           onClick={isEnrolled ? handleContinueLearning : handleDirectEnroll}
           className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition"
         >
-          {isEnrolled ? "Continue Learning" : "Enroll Now"}
+          {isEnrolled ? (hasStartedLearning ? "Continue Learning" : "Start Learning") : "Enroll Now"}
         </Button>
       </div>
 
@@ -186,15 +237,14 @@ const CardDetail: React.FC = () => {
         <div className="w-full lg:w-2/3 p-4 lg:p-20">
           {/* Supervised Course Tag with Back Arrow */}
           <div className="mb-4 flex flex-wrap items-center gap-2 lg:gap-3">
-            
             {/* Back Button */}
-            <button
+            <Button
               onClick={handleGoBack}
               className="flex items-center bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full hover:bg-[#6D28D9] transition"
             >
               <IoArrowBack className="mr-1" />
               Back
-            </button>
+            </Button>
             {/* Supervised Course Tag */}
             <span className="inline-block bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full">
               {course.level.charAt(0).toUpperCase() + course.level.slice(1)} Level
@@ -227,7 +277,7 @@ const CardDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* --------------- */}
+          {/* Course Content */}
           <div className="bg-white p-4 lg:p-16 shadow-[0_0_10px_0_rgba(0,0,0,0.2)] rounded-lg">
             {/* What You'll Learn Section */}
             <div className="mb-6 lg:mb-8">
@@ -275,7 +325,7 @@ const CardDetail: React.FC = () => {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={Behance} alt="" className="w-12 h-10" />
+                    <img src={Behance} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Behance Profile</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -284,14 +334,14 @@ const CardDetail: React.FC = () => {
                 </div>
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={linkedin} alt="" className="w-12 h-10" />
+                    <img src={linkedin} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">LinkedIn Profile</p>
                   <p className="text-gray-500 text-xs lg:text-sm">Highlight skills, projects</p>
                 </div>
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={resume} alt="" className="w-10 h-10" />
+                    <img src={resume} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Resume Building</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -300,7 +350,7 @@ const CardDetail: React.FC = () => {
                 </div>
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={interview} alt="" className="w-10 h-10" />
+                    <img src={interview} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Interview Prep</p>
                   <p className="text-gray-500 text-xs lg:text-sm">Mock interviews, feedback</p>
@@ -315,8 +365,8 @@ const CardDetail: React.FC = () => {
               <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF] mb-4">What You'll Get</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={coc} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={coc} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Certificate</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -324,8 +374,8 @@ const CardDetail: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={reference} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={reference} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Reference Materials</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -333,8 +383,8 @@ const CardDetail: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={skill} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={skill} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Skill Assessment</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -342,8 +392,8 @@ const CardDetail: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={mentor} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={mentor} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Mentorship</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -362,7 +412,7 @@ const CardDetail: React.FC = () => {
                   onClick={handleContinueLearning}
                   className="bg-[#8A63FF] text-white hover:bg-[#7A53EF]"
                 >
-                  Continue Learning
+                  {hasStartedLearning ? "Continue Learning" : "Start Learning"}
                 </Button>
                 <Button 
                   onClick={handleViewAssignments}
@@ -406,7 +456,7 @@ const CardDetail: React.FC = () => {
                 onClick={handleContinueLearning}
                 className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition mb-4"
               >
-                Continue Learning
+                {hasStartedLearning ? "Continue Learning" : "Start Learning"}
               </Button>
             </div>
           ) : (
@@ -432,34 +482,6 @@ const CardDetail: React.FC = () => {
       <Footer />
     </div>
   );
-};
-
-// Helper function for direct enrollment (to use in the mobile button)
-const handleDirectEnroll = async () => {
-  try {
-    const courseId = window.location.pathname.split('/').pop();
-    if (!courseId) return;
-    
-    await courseService.enrollInCourse(courseId);
-    toast.success("Successfully enrolled in course!");
-    window.location.href = `/course/${courseId}/learn`;
-  } catch (error: any) {
-    console.error("Error enrolling in course:", error);
-    
-    // Check if this is the "already enrolled" error
-    if (error.response && error.response.status === 400 && 
-        error.response.data && error.response.data.message === 'User already enrolled in this course') {
-      toast.info("You're already enrolled in this course. Redirecting to learning page...");
-      
-      // Wait a moment to show the message before redirecting
-      const courseId = window.location.pathname.split('/').pop();
-      setTimeout(() => {
-        window.location.href = `/course/${courseId}/learn`;
-      }, 1500);
-    } else {
-      toast.error("Failed to enroll in course. Please try again.");
-    }
-  }
 };
 
 export default CardDetail;

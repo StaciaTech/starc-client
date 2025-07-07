@@ -7,7 +7,8 @@ import WallOfLove from "@/components/WallOfLove";
 import PurpleBox from "@/components/PurpleBox";
 import TeamShip from "@/components/TeamShip";
 import StarcTeam from "@/components/StarcTeam";
-import woman from "../Assets/woman.png";
+import about1 from "../Assets/a1.png";
+import about2 from "../Assets/a3.png";
 import world from "../Assets/world.png";
 import trust from "../Assets/trust.png";
 import award from "../Assets/award.png";
@@ -18,6 +19,8 @@ import promote from "../Assets/promote.svg";
 import foster from "../Assets/foster.svg";
 import provide from "../Assets/provide.svg";
 import group from "../Assets/Group.svg";
+import Image1 from '../Assets/img-1.jpg'
+import Image2 from '../Assets/img-2.jpg'
 
 const About = () => {
   const stats = [
@@ -136,14 +139,14 @@ const About = () => {
               {/* Main Image */}
               <div className="flex justify-center md:justify-start">
                 <img
-                  src={woman}
+                  src={about1}
                   alt="Team"
                   className="w-[220px] h-[150px] sm:w-[250px] sm:h-[170px] lg:w-[290px] lg:h-[179px] xl:w-[330px] xl:h-[199px] 2xl:w-[454px] 2xl:h-[284px] 3xl:w-[584px] 3xl:h-[364px] rounded-xl shadow-lg z-10"
                 />
 
                 {/* Overlapping Image */}
                 <img
-                  src={woman}
+                  src={about2}
                   alt="Team 2"
                   className="absolute w-[180px] h-[120px] sm:w-[200px] sm:h-[140px] lg:w-[220px] lg:h-[149px] top-[30%] left-[25%] sm:top-[30%] sm:left-[25%] lg:top-[35%] lg:left-[25%] xl:w-[250px] xl:h-[160px] xl:top-[30%] xl:left-[25%] 2xl:top-[35%] 2xl:left-[25%] 2xl:h-[200px] 2xl:w-[328px] 3xl:top-[40%] 3xl:left-[28%] 3xl:h-[245px] 3xl:w-[428px] rounded-xl shadow-lg border-4 border-white z-20"
                 />
@@ -219,7 +222,7 @@ const About = () => {
 
       {/* Achievements Section */}
       <section className="py-12 sm:py-16 md:py-20 flex justify-center bg-white w-full">
-        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[900px] xl:w-[1000px] 2xl:w-[1200px] 3xl:w-[1596px]">
+        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[900px] xl:w-[1000px] 2xl:w-[1200px] 3xl:w-[1596px] ">
           <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
             <h2
               className="text-2xl sm:text-3xl md:text-4xl font-mont font-medium text-gray-900 mb-2 sm:mb-3 md:mb-4 xl:text-[30px] 2xl:text-[30px] 3xl:text-[40px]"
@@ -236,7 +239,7 @@ const About = () => {
             </p>
           </div>
 
-          <div className="flex flex-col md:flex-row flex-wrap 3xl:p-10 2xl:p-10">
+          <div className="flex flex-col md:flex-row flex-wrap 3xl:p-10 2 xl:p-10">
             {/* left side */}
             <div className="w-full md:w-1/2 space-y-8 sm:space-y-10 mb-5">
               <div className="flex flex-col space-y-3 sm:space-y-4 items-start 3xl:w-[683px] 2xl:w-[400px]">
@@ -249,8 +252,7 @@ const About = () => {
                   </h3>
                   <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
                     Our platform has earned the confidence of a vast and growing
-                    community of learners worldwide, a testament to our quality
-                    and reliability.
+                    community of learners worldwide.
                   </p>
                 </div>
               </div>
