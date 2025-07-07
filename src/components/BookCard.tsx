@@ -12,6 +12,7 @@ export interface Book {
   coverImage: string;
   driveUrl: string;
   rating: number;
+  publishedYear:number;
   pages: number;
   description?: string;
 }

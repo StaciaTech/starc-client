@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { ErrorInfo, ReactNode, createContext, useState, useEffect, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -198,7 +199,7 @@ const App: React.FC = () => {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/learning/overview" element={<LearningOverview />} />
+                <Route path="/learning/overview" element={<LearningOverview />}  />
                 <Route path="/course/:id" element={<ProtectedRoute><CardDetail /></ProtectedRoute>} />
                 <Route path="/course/:id/learn" element={<ProtectedRoute><LearningModule /></ProtectedRoute>} />
                 <Route path="/course/:id/learning" element={<LearningModule />} />
