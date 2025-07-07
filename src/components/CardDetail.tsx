@@ -275,7 +275,7 @@ const CardDetail: React.FC = () => {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={Behance} alt="" className="w-12 h-10" />
+                    <img src={Behance} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Behance Profile</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -284,14 +284,14 @@ const CardDetail: React.FC = () => {
                 </div>
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={linkedin} alt="" className="w-12 h-10" />
+                    <img src={linkedin} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">LinkedIn Profile</p>
                   <p className="text-gray-500 text-xs lg:text-sm">Highlight skills, projects</p>
                 </div>
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={resume} alt="" className="w-10 h-10" />
+                    <img src={resume} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Resume Building</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -300,7 +300,7 @@ const CardDetail: React.FC = () => {
                 </div>
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center">
-                    <img src={interview} alt="" className="w-10 h-10" />
+                    <img src={interview} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Interview Prep</p>
                   <p className="text-gray-500 text-xs lg:text-sm">Mock interviews, feedback</p>
@@ -315,8 +315,8 @@ const CardDetail: React.FC = () => {
               <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF] mb-4">What You'll Get</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={coc} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={coc} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Certificate</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -324,8 +324,8 @@ const CardDetail: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={reference} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={reference} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Reference Materials</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -333,8 +333,8 @@ const CardDetail: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={skill} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={skill} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Skill Assessment</p>
                   <p className="text-gray-500 text-xs lg:text-sm">
@@ -342,8 +342,8 @@ const CardDetail: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={mentor} alt="" className="w-10 h-10" />
+                  <div className="flex items-center justify-center ">
+                    <img src={mentor} alt="" className="w-12 h-12" />
                   </div>
                   <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">Mentorship</p>
                   <p className="text-gray-500 text-xs lg:text-sm">

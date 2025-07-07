@@ -14,7 +14,7 @@ import "react-toastify/dist/ReactToastify.css";
 import api from "../lib/api";
 
 // The email address where form submissions will be sent
-const CONTACT_EMAIL = "contact@edifai.com";
+const CONTACT_EMAIL = "contactus@staciacorp.com";
 
 const Contact = () => {
   // Form state

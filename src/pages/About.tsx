@@ -7,7 +7,8 @@ import WallOfLove from "@/components/WallOfLove";
 import PurpleBox from "@/components/PurpleBox";
 import TeamShip from "@/components/TeamShip";
 import StarcTeam from "@/components/StarcTeam";
-import woman from "../Assets/woman.png";
+import about1 from "../Assets/a1.png";
+import about2 from "../Assets/a3.png";
 import world from "../Assets/world.png";
 import trust from "../Assets/trust.png";
 import award from "../Assets/award.png";
@@ -136,14 +137,14 @@ const About = () => {
               {/* Main Image */}
               <div className="flex justify-center md:justify-start">
                 <img
-                  src={woman}
+                  src={about1}
                   alt="Team"
                   className="w-[220px] h-[150px] sm:w-[250px] sm:h-[170px] lg:w-[290px] lg:h-[179px] xl:w-[330px] xl:h-[199px] 2xl:w-[454px] 2xl:h-[284px] 3xl:w-[584px] 3xl:h-[364px] rounded-xl shadow-lg z-10"
                 />
 
                 {/* Overlapping Image */}
                 <img
-                  src={woman}
+                  src={about2}
                   alt="Team 2"
                   className="absolute w-[180px] h-[120px] sm:w-[200px] sm:h-[140px] lg:w-[220px] lg:h-[149px] top-[30%] left-[25%] sm:top-[30%] sm:left-[25%] lg:top-[35%] lg:left-[25%] xl:w-[250px] xl:h-[160px] xl:top-[30%] xl:left-[25%] 2xl:top-[35%] 2xl:left-[25%] 2xl:h-[200px] 2xl:w-[328px] 3xl:top-[40%] 3xl:left-[28%] 3xl:h-[245px] 3xl:w-[428px] rounded-xl shadow-lg border-4 border-white z-20"
                 />
