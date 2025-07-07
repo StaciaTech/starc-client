@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X,Maximize,Minimize } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface BookViewProps {
@@ -13,6 +13,7 @@ const BookView: React.FC<BookViewProps> = ({ driveUrl, title, onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isFullScreen,setIsFullScreen] = useState(false)
 
   // Check if URL is a Google Docs link
   const isGoogleDocs = driveUrl.includes('docs.google.com/document');
@@ -127,6 +128,24 @@ const BookView: React.FC<BookViewProps> = ({ driveUrl, title, onClose }) => {
     };
   }, []);
 
+  const handleToggleFullScreen = () =>{
+    const element=  iframeRef.current?.parentElement; // wrapper dive arround iframe
+
+    if(!element) return;
+
+    if(!document.fullscreenElement){
+      element.requestFullscreen().then(()=>{
+        setIsFullScreen(true);
+      }).catch((err)=>{
+        console.log("Fullscreen error",err)
+      });
+    }else{
+      document.exitFullscreen().then(()=>{
+        setIsFullScreen(false)
+      })
+    }
+  }
+
   return (
     <AnimatePresence>
       <motion.div
@@ -146,13 +165,27 @@ const BookView: React.FC<BookViewProps> = ({ driveUrl, title, onClose }) => {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          {/* <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-xl font-semibold text-gray-800 truncate">{title}</h3>
             <div className="flex space-x-2">
               <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">
                 <X size={20} />
               </Button>
             </div>
+          </div> */}
+
+          <div className="flex space-x-2">
+            <Button
+            variant='ghost'
+            size='sm'
+            onClick={handleToggleFullScreen}
+            aria-label='Toggle Fullscreen'
+            >
+              {isFullScreen ? <Minimize size={20}/> : <Maximize size={20}/>}
+            </Button>
+            <Button variant='ghost' size='sm' onClick={onClose} aria-label='Close'>
+                <X size={20}/>
+            </Button>
           </div>
 
           {/* Content */}
@@ -198,10 +231,10 @@ const BookView: React.FC<BookViewProps> = ({ driveUrl, title, onClose }) => {
                   title={`${title} Viewer`}
                 />
                 {/* Overlay to block interactions with specific parts of the iframe */}
-                <div 
+                {/* <div 
                   className="absolute top-0 right-0 w-16 h-16 z-10 bg-transparent cursor-default"
                   onClick={(e) => e.preventDefault()}
-                />
+                /> */}
               </div>
             )}
             

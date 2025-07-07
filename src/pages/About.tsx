@@ -19,6 +19,8 @@ import promote from "../Assets/promote.svg";
 import foster from "../Assets/foster.svg";
 import provide from "../Assets/provide.svg";
 import group from "../Assets/Group.svg";
+import Image1 from '../Assets/img-1.jpg'
+import Image2 from '../Assets/img-2.jpg'
 
 const About = () => {
   const stats = [
@@ -220,7 +222,7 @@ const About = () => {
 
       {/* Achievements Section */}
       <section className="py-12 sm:py-16 md:py-20 flex justify-center bg-white w-full">
-        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[900px] xl:w-[1000px] 2xl:w-[1200px] 3xl:w-[1596px]">
+        <div className="w-full px-4 sm:px-8 md:px-12 lg:w-[900px] xl:w-[1000px] 2xl:w-[1200px] 3xl:w-[1596px] ">
           <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12">
             <h2
               className="text-2xl sm:text-3xl md:text-4xl font-mont font-medium text-gray-900 mb-2 sm:mb-3 md:mb-4 xl:text-[30px] 2xl:text-[30px] 3xl:text-[40px]"
@@ -237,7 +239,7 @@ const About = () => {
             </p>
           </div>
 
-          <div className="flex flex-col md:flex-row flex-wrap 3xl:p-10 2xl:p-10">
+          <div className="flex flex-col md:flex-row flex-wrap 3xl:p-10 2 xl:p-10">
             {/* left side */}
             <div className="w-full md:w-1/2 space-y-8 sm:space-y-10 mb-5">
               <div className="flex flex-col space-y-3 sm:space-y-4 items-start 3xl:w-[683px] 2xl:w-[400px]">
@@ -250,8 +252,7 @@ const About = () => {
                   </h3>
                   <p className="text-gray-600 text-sm sm:text-base 3xl:text-[20px] 2xl:text-[16px] 3xl:w-[100%] lg:text-[15px]">
                     Our platform has earned the confidence of a vast and growing
-                    community of learners worldwide, a testament to our quality
-                    and reliability.
+                    community of learners worldwide.
                   </p>
                 </div>
               </div>
