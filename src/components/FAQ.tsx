@@ -10,31 +10,36 @@ const FAQ: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const faqs: FAQItem[] = [
-    {
-      question: "Why do I need to use a Design System?",
-      answer:
-        "A Design System is a super useful tool for designers. It helps keep designs consistent and makes the user process faster. You can use pre-designed stuff over and over, and it's helpful for both new and experienced designers. In short, a Design System is like a designer's toolbox for making great-looking and user-friendly designs.",
-    },
-    {
-      question: "Is there a preview or a free trial available?",
-      answer:
-        "Yes, we offer a free trial for you to explore the features of our Design System before committing to a purchase. Sign up on our website to get started!",
-    },
-    {
-      question: "Where can I purchase AlignUI Design System?",
-      answer:
-        "You can purchase the AlignUI Design System directly from our official website. Visit the pricing page for more details and to complete your purchase.",
-    },
-    {
-      question: "What are the recent updates and enhancements in AlignUI?",
-      answer:
-        "We regularly update AlignUI with new components, improved accessibility, and enhanced performance. Check our changelog on the website for the latest updates.",
-    },
-    {
-      question: "How do I install AlignUI Design System in Figma?",
-      answer:
-        "To install AlignUI in Figma, visit our website and download the design kit. Follow the step-by-step instructions in the documentation to import it into Figma.",
-    },
+   {
+    question: "What is the EDIFAI platform used for?",
+    answer:
+      "EDIFAI is an all-in-one learning platform designed to help learners access high-quality courses in Full Stack Development, Mechanical Engineering, UI/UX Design, and IoT. It offers structured learning paths, resources, and design tools to help users build career-ready skills.",
+  },
+  {
+    question: "How do I use the EDIFAI platform as a learner?",
+    answer:
+      "To use EDIFAI, simply create an account, log in, and navigate to the Courses or Books section. You can browse by category, view course details, and start learning right from your dashboard.",
+  },
+  {
+    question: "What types of content are included in a course?",
+    answer:
+      "Each course includes video lessons, downloadable resources, quizzes, and practical projects. Some also come with software or hardware setup guides (especially for Mechanical and IoT topics).",
+  },
+  {
+    question: "Does EDIFAI support filtering courses by domain?",
+    answer:
+      "Yes, EDIFAI allows you to filter courses based on categories like IoT, UI/UX, Full Stack, and Mechanical Engineering, so you can quickly find content relevant to your interests.",
+  },
+  {
+    question: "Are there any free courses or trial options available?",
+    answer:
+      "Yes, some introductory courses like 'Comprehensive Full Stack Development Program' are available for free. This allows learners to explore the platform before purchasing paid courses.",
+  },
+  {
+    question: "Who can benefit from using EDIFAI?",
+    answer:
+      "EDIFAI is built for students, early professionals, and career-switchers in tech, engineering, and design fields. Whether you're a beginner or looking to upskill, EDIFAI provides tools and content tailored for your growth.",
+  },
   ];
 
   const toggleFAQ = (index: number) => {

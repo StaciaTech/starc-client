@@ -109,11 +109,11 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
-              className="w-[100px] sm:w-[120px] md:w-[130px] lg:w-[150px] xl:w-[160px] 2xl:w-[160px] 3xl:w-[160px] 
+              className="w-[100px] sm:w-[120px] md:w-[130px] lg:w-[150px] xl:w-[160px] 2xl:w-[160px] 3xl:w-[200px] 
                          h-[25px] sm:h-[28px] md:h-[30px] lg:h-[35px] xl:h-[38px] 2xl:h-[38px] 3xl:h-[38px] 
                          flex justify-center items-center bg-[#8A63FF] text-white 
                          text-[8px] sm:text-[9px] md:text-[10px] lg:text-[12px] xl:text-[13px] 2xl:text-[13px] 3xl:text-[13px] 
-                         font-semibold rounded-full mb-3 sm:mb-4 lg:mb-6 xl:mb-6 shadow-md"
+                         font-semibold rounded-full mb-3 sm:mb-4 lg:mb-6 xl:mb-6 shadow-md cursor-pointer"
             >
               SUPERVISED COURSES
             </motion.span>

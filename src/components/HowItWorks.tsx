@@ -4,7 +4,8 @@ import Purplegradient from "../Assets/Purplegradient.png"
 
 // Assuming these paths are correct relative to your project structure
 // and that your bundler (e.g., Vite, Create React App, Next.js) handles them.
-import girlpic from "../Assets/girl.jpg";
+import girlpic1 from "../Assets/choose1.png";
+import girlpic2 from "../Assets/choose2.png";
 import avatars from "../Assets/avatar.jpg";
 import chicks from "../Assets/chick.jpg";
 import boyz from "../Assets/boy.jpg";
@@ -97,7 +98,7 @@ const HowItWorks = () => {
 
   // Handle image loading
   useEffect(() => {
-    const images = [girlpic, avatars, chicks, boyz, Purplegradient];
+    const images = [girlpic1, avatars, chicks, boyz, Purplegradient];
     let loadedCount = 0;
     
     const preloadImage = (src: string): Promise<void> => {
@@ -206,7 +207,7 @@ const HowItWorks = () => {
               <div className={`h-auto ${isTablet ? 'md:h-[50vh]' : 'md:h-[60vh]'} relative`}>
                 <div className={`h-[250px] ${isTablet ? 'md:h-[60%]' : 'md:h-[70%]'} flex items-end justify-center md:justify-end`}>
                   <img
-                    src={girlpic}
+                    src={girlpic1}
                     alt="Student working"
                     className="object-cover w-full md:w-[70%] h-full rounded-[20px]"
                     loading="lazy"
@@ -215,7 +216,7 @@ const HowItWorks = () => {
 
                 {/* User stats overlay - positioned better for mobile */}
                 <div className="flex justify-center md:justify-end mt-4 md:mt-0">
-                  <div className={`w-fit z-10 md:absolute ${isTablet ? 'md:left-[30%] md:top-[65%]' : 'md:left-[40%] md:top-[75%] lg:left-[55%] lg:top-[70%]'}`}>
+                  <div className={`w-[100%]  z-10 md:absolute ${isTablet ? 'md:left-[30%] md:top-[65%]' : 'md:left-[40%] md:top-[75%] lg:left-[55%] lg:top-[70%]'}`}>
                     <div className="bg-white/90 backdrop-blur-md rounded-xl p-3 md:p-4 flex items-center gap-2 md:gap-3 shadow-md w-fit">
                       <div className="flex -space-x-2">
                         {[avatars, chicks, boyz].map((src, index) => (
@@ -223,12 +224,12 @@ const HowItWorks = () => {
                             key={index}
                             src={src}
                             alt={`User ${index + 1}`}
-                            className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 rounded-full border-2 border-white object-cover"
+                            className="w-8 h-8 md:w-10 md:h-10 lg:w-8 lg:h-8 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14 3xl: rounded-full border-2 border-white object-cover"
                             loading="lazy"
                           />
                         ))}
                       </div>
-                      <div className="text-xs md:text-sm font-semibold text-blue-600">
+                      <div className="text-xs md:text-[10px] 2xl:text-[12px] font-semibold text-blue-600">
                         10K+<br /> <span className="text-gray-700 font-normal">Job Seekers</span>
                       </div>
                     </div>
@@ -239,7 +240,7 @@ const HowItWorks = () => {
               {/* Second column - hidden on mobile to save space */}
               <div className={`hidden md:block ${isTablet ? 'md:h-[50vh]' : 'md:h-[60vh]'}`}>
                 <img
-                  src={girlpic}
+                  src={girlpic2}
                   alt="Student 2"
                   className="object-cover w-full h-[100%] rounded-[20px]"
                   loading="lazy"
