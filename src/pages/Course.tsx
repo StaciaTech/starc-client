@@ -28,6 +28,7 @@ interface Course {
   driveUrl?: string;
   type?: string;
   id?: string;
+  createdAt?: string; // ✅ Added for sorting "Latest"
 }
 
 interface UserCourse {
@@ -45,7 +46,6 @@ const Course: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"supervised" | "unsupervised">("supervised");
 
-  // add these
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortOption, setSortOption] = useState<string>("Latest");
   const [statusFilter, setStatusFilter] = useState<string>("All Courses");
@@ -57,7 +57,7 @@ const Course: React.FC = () => {
   ]);
 
   const starcBooks = [
-    /* keep your books exactly as you wrote them */
+    // keep your books exactly as you wrote them
   ];
 
   useEffect(() => {
@@ -85,6 +85,7 @@ const Course: React.FC = () => {
           badge: course.discount ? "Sale" : undefined,
           _id: course._id,
           type: "course",
+          // createdAt: course.createdAt, // ✅ used for sorting "Latest"
         }));
         setCoursesData(formattedCourses);
         setLoading(false);
@@ -104,7 +105,6 @@ const Course: React.FC = () => {
   const applyFilters = (courses: Course[]) => {
     let filtered = courses;
 
-    // category
     if (selectedCategory !== "all") {
       filtered = filtered.filter((c) =>
         (c.category || "")
@@ -113,14 +113,12 @@ const Course: React.FC = () => {
       );
     }
 
-    // search
     if (searchQuery.trim()) {
       filtered = filtered.filter((c) =>
         c.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // status
     if (statusFilter !== "All Courses") {
       if (statusFilter === "In Progress") {
         filtered = filtered.filter((c) =>
@@ -137,7 +135,7 @@ const Course: React.FC = () => {
       }
     }
 
-    // sort
+    // ✅ Sort logic
     switch (sortOption) {
       case "Most Popular":
         filtered = filtered.slice().sort((a, b) => b.students - a.students);
@@ -151,7 +149,7 @@ const Course: React.FC = () => {
           .sort((a, b) => (b._id || "").localeCompare(a._id || ""));
         break;
       default:
-        break; // latest = keep original
+        break;
     }
 
     return filtered;
@@ -181,7 +179,7 @@ const Course: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-mont">
       <Navbar />
-      {/* Hero as you wrote */}
+      {/* Hero Section */}
       <section className="relative bottom-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex flex-col justify-center items-center">
@@ -198,7 +196,7 @@ const Course: React.FC = () => {
                 transform: "ScaleX(-1)",
               }}
             />
-            <div className="">
+            <div>
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-8">
                 Discover Our Edifai Courses
               </h1>
@@ -211,7 +209,7 @@ const Course: React.FC = () => {
         </div>
       </section>
 
-      {/* Filter Section with only functionality added */}
+      {/* Filter Section */}
       <FilterSection
         initialActiveButton="supervised"
         description={
@@ -228,7 +226,7 @@ const Course: React.FC = () => {
         onStatusFilterChange={setStatusFilter}
       />
 
-      {/* your cards + categories as you wrote them */}
+      {/* Cards Section */}
       <div className="flex justify-center mb-20">
         {loading ? (
           <div className="flex relative justify-center py-8 mb-16 xl:w-[90%]">
@@ -238,7 +236,6 @@ const Course: React.FC = () => {
           <div className="text-red-500 text-center py-8">{error}</div>
         ) : (
           <section className="flex relative justify-center py-8 mb-16 xl:w-[90%] flex-col md:flex-row">
-            {/* sidebar, no changes */}
             <section
               className="hidden md:block sticky h-[80vh] top-[90px] lg:w-[25%] overflow-y-auto px-2"
               style={{ scrollbarWidth: "thin" }}
@@ -272,18 +269,13 @@ const Course: React.FC = () => {
               </div>
             </section>
 
-            {/* course cards grid */}
             <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] gap-5 md:gap-6">
               {mode === "unsupervised" ? (
-                // when unsupervised, show enroll button instead of cards
                 <div className="w-full flex flex-col items-center justify-center py-12">
                   <h2 className="text-2xl font-bold mb-4">
                     Unlock Self-Paced Materials
                   </h2>
-                  <Button
-                    className="bg-[#8A63FF] hover:bg-[#7A53EF] text-white px-6 py-3 rounded-full"
-                    // onClick={() => navigate("/book")}
-                  >
+                  <Button className="bg-[#8A63FF] hover:bg-[#7A53EF] text-white px-6 py-3 rounded-full">
                     Enroll Now
                   </Button>
                 </div>
@@ -324,7 +316,6 @@ const Course: React.FC = () => {
   );
 };
 
-// FilterSection props expanded to handle state
 interface FilterSectionProps {
   initialActiveButton?: "supervised" | "unsupervised";
   description?: string;
@@ -412,7 +403,6 @@ const FilterSection: React.FC<FilterSectionProps> = ({
                 onChange={(e) => onSortOptionChange(e.target.value)}
                 className="w-full rounded-full border px-4 py-2"
               >
-                <option>Latest</option>
                 <option>Most Popular</option>
                 <option>Highest Rated</option>
                 <option>Newest</option>
