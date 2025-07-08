@@ -109,7 +109,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
-              className="w-[100px] sm:w-[120px] md:w-[130px] lg:w-[150px] xl:w-[160px] 2xl:w-[160px] 3xl:w-[200px] 
+              className="w-[100px] sm:w-[120px] md:w-[130px] lg:w-[160px] xl:w-[180px] 2xl:w-[190px] 3xl:w-[200px] 
                          h-[25px] sm:h-[28px] md:h-[30px] lg:h-[35px] xl:h-[38px] 2xl:h-[38px] 3xl:h-[38px] 
                          flex justify-center items-center bg-[#8A63FF] text-white 
                          text-[8px] sm:text-[9px] md:text-[10px] lg:text-[12px] xl:text-[13px] 2xl:text-[13px] 3xl:text-[13px] 
@@ -227,9 +227,9 @@ const Hero: React.FC = () => {
                 <div className="flex items-center gap-2 lg:gap-3 xl:gap-3 
                               text-xs sm:text-sm md:text-base lg:text-base xl:text-base 2xl:text-base 
                               text-gray-600 mt-3 sm:mt-0 
-                              bg-white/80 px-3 sm:px-4 lg:px-4 xl:px-4 
+                              px-3 sm:px-4 lg:px-4 xl:px-4 
                               py-1.5 sm:py-2 lg:py-1.5 xl:py-1.5 
-                              rounded-full shadow-sm">
+                              ">
                   <span className="text-base sm:text-lg md:text-xl lg:text-xl xl:text-xl 2xl:text-xl">📚</span>
                   <span className="font-medium">300+ Modules & 30+ Courses</span>
                 </div>

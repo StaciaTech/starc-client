@@ -140,7 +140,7 @@ const HowItWorks = () => {
             
             {/* Scrollable container for steps */}
             <div
-              className={`space-y-6 md:space-y-10 lg:space-y-14 max-h-[500px] ${isTablet ? 'md:max-h-[550px]' : 'md:h-[100%]'} w-full overflow-y-auto pr-2 md:pr-6 lg:pr-11 pl-2 md:pl-4`}
+              className={`space-y-6 md:space-y-10 lg:space-y-14 max-h-[500px] ${isTablet ? 'md:max-h-[550px]' : 'md:h-[100%]'} w-full overflow-y-auto pr-2  pb-6 md:pr-6 lg:pr-11 pl-2 md:pl-4`}
               style={{
                 WebkitOverflowScrolling: 'touch',
                 msOverflowStyle: 'none',
