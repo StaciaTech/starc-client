@@ -4,8 +4,8 @@ import Purplegradient from "../Assets/Purplegradient.png"
 
 // Assuming these paths are correct relative to your project structure
 // and that your bundler (e.g., Vite, Create React App, Next.js) handles them.
-import girlpic1 from "../Assets/choose1.png";
-import girlpic2 from "../Assets/choose2.png";
+import girlpic1 from "../Assets/work1.png";
+import girlpic2 from "../Assets/work2.png";
 import avatars from "../Assets/avatar.jpg";
 import chicks from "../Assets/chick.jpg";
 import boyz from "../Assets/boy.jpg";
