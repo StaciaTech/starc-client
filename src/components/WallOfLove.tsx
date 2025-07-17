@@ -165,13 +165,13 @@ const WallOfLove: React.FC = () => {
         </div>
 
         <div className="relative w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 items-start justify-center overflow-hidden h-[360px] sm:h-[400px] md:h-[480px] lg:h-[600px]">
-          <VerticalMarquee reviews={firstRow} duration="500s" />
-          <VerticalMarquee reviews={secondRow} duration="500s" reverse />
+          <VerticalMarquee reviews={firstRow} duration="700s" />
+          <VerticalMarquee reviews={secondRow} duration="700s" reverse />
           <div className="hidden md:block">
-            <VerticalMarquee reviews={thirdRow} duration="500s" />
+            <VerticalMarquee reviews={thirdRow} duration="700s" />
           </div>
           <div className="hidden lg:block">
-            <VerticalMarquee reviews={fourthRow} duration="500s" reverse />
+            <VerticalMarquee reviews={fourthRow} duration="700s" reverse />
           </div>
         </div>
       </div>
