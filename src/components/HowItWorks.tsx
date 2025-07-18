@@ -4,8 +4,8 @@ import Purplegradient from "../Assets/Purplegradient.png"
 
 // Assuming these paths are correct relative to your project structure
 // and that your bundler (e.g., Vite, Create React App, Next.js) handles them.
-import girlpic1 from "../Assets/choose1.png";
-import girlpic2 from "../Assets/choose2.png";
+import girlpic1 from "../Assets/work1.png";
+import girlpic2 from "../Assets/work2.png";
 import avatars from "../Assets/avatar.jpg";
 import chicks from "../Assets/chick.jpg";
 import boyz from "../Assets/boy.jpg";
@@ -140,7 +140,7 @@ const HowItWorks = () => {
             
             {/* Scrollable container for steps */}
             <div
-              className={`space-y-6 md:space-y-10 lg:space-y-14 max-h-[500px] ${isTablet ? 'md:max-h-[550px]' : 'md:h-[100%]'} w-full overflow-y-auto pr-2 md:pr-6 lg:pr-11 pl-2 md:pl-4`}
+              className={`space-y-6 md:space-y-10 lg:space-y-14 max-h-[500px] ${isTablet ? 'md:max-h-[550px]' : 'md:h-[100%]'} w-full overflow-y-auto pr-2  pb-6 md:pr-6 lg:pr-11 pl-2 md:pl-4`}
               style={{
                 WebkitOverflowScrolling: 'touch',
                 msOverflowStyle: 'none',

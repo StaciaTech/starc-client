@@ -7,8 +7,8 @@ import WallOfLove from "@/components/WallOfLove";
 import PurpleBox from "@/components/PurpleBox";
 import TeamShip from "@/components/TeamShip";
 import StarcTeam from "@/components/StarcTeam";
-import about1 from "../Assets/a1.png";
-import about2 from "../Assets/a3.png";
+import about1 from "../Assets/about-video/abt-1.png";
+import about2 from "../Assets/about-video/abt-2.png";
 import world from "../Assets/world.png";
 import trust from "../Assets/trust.png";
 import award from "../Assets/award.png";
@@ -169,7 +169,7 @@ const About = () => {
             <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl w-full sm:w-[90%] md:w-[80%] font-mont font-medium text-gray-900 mb-6 sm:mb-8 leading-tight">
               "Learn today, lead tomorrow"
             </h2>
-            
+
             <div className="flex justify-between w-full sm:w-[90%] md:w-[80%] lg:w-[80%] xl:w-[80%] 2xl:w-[50%] 3xl:w-[90%]">
               <div className="text-center">
                 <div className="text-2xl sm:text-3xl md:text-4xl 3xl:text-5xl font-mont font-bold bg-gradient-to-b from-[#6E51E0] to-[#8A63FFB2] bg-clip-text text-transparent">

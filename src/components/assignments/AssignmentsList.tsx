@@ -300,7 +300,7 @@ const AssignmentsList: React.FC<AssignmentsListProps> = ({ courseId }) => {
                                 <p className="text-sm">{submission.feedback}</p>
                                 {submission.grade !== undefined && (
                                   <p className="text-sm font-semibold mt-1">
-                                    Grade: {submission.grade}/100
+                                    Grade: {submission.grade}/10
                                   </p>
                                 )}
                               </div>
