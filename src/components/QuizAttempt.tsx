@@ -54,28 +54,12 @@ const QuizAttempt: React.FC = () => {
   const [quizResult, setQuizResult] = useState<IQuizResult | null>(null);
   const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
-  const [fullScreenWarning, setFullScreenWarning] = useState<boolean>(false);
-  const [showExitConfirmation, setShowExitConfirmation] =
-    useState<boolean>(false);
+  const [fullScreenWarning, setFullScreenWarning] = useState<boolean>(true);
 
   // Load quiz data
   useEffect(() => {
     const fetchQuiz = async () => {
       if (!quizId) return;
-
-      // Check if fullscreen is active
-
-      const isFullScreenActive = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
-      );
-
-      if (!isFullScreenActive) {
-        toast.error("Quiz must be opened in fullscreen mode");
-        navigate(`/course/${courseId}/learning`);
-      }
 
       try {
         setLoading(true);
@@ -92,23 +76,32 @@ const QuizAttempt: React.FC = () => {
     fetchQuiz();
   }, [quizId]);
 
-  
-
-  // request fullscreen on load
+  // Request fullscreen on load
   useEffect(() => {
     if (!loading && quiz && !quizCompleted) {
-      requestFullScreen();
+      const isFullScreenActive = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullScreen(isFullScreenActive);
+      if (!isFullScreenActive) {
+        setFullScreenWarning(true);
+      } else {
+        setFullScreenWarning(false);
+      }
     }
   }, [loading, quiz, quizCompleted]);
 
-  // push dummy state to control history
+  // Push dummy state to control history
   useEffect(() => {
     if (!loading && quiz && !quizCompleted) {
       window.history.pushState(null, "", window.location.href);
     }
   }, [loading, quiz, quizCompleted]);
 
-  // listen for fullscreen exit
+  // Listen for fullscreen exit
   useEffect(() => {
     const handleFullScreenChange = () => {
       const isCurrentlyFullScreen = !!(
@@ -119,11 +112,9 @@ const QuizAttempt: React.FC = () => {
       );
       setIsFullScreen(isCurrentlyFullScreen);
 
-      // Immediately submit quiz if the user exits full screen
       if (!isCurrentlyFullScreen && !quizCompleted && quiz) {
-        toast.error("You exited fullscreen The quiz has been terminated.");
+        toast.error("You exited fullscreen. The quiz has been terminated.");
         handleSubmitQuiz();
-        // setShowExitConfirmation(true);
       }
     };
 
@@ -150,30 +141,19 @@ const QuizAttempt: React.FC = () => {
   }, [quiz, quizCompleted]);
 
   // Prevent Tab switch
-  useEffect(()=>{
-    const handleVisibilityChange = ()=>{
-      if(document.hidden && !quizCompleted && quiz){
-        toast.error('Tab switch detected. The quiz has been terminated');
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && !quizCompleted && quiz) {
+        toast.error("Tab switch detected. The quiz has been terminated.");
         handleSubmitQuiz();
       }
-    }
-    document.addEventListener('visibilitychange',handleVisibilityChange);
-    return ()=> {
-      document.removeEventListener('visibilitychange',handleVisibilityChange);
-    }
-  },[quiz, quizCompleted]);
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [quiz, quizCompleted]);
 
-  // // catch back/forward swipe (popstate)
-  // useEffect(() => {
-  //   const handlePopState = () => {
-  //     window.history.pushState(null, '', window.location.href);
-  //     setShowExitConfirmation(true);
-  //   };
-  //   window.addEventListener('popstate', handlePopState);
-  //   return () => window.removeEventListener('popstate', handlePopState);
-  // }, [quiz, quizCompleted]);
-
-  // timer
+  // Timer
   useEffect(() => {
     if (!quiz || quizCompleted || timeRemaining <= 0) return;
     const timer = setInterval(() => {
@@ -190,7 +170,6 @@ const QuizAttempt: React.FC = () => {
   }, [quiz, quizCompleted, timeRemaining]);
 
   // Disable Right Click (Context menu)
-
   useEffect(() => {
     const handleRightClick = (e: MouseEvent) => {
       e.preventDefault();
@@ -201,11 +180,9 @@ const QuizAttempt: React.FC = () => {
   }, []);
 
   // Block Copy + Keyboard Shortcuts
-
   const blockKeyActions = (e: KeyboardEvent) => {
-    // Disable F12, Ctrl+Shift+I, Ctrl+shift+J, Ctrl+U
     if (
-      e.key == "F12" ||
+      e.key === "F12" ||
       (e.ctrlKey && e.shiftKey && ["I", "J"].includes(e.key)) ||
       (e.ctrlKey && e.key === "u")
     ) {
@@ -227,7 +204,7 @@ const QuizAttempt: React.FC = () => {
       document.removeEventListener("cut", disableCopyPaste);
       document.removeEventListener("paste", disableCopyPaste);
     };
-  },[]);
+  }, []);
 
   const requestFullScreen = () => {
     if (containerRef.current) {
@@ -242,6 +219,7 @@ const QuizAttempt: React.FC = () => {
           (containerRef.current as any).msRequestFullscreen();
         }
         setFullScreenWarning(false);
+        setIsFullScreen(true);
       } catch (err) {
         console.error("Error requesting fullscreen:", err);
         toast.error("Failed to enter fullscreen mode. Please try again.");
@@ -363,6 +341,7 @@ const QuizAttempt: React.FC = () => {
       <div className="text-center p-8" ref={containerRef}>
         <h2 className="text-xl font-semibold mb-2">Quiz Not Found</h2>
         <p className="text-gray-600 mb-4">The quiz is not available.</p>
+        hunting = true
         <Button onClick={() => navigate(`/course/${courseId}/learning`)}>
           Back to Course
         </Button>
@@ -416,6 +395,31 @@ const QuizAttempt: React.FC = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-gray-50">
+      <Dialog open={fullScreenWarning} onOpenChange={setFullScreenWarning}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fullscreen Required</DialogTitle>
+            <DialogDescription>
+              This quiz requires fullscreen mode to proceed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => navigate(`/course/${courseId}/learning`)}
+              variant="outline"
+            >
+              Exit Quiz
+            </Button>
+            <Button
+              onClick={requestFullScreen}
+              className="bg-[#8A63FF] hover:bg-[#7A53EF]"
+            >
+              Enter Fullscreen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">{quiz.title}</h1>
@@ -431,21 +435,6 @@ const QuizAttempt: React.FC = () => {
             </Button>
           </div>
         </div>
-
-        {fullScreenWarning && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>
-              <span>This quiz requires fullscreen mode.</span>
-              <Button
-                onClick={requestFullScreen}
-                size="sm"
-                className="ml-4 bg-red-600 hover:bg-red-700"
-              >
-                Enter Fullscreen
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
 
         <Progress value={calculateProgress()} className="mb-4" />
 
@@ -510,29 +499,6 @@ const QuizAttempt: React.FC = () => {
             </Button>
           )}
         </div>
-
-        {/* exit confirmation dialog */}
-        {/* <Dialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Exit Quiz?</DialogTitle>
-            <DialogDescription>
-              Leaving this page will end your quiz attempt. Are you sure?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowExitConfirmation(false);
-              requestFullScreen();
-            }}>
-              Stay
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={handleFinishQuiz}>
-              Exit Quiz
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
       </div>
     </div>
   );
