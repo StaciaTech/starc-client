@@ -256,8 +256,8 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
     if (!selectedSubmission) return;
     
     // Validate grade if provided
-    if (grade && (isNaN(Number(grade)) || Number(grade) < 0 || Number(grade) > 100)) {
-      setFormError('Grade must be a number between 0 and 100');
+    if (grade && (isNaN(Number(grade)) || Number(grade) < 0 || Number(grade) > 10)) {
+      setFormError('Grade must be a number between 0 and 10');
       return;
     }
     
@@ -714,7 +714,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                         {format(new Date(submission.submissionDate), 'MMM d, yyyy h:mm a')}
                       </td>
                       <td className="p-2">
-                        {submission.grade !== undefined ? `${submission.grade}/100` : 'Not graded'}
+                        {submission.grade !== undefined ? `${submission.grade}/10` : 'Not graded'}
                       </td>
                       <td className="p-2 text-right">
                         <Button 
@@ -777,12 +777,12 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="grade">Grade (0-100)</Label>
+              <Label htmlFor="grade">Grade (0-10)</Label>
               <Input
                 id="grade"
                 type="number"
                 min="0"
-                max="100"
+                max="10"
                 placeholder="Grade (optional)"
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
