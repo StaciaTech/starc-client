@@ -1,11 +1,13 @@
 //Login
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { LoginSocialGoogle } from "reactjs-social-login";
 import ForgotPassword from "./ForgotPassword";
+import authService from "@/services/authService";
+import { toast } from "sonner";
 
 interface LoginFormProps {
   email: string;
@@ -20,6 +22,7 @@ interface LoginFormProps {
   setShowPassword: (value: boolean) => void;
   handleLogin: (e: React.FormEvent<HTMLFormElement>) => void;
   setView: (view: "login" | "forgot") => void;
+  isLoading?: boolean;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -35,6 +38,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   setShowPassword,
   handleLogin,
   setView,
+  isLoading = false,
 }) => {
   return (
     <div className="w-full h-screen flex items-center justify-center">
@@ -45,7 +49,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <form className="space-y-4" onSubmit={handleLogin}>
           <div>
             <p className="text-sm text-gray-600 mb-2 pb-6 font-mont">
-              Sign Up Now—Discover 500+ Courses are<br/> waiting for your Learning
+              Sign Up Now—Discover 500+ Courses are
+              <br /> waiting for your Learning
             </p>
             <label className="block text-sm font-medium text-gray-700 mb-1 font-mont">
               Email address/Phone Number*
@@ -112,8 +117,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <Button
             style={{ backgroundColor: "#8A63FF" }}
             className="w-full h-10 text-white rounded-lg text-sm font-mont font-semibold"
+            disabled={isLoading}
           >
-            Login
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              "Login"
+            )}
           </Button>
 
           <div className="flex items-center justify-center my-2">
@@ -162,12 +175,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
               </Button>
             </LoginSocialGoogle>
             <Link to="/">
-            <Button
-              variant="outline"
-              className="w-30 h-10 border border-gray-300 text-gray-700 rounded-sm text-xs font-semibold font-mont"
-            >
-              Continue as Guest
-            </Button>
+              <Button
+                variant="outline"
+                className="w-30 h-10 border border-gray-300 text-gray-700 rounded-sm text-xs font-semibold font-mont"
+              >
+                Continue as Guest
+              </Button>
             </Link>
           </div>
         </form>
@@ -192,12 +205,16 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState<string>("");
   const [isEmailValid, setIsEmailValid] = useState<boolean>(true);
   const [isPasswordValid, setIsPasswordValid] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || "/";
 
   const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const passwordRegex: RegExp = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+  // Relaxed password regex for login to avoid blocking users with old passwords
+  const passwordRegex: RegExp = /^.{6,}$/;
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validEmail: boolean = emailRegex.test(email);
     const validPassword: boolean = passwordRegex.test(password);
@@ -206,8 +223,21 @@ const Login: React.FC = () => {
     setIsPasswordValid(validPassword);
 
     if (validEmail && validPassword) {
-      localStorage.setItem("isAuthenticated", "true");
-      navigate("/");
+      try {
+        setIsLoading(true);
+        const response = await authService.login({ email, password });
+
+        if (response.token) {
+          toast.success("Login successful!");
+          // authService.login already sets localStorage and dispatches event
+          navigate(from);
+        }
+      } catch (error: any) {
+        console.error("Login Error:", error);
+        toast.error(error.message || "Invalid email or password");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -229,6 +259,7 @@ const Login: React.FC = () => {
       setShowPassword={setShowPassword}
       handleLogin={handleLogin}
       setView={setView}
+      isLoading={isLoading}
     />
   );
 };
