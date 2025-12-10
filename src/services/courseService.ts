@@ -4,10 +4,6 @@ import { toast } from "sonner";
 import { API_URL } from "@/config/api";
 import { handleApiError } from "@/utils/apiUtils";
 
-// Fallback API URL in case proxy fails
-const FALLBACK_API_URL = 'https://server.edifai.in';
-//const FALLBACK_API_URL = "http://localhost:5001";
-
 // Course interfaces
 export interface ICourse {
   _id: string;
@@ -60,8 +56,8 @@ export interface IMentor {
 }
 
 // API endpoints - using the direct fallback URL
-const API_ENDPOINT = `${FALLBACK_API_URL}/api/courses`;
-const MENTORS_ENDPOINT = `${FALLBACK_API_URL}/api/mentors`;
+const API_ENDPOINT = `${API_URL}/api/courses`;
+const MENTORS_ENDPOINT = `${API_URL}/api/mentors`;
 
 // Get all courses
 export const getCourses = async (): Promise<ICourse[]> => {
@@ -270,7 +266,7 @@ export const setCourseCompletion = async (
 ): Promise<any> => {
   try {
     const response = await axios.put(
-      `${FALLBACK_API_URL}/api/courses/${courseId}/completion`,
+      `${API_URL}/api/courses/${courseId}/completion`,
       data,
       {
         headers: {
@@ -290,7 +286,7 @@ export const getCompletedCourseUsers = async (
 ): Promise<any[]> => {
   try {
     const response = await axios.get(
-      `${FALLBACK_API_URL}/api/courses/${courseId}/completed-users`,
+      `${API_URL}/api/courses/${courseId}/completed-users`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,

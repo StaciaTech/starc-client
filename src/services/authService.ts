@@ -1,13 +1,13 @@
 import axios from "axios";
 import { handleApiError } from "@/utils/apiUtils";
 import { AUTH_STATE_CHANGED_EVENT } from "@/App";
+import { API_URL } from "@/config/api";
 
 // Fallback API URL in case proxy fails
 // const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
 
 // Update API URL to use direct fallback URL
-const AUTH_API_URL = `${FALLBACK_API_URL}/api/auth`;
+const AUTH_API_URL = `${API_URL}/api/auth`;
 
 export interface LoginCredentials {
   email: string;

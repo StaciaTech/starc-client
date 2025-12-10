@@ -4,10 +4,6 @@ import { toast } from "sonner";
 import { API_URL } from "@/config/api";
 import { handleApiError } from "@/utils/apiUtils";
 
-// Fallback API URL in case proxy fails
-// const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
-
 // Study Material interfaces
 export interface IStudyMaterial {
   _id: string;
@@ -25,8 +21,8 @@ export interface IStudyMaterial {
 }
 
 // API endpoints
-const API_ENDPOINT = `${FALLBACK_API_URL}/api/study-materials`;
-const ADMIN_API_ENDPOINT = `${FALLBACK_API_URL}/api/admin/study-materials`;
+const API_ENDPOINT = `${API_URL}/api/study-materials`;
+const ADMIN_API_ENDPOINT = `${API_URL}/api/admin/study-materials`;
 
 // Get all published study materials for a course (for students)
 export const getStudyMaterials = async (

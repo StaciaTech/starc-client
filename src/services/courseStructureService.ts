@@ -1,10 +1,7 @@
 import axios from "axios";
 import { handleApiError } from "@/utils/apiUtils";
 import { getAuthHeader } from "@/utils/authUtils";
-
-// Fallback API URL in case proxy fails
-// const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
+import { API_URL } from "../config/api";
 
 interface Section {
   id: string;
@@ -52,9 +49,6 @@ interface Quiz {
   correctOption: number;
 }
 
-// Update API URL to use direct fallback URL
-const API_URL = `${FALLBACK_API_URL}/api`;
-
 const courseStructureService = {
   // Get course structure
   getCourseStructure: async (courseId: string): Promise<CourseStructure> => {
@@ -65,7 +59,7 @@ const courseStructureService = {
       }
 
       const response = await axios.get(
-        `${API_URL}/courses/${courseId}/structure`,
+        `${API_URL}/api/courses/${courseId}/structure`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -97,7 +91,7 @@ const courseStructureService = {
       }
 
       const response = await axios.post(
-        `${API_URL}/courses/${courseId}/structure`,
+        `${API_URL}/api/courses/${courseId}/structure`,
         structure,
         {
           headers: {
@@ -123,7 +117,7 @@ const courseStructureService = {
       }
 
       const response = await axios.post(
-        `${API_URL}/admin/courses/preview-content`,
+        `${API_URL}/api/admin/courses/preview-content`,
         { courseId, sectionTitle: section.title, content: section.content },
         {
           headers: {
@@ -149,7 +143,7 @@ const courseStructureService = {
       }
 
       const response = await axios.post(
-        `${API_URL}/admin/courses/${courseId}/generate-all-content`,
+        `${API_URL}/api/admin/courses/${courseId}/generate-all-content`,
         structure,
         {
           headers: {
@@ -173,7 +167,7 @@ const courseStructureService = {
       if (!token) throw new Error("No authentication token found");
 
       const response = await axios.put(
-        `${API_URL}/courses/${courseId}/structure`,
+        `${API_URL}/api/courses/${courseId}/structure`,
         structure,
         {
           headers: {
@@ -196,7 +190,7 @@ const courseStructureService = {
       if (!token) throw new Error("No authentication token found");
 
       const response = await axios.post(
-        `${API_URL}/courses/${courseId}/structure/chapters`,
+        `${API_URL}/api/courses/${courseId}/structure/chapters`,
         chapter,
         {
           headers: {
@@ -216,7 +210,7 @@ const courseStructureService = {
   deleteChapter: async (courseId: string, chapterId: string): Promise<any> => {
     try {
       const response = await axios.delete(
-        `${FALLBACK_API_URL}/api/courses/${courseId}/structure/chapters/${chapterId}`,
+        `${API_URL}/api/courses/${courseId}/structure/chapters/${chapterId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

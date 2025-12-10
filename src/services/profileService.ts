@@ -2,10 +2,6 @@ import axios from "axios";
 import { handleApiError, hasValidToken } from "@/utils/apiUtils";
 import { API_URL } from "@/config/api";
 
-// Fallback API URL in case proxy fails
-// const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
-
 // Type definitions
 export interface User {
   _id: string;
@@ -37,8 +33,8 @@ export interface ScheduleEvent {
 }
 
 // Update API URLs to use correct endpoints
-const AUTH_API_URL = `${FALLBACK_API_URL}/api/auth`;
-const PROFILE_API_URL = `${FALLBACK_API_URL}/api/profile`;
+const AUTH_API_URL = `${API_URL}/api/auth`;
+const PROFILE_API_URL = `${API_URL}/api/profile`;
 
 export interface UserProfile {
   _id: string;
@@ -155,7 +151,7 @@ export const getUserSchedule = async (): Promise<ScheduleEvent[]> => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No authentication token found");
 
-    const response = await axios.get(`${FALLBACK_API_URL}/api/users/schedule`, {
+    const response = await axios.get(`${API_URL}/api/users/schedule`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -172,10 +168,7 @@ export const addScheduleEvent = async (
   eventData: Omit<ScheduleEvent, "_id">
 ): Promise<ScheduleEvent> => {
   try {
-    const response = await axios.post(
-      `${FALLBACK_API_URL}/api/schedule`,
-      eventData
-    );
+    const response = await axios.post(`${API_URL}/api/schedule`, eventData);
     return response.data.data;
   } catch (error) {
     console.error("Error adding schedule event:", error);
@@ -190,7 +183,7 @@ export const updateScheduleEvent = async (
 ): Promise<ScheduleEvent> => {
   try {
     const response = await axios.put(
-      `${FALLBACK_API_URL}/api/schedule/${eventId}`,
+      `${API_URL}/api/schedule/${eventId}`,
       eventData
     );
     return response.data.data;
@@ -203,7 +196,7 @@ export const updateScheduleEvent = async (
 // Delete a schedule event
 export const deleteScheduleEvent = async (eventId: string): Promise<void> => {
   try {
-    await axios.delete(`${FALLBACK_API_URL}/api/schedule/${eventId}`);
+    await axios.delete(`${API_URL}/api/schedule/${eventId}`);
   } catch (error) {
     console.error("Error deleting schedule event:", error);
     throw error;
@@ -216,14 +209,11 @@ export const getEnrolledCourses = async (): Promise<any[]> => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No authentication token found");
 
-    const response = await axios.get(
-      `${FALLBACK_API_URL}/api/courses/enrolled`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await axios.get(`${API_URL}/api/courses/enrolled`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching enrolled courses:", error);
@@ -237,14 +227,11 @@ export const getUserActivity = async (): Promise<any> => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No authentication token found");
 
-    const response = await axios.get(
-      `${FALLBACK_API_URL}/api/profile/activity`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await axios.get(`${API_URL}/api/profile/activity`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     return (
       response.data.data || {
@@ -287,7 +274,7 @@ export const updateCourseProgress = async (
     const token = localStorage.getItem("token");
 
     const response = await axios.put(
-      `${FALLBACK_API_URL}/api/courses/${courseId}/progress`,
+      `${API_URL}/api/courses/${courseId}/progress`,
       progressData,
       {
         headers: {
@@ -336,7 +323,7 @@ export const getUserCourseDetails = async (courseId: string): Promise<any> => {
     const token = localStorage.getItem("token");
 
     const response = await axios.get(
-      `${FALLBACK_API_URL}/api/courses/${courseId}/user-details`,
+      `${API_URL}/api/courses/${courseId}/user-details`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

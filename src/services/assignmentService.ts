@@ -1,10 +1,6 @@
 import axios from "axios";
-import { API_URL } from "@/config/api";
 import { hasValidToken } from "@/utils/apiUtils";
-
-// Use a fallback URL if API_URL is not available
-// const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
+import { API_URL } from "@/config/api";
 
 // Define types
 export interface Assignment {
@@ -52,8 +48,8 @@ export interface UpdateAssignmentData {
 }
 
 // API endpoints
-const API_ENDPOINT = `${FALLBACK_API_URL}/api/assignments`;
-const ADMIN_API_ENDPOINT = `${FALLBACK_API_URL}/api/admin/assignments`;
+const API_ENDPOINT = `${API_URL}/api/assignments`;
+const ADMIN_API_ENDPOINT = `${API_URL}/api/admin/assignments`;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {

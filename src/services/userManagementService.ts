@@ -1,14 +1,11 @@
 import axios from "axios";
 import { handleApiError } from "@/utils/apiUtils";
 import { getAuthHeader } from "@/utils/authUtils";
-
-// Fallback API URL in case proxy fails
-// const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
+import { API_URL } from "@/config/api";
 
 // API endpoint
-const ADMIN_API_URL = `${FALLBACK_API_URL}/api/admin`;
-const COURSES_API_URL = `${FALLBACK_API_URL}/api/courses`;
+const ADMIN_API_URL = `${API_URL}/api/admin`;
+const COURSES_API_URL = `${API_URL}/api/courses`;
 
 interface User {
   _id: string;
