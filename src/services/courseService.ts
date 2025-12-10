@@ -5,8 +5,8 @@ import { API_URL } from "@/config/api";
 import { handleApiError } from "@/utils/apiUtils";
 
 // Fallback API URL in case proxy fails
-// const FALLBACK_API_URL = 'https://server.edifai.in';
-const FALLBACK_API_URL = "http://localhost:5001";
+const FALLBACK_API_URL = 'https://server.edifai.in';
+//const FALLBACK_API_URL = "http://localhost:5001";
 
 // Course interfaces
 export interface ICourse {
