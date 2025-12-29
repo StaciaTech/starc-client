@@ -1,16 +1,24 @@
-// KEEP all imports
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import PurpleBox from "@/components/PurpleBox";
 import Footer from "@/components/Footer";
 import WallOfLove from "../components/WallOfLove";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import heroimage from "../Assets/Vector.png";
 import Recard from "@/components/Card";
 import courseService, { ICourse } from "@/services/courseService";
 import { Button } from "@/components/ui/button";
+import { ShoppingCart, Heart, Lock } from "lucide-react";
+import { useAddToCart, useCart, useRemoveFromCart } from "../hooks/useCart";
+import {
+  useAddToWishlist,
+  useRemoveFromWishlist,
+  useWishlist,
+} from "../hooks/useWishlist";
+import { useEnrollments } from "@/hooks/useEnrollments"; // ✅ Import enrollments hook
+import { toast } from "sonner";
+import { useAuth } from "@/App";
 
-// Course interfaces stay as you wrote
 interface Course {
   title: string;
   instructor: string;
@@ -28,7 +36,7 @@ interface Course {
   driveUrl?: string;
   type?: string;
   id?: string;
-  createdAt?: string; // ✅ Added for sorting "Latest"
+  createdAt?: string;
 }
 
 interface UserCourse {
@@ -56,37 +64,48 @@ const Course: React.FC = () => {
     { courseId: "3", userId: "user1", completed: true },
   ]);
 
-  const starcBooks = [
-    // keep your books exactly as you wrote them
-  ];
+  const starcBooks: any[] = [];
 
   useEffect(() => {
     const fetchCourses = async () => {
       setLoading(true);
       try {
         const courses = await courseService.getCourses();
-        const formattedCourses: Course[] = courses.map((course: ICourse) => ({
-          title: course.title,
-          instructor: course.instructor?.name || "Unknown Instructor",
-          rating: course.rating || 0,
-          students: course.enrolledUsers?.length || 0,
-          price: course.price,
-          originalPrice: course.price,
-          duration: `${course.duration} hours`,
-          lessons: course.lessons?.length || 0,
-          level: course.level,
-          category:
-            course.category === "AI Generated"
-              ? "Development"
-              : course.category,
-          image:
-            course.thumbnail ||
-            "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=300&h=200&fit=crop",
-          badge: course.discount ? "Sale" : undefined,
-          _id: course._id,
-          type: "course",
-          // createdAt: course.createdAt, // ✅ used for sorting "Latest"
-        }));
+        const formattedCourses: Course[] = courses.map((course: ICourse) => {
+          // ✅ Original price is the base price
+          console.log(course);
+
+          const originalPrice = course.price;
+
+          // ✅ Calculate discounted price if discount exists
+          const discountedPrice =
+            course.discount && course.discount > 0
+              ? course.price - course.price * (course.discount / 100)
+              : course.price;
+
+          return {
+            title: course.title,
+            instructor: course.instructor?.name || "Unknown Instructor",
+            rating: course.rating || 0,
+            students: course.enrolledUsers?.length || 0,
+            price: 299.99, // ✅ Discounted price
+            originalPrice: 299.99, // ✅ Original price (before discount)
+            discount: course.discount || 0, // ✅ Add discount percentage
+            duration: `${course.duration} hours`,
+            lessons: course.lessons?.length || 0,
+            level: course.level,
+            category:
+              course.category === "AI Generated"
+                ? "Development"
+                : course.category,
+            image:
+              course.thumbnail ||
+              "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=300&h=200&fit=crop",
+            badge: course.discount && course.discount > 0 ? "Sale" : undefined, // ✅ Only show Sale badge if discount exists
+            _id: course._id,
+            type: "course",
+          };
+        });
         setCoursesData(formattedCourses);
         setLoading(false);
       } catch (err) {
@@ -135,7 +154,6 @@ const Course: React.FC = () => {
       }
     }
 
-    // ✅ Sort logic
     switch (sortOption) {
       case "Most Popular":
         filtered = filtered.slice().sort((a, b) => b.students - a.students);
@@ -179,6 +197,7 @@ const Course: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-mont">
       <Navbar />
+
       {/* Hero Section */}
       <section className="relative bottom-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -229,47 +248,47 @@ const Course: React.FC = () => {
       {/* Cards Section */}
       <div className="flex justify-center mb-20">
         {loading ? (
-          <div className="flex relative justify-center py-8 mb-16 xl:w-[90%]">
+          <div className="flex relative justify-center py-8 mb-16 w-full px-4">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#8A63FF]"></div>
           </div>
         ) : error ? (
           <div className="text-red-500 text-center py-8">{error}</div>
         ) : (
-          <section className="flex relative justify-center py-8 mb-16 xl:w-[90%] flex-col md:flex-row">
-            <section
-              className="hidden md:block sticky h-[80vh] top-[90px] lg:w-[25%] overflow-y-auto px-2"
+          <section className="flex relative justify-center py-8 mb-16 w-full px-4 lg:px-6 flex-col lg:flex-row gap-6 max-w-[1600px] mx-auto">
+            {/* Sidebar */}
+            <aside
+              className="hidden lg:block lg:sticky h-[80vh] top-[90px] w-[200px] xl:w-[240px] flex-shrink-0 overflow-y-auto"
               style={{ scrollbarWidth: "thin" }}
             >
               <div className="w-full">
-                <div className="max-w-c mx-auto px-4 sm:px-6 lg:px-10">
-                  <h2 className="text-2xl font-mont font-bold mb-4 py-2 text-gray-800 text-center">
-                    Categories
-                  </h2>
-                  <ul className="w-full h-full overflow-y-auto pr-2 custom-scrollbar">
-                    {categories.map((category, index) => (
-                      <li
-                        key={index}
-                        onClick={() => {
-                          setActiveIndex(index);
-                          filterCards(
-                            index === 0 ? "all" : category.toLowerCase()
-                          );
-                        }}
-                        className={`py-4 px-4 lg:text-[10px] xl:text-sm cursor-pointer w-[95%] border-b-[0.1px] ${
-                          index === activeIndex
-                            ? "text-[#8A63FF] font-semibold"
-                            : "text-gray-800"
-                        }`}
-                      >
-                        {category}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <h2 className="text-xl xl:text-2xl font-mont font-bold mb-4 py-2 text-gray-800 text-center">
+                  Categories
+                </h2>
+                <ul className="w-full overflow-y-auto pr-2 custom-scrollbar">
+                  {categories.map((category, index) => (
+                    <li
+                      key={index}
+                      onClick={() => {
+                        setActiveIndex(index);
+                        filterCards(
+                          index === 0 ? "all" : category.toLowerCase()
+                        );
+                      }}
+                      className={`py-3 px-4 text-sm xl:text-base cursor-pointer w-full border-b-[0.1px] transition-colors ${
+                        index === activeIndex
+                          ? "text-[#8A63FF] font-semibold bg-purple-50"
+                          : "text-gray-800 hover:bg-gray-50"
+                      }`}
+                    >
+                      {category}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </section>
+            </aside>
 
-            <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] gap-5 md:gap-6">
+            {/* Course Grid */}
+            <div className="flex-1 w-full max-w-[1300px]">
               {mode === "unsupervised" ? (
                 <div className="w-full flex flex-col items-center justify-center py-12">
                   <h2 className="text-2xl font-bold mb-4">
@@ -280,28 +299,28 @@ const Course: React.FC = () => {
                   </Button>
                 </div>
               ) : filteredCourses.length > 0 ? (
-                filteredCourses.map((course, index) => (
-                  <div
-                    key={index}
-                    onClick={() => {
-                      if (mode === "unsupervised" && course.driveUrl) {
-                        navigate("/book");
-                      } else if (course._id) {
-                        navigate(`/course/${course._id}`);
-                      } else {
-                        navigate("/carddetail", { state: { course } });
-                      }
-                    }}
-                    className="flex justify-center w-full xs:w-[45%] sm:w-[45%] md:w-[30%]"
-                  >
-                    <Recard course={course} />
-                  </div>
-                ))
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+                  {filteredCourses.map((course, index) => (
+                    <div key={index} className="w-full">
+                      <CourseCardWithActions
+                        course={course}
+                        isSupervised={mode === "supervised"}
+                        onCardClick={() => {
+                          if (mode === "unsupervised" && course.driveUrl) {
+                            navigate("/book");
+                          } else if (course._id) {
+                            navigate(`/course/${course._id}`);
+                          } else {
+                            navigate("/carddetail", { state: { course } });
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg z-50 border-t border-gray-200">
-                  <Button className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition">
-                    Enroll Now
-                  </Button>
+                <div className="w-full text-center py-12 text-gray-500">
+                  No courses found matching your filters.
                 </div>
               )}
             </div>
@@ -316,6 +335,203 @@ const Course: React.FC = () => {
   );
 };
 
+// ✅ UPDATED CourseCardWithActions Component with 3 States
+interface CourseCardWithActionsProps {
+  course: Course;
+  isSupervised: boolean;
+  onCardClick: () => void;
+}
+
+const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
+  course,
+  isSupervised,
+  onCardClick,
+}) => {
+  const addToCartMutation = useAddToCart();
+  const removeFromCartMutation = useRemoveFromCart();
+  const addToWishlistMutation = useAddToWishlist();
+  const removeFromWishlistMutation = useRemoveFromWishlist();
+
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { data: cartData } = useCart();
+  const { data: wishlistData } = useWishlist();
+  const { data: enrollmentsData } = useEnrollments(); // ✅ Get enrollments
+
+  // ✅ Check if course is in cart (State 2)
+  const isInCart =
+    cartData?.data?.items?.some((item) => item.course._id === course._id) ||
+    false;
+
+  // ✅ Check if course is enrolled (State 3 - after checkout)
+  const isEnrolled =
+    enrollmentsData?.data?.some(
+      (enrollment: any) => enrollment.courseId._id === course._id
+    ) || false;
+
+  // ✅ Check if course is in wishlist
+  const isInWishlist =
+    wishlistData?.data?.items?.some((item) => item.course._id === course._id) ||
+    false;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate("/Signup", { state: { from: location.pathname } });
+      return;
+    }
+
+    if (!course._id) {
+      toast.error("Course ID not found");
+      return;
+    }
+    addToCartMutation.mutate(course._id);
+  };
+
+  const handleRemoveFromCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!course._id) {
+      toast.error("Course ID not found");
+      return;
+    }
+    removeFromCartMutation.mutate(course._id);
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate("/Signup", { state: { from: location.pathname } });
+      return;
+    }
+
+    if (!course._id) {
+      toast.error("Course ID not found");
+      return;
+    }
+
+    if (isInWishlist) {
+      removeFromWishlistMutation.mutate(course._id);
+    } else {
+      addToWishlistMutation.mutate(course._id);
+    }
+  };
+
+  const isWishlistLoading =
+    addToWishlistMutation.isPending || removeFromWishlistMutation.isPending;
+
+  return (
+    <div
+      className="relative w-full h-full group cursor-pointer"
+      onClick={onCardClick}
+    >
+      <Recard course={course} />
+
+      {isSupervised && (
+        <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+          <div className="flex gap-2">
+            {/* ✅ THREE STATES: Not in cart, In cart, Enrolled */}
+            {isEnrolled ? (
+              // ✅ STATE 3: After Checkout - Show "Will be Unlocked Soon" (LOCKED)
+              <div className="flex-1 flex flex-col gap-1">
+                <Button
+                  disabled
+                  className="w-full bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300 shadow-lg text-xs sm:text-sm h-9 px-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Lock className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">
+                    Will be Unlocked Soon
+                  </span>
+                  <span className="sm:hidden">Locked</span>
+                </Button>
+                <p className="text-[10px] text-gray-600 text-center">
+                  Team will contact you
+                </p>
+              </div>
+            ) : isInCart ? (
+              // ✅ STATE 2: In Cart (before checkout) - Show "Remove from Cart" (RED)
+              <Button
+                onClick={handleRemoveFromCart}
+                disabled={removeFromCartMutation.isPending}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white shadow-lg text-xs sm:text-sm h-9 px-3"
+              >
+                {removeFromCartMutation.isPending ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Remove from Cart</span>
+                    <span className="sm:hidden">Remove</span>
+                  </>
+                )}
+              </Button>
+            ) : (
+              // ✅ STATE 1: Default - Show "Add to Cart" (PURPLE)
+              <Button
+                onClick={handleAddToCart}
+                disabled={addToCartMutation.isPending}
+                className="flex-1 bg-[#8A63FF] hover:bg-[#7047e0] text-white shadow-lg text-xs sm:text-sm h-9 px-3"
+              >
+                {addToCartMutation.isPending ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Add to Cart</span>
+                    <span className="sm:hidden">+</span>
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* ✅ Wishlist Button (hide if enrolled) */}
+            {!isEnrolled && (
+              <Button
+                onClick={handleToggleWishlist}
+                disabled={isWishlistLoading}
+                variant="outline"
+                size="icon"
+                className={`shadow-lg transition-all duration-200 h-9 w-9 flex-shrink-0 ${
+                  isInWishlist
+                    ? "bg-red-50 hover:bg-red-100 border-red-400"
+                    : "bg-white hover:bg-gray-100 border-gray-300"
+                }`}
+                title={
+                  isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"
+                }
+              >
+                {isWishlistLoading ? (
+                  <div
+                    className={`h-4 w-4 border-2 border-t-transparent rounded-full animate-spin ${
+                      isInWishlist ? "border-red-600" : "border-[#8A63FF]"
+                    }`}
+                  />
+                ) : (
+                  <Heart
+                    className={`w-4 h-4 transition-all duration-200 ${
+                      isInWishlist
+                        ? "text-red-600 fill-red-600"
+                        : "text-[#8A63FF]"
+                    }`}
+                    style={{
+                      fill: isInWishlist ? "currentColor" : "none",
+                    }}
+                  />
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// FilterSection Component (unchanged)
 interface FilterSectionProps {
   initialActiveButton?: "supervised" | "unsupervised";
   description?: string;

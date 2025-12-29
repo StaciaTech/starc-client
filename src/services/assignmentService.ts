@@ -1,9 +1,6 @@
-import axios from 'axios';
-import { API_URL } from '@/config/api';
-import { hasValidToken } from '@/utils/apiUtils';
-
-// Use a fallback URL if API_URL is not available
-const FALLBACK_API_URL = 'https://server.edifai.in';
+import axios from "axios";
+import { hasValidToken } from "@/utils/apiUtils";
+import { API_URL } from "@/config/api";
 
 // Define types
 export interface Assignment {
@@ -51,33 +48,35 @@ export interface UpdateAssignmentData {
 }
 
 // API endpoints
-const API_ENDPOINT = `${FALLBACK_API_URL}/api/assignments`;
-const ADMIN_API_ENDPOINT = `${FALLBACK_API_URL}/api/admin/assignments`;
+const API_ENDPOINT = `${API_URL}/api/assignments`;
+const ADMIN_API_ENDPOINT = `${API_URL}/api/admin/assignments`;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   return {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   };
 };
 
 // Get all published assignments for a course
-export const getAssignments = async (courseId: string): Promise<Assignment[]> => {
+export const getAssignments = async (
+  courseId: string
+): Promise<Assignment[]> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.get(
       `${API_ENDPOINT}/course/${courseId}`,
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching assignments:', error);
+    console.error("Error fetching assignments:", error);
     throw error;
   }
 };
@@ -86,16 +85,13 @@ export const getAssignments = async (courseId: string): Promise<Assignment[]> =>
 export const getAssignment = async (id: string): Promise<Assignment> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
-    const response = await axios.get(
-      `${API_ENDPOINT}/${id}`,
-      getAuthHeaders()
-    );
+
+    const response = await axios.get(`${API_ENDPOINT}/${id}`, getAuthHeaders());
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching assignment:', error);
+    console.error("Error fetching assignment:", error);
     throw error;
   }
 };
@@ -107,35 +103,37 @@ export const submitAssignment = async (
 ): Promise<AssignmentSubmission> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.post(
-      `${API_ENDPOINT}/${assignmentId}/submit`, 
+      `${API_ENDPOINT}/${assignmentId}/submit`,
       { submissionUrl },
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error submitting assignment:', error);
+    console.error("Error submitting assignment:", error);
     throw error;
   }
 };
 
 // Get user's submissions for an assignment
-export const getUserSubmissions = async (assignmentId: string): Promise<AssignmentSubmission[]> => {
+export const getUserSubmissions = async (
+  assignmentId: string
+): Promise<AssignmentSubmission[]> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.get(
       `${API_ENDPOINT}/${assignmentId}/submissions`,
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching user submissions:', error);
+    console.error("Error fetching user submissions:", error);
     throw error;
   }
 };
@@ -143,19 +141,21 @@ export const getUserSubmissions = async (assignmentId: string): Promise<Assignme
 // Admin functions
 
 // Get all assignments for a course (including unpublished)
-export const getAllAssignments = async (courseId: string): Promise<Assignment[]> => {
+export const getAllAssignments = async (
+  courseId: string
+): Promise<Assignment[]> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.get(
-      `${ADMIN_API_ENDPOINT}/course/${courseId}`, 
+      `${ADMIN_API_ENDPOINT}/course/${courseId}`,
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching all assignments:', error);
+    console.error("Error fetching all assignments:", error);
     throw error;
   }
 };
@@ -167,17 +167,17 @@ export const createAssignment = async (
 ): Promise<Assignment> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.post(
-      `${ADMIN_API_ENDPOINT}/course/${courseId}`, 
-      assignmentData, 
+      `${ADMIN_API_ENDPOINT}/course/${courseId}`,
+      assignmentData,
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error creating assignment:', error);
+    console.error("Error creating assignment:", error);
     throw error;
   }
 };
@@ -189,17 +189,17 @@ export const updateAssignment = async (
 ): Promise<Assignment> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.put(
-      `${ADMIN_API_ENDPOINT}/${id}`, 
-      assignmentData, 
+      `${ADMIN_API_ENDPOINT}/${id}`,
+      assignmentData,
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error updating assignment:', error);
+    console.error("Error updating assignment:", error);
     throw error;
   }
 };
@@ -208,15 +208,12 @@ export const updateAssignment = async (
 export const deleteAssignment = async (id: string): Promise<void> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
-    await axios.delete(
-      `${ADMIN_API_ENDPOINT}/${id}`, 
-      getAuthHeaders()
-    );
+
+    await axios.delete(`${ADMIN_API_ENDPOINT}/${id}`, getAuthHeaders());
   } catch (error) {
-    console.error('Error deleting assignment:', error);
+    console.error("Error deleting assignment:", error);
     throw error;
   }
 };
@@ -228,35 +225,37 @@ export const reorderAssignments = async (
 ): Promise<Assignment[]> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.put(
-      `${ADMIN_API_ENDPOINT}/course/${courseId}/reorder`, 
-      { assignmentIds }, 
+      `${ADMIN_API_ENDPOINT}/course/${courseId}/reorder`,
+      { assignmentIds },
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error reordering assignments:', error);
+    console.error("Error reordering assignments:", error);
     throw error;
   }
 };
 
 // Get all submissions for an assignment (admin only)
-export const getAllSubmissions = async (assignmentId: string): Promise<AssignmentSubmission[]> => {
+export const getAllSubmissions = async (
+  assignmentId: string
+): Promise<AssignmentSubmission[]> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.get(
-      `${ADMIN_API_ENDPOINT}/${assignmentId}/submissions`, 
+      `${ADMIN_API_ENDPOINT}/${assignmentId}/submissions`,
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching all submissions:', error);
+    console.error("Error fetching all submissions:", error);
     throw error;
   }
 };
@@ -269,17 +268,17 @@ export const provideSubmissionFeedback = async (
 ): Promise<AssignmentSubmission> => {
   try {
     if (!hasValidToken()) {
-      throw new Error('Authentication token is missing or expired');
+      throw new Error("Authentication token is missing or expired");
     }
-    
+
     const response = await axios.put(
-      `${ADMIN_API_ENDPOINT}/submissions/${submissionId}`, 
-      { feedback, grade }, 
+      `${ADMIN_API_ENDPOINT}/submissions/${submissionId}`,
+      { feedback, grade },
       getAuthHeaders()
     );
     return response.data.data;
   } catch (error) {
-    console.error('Error providing submission feedback:', error);
+    console.error("Error providing submission feedback:", error);
     throw error;
   }
-}; 
+};

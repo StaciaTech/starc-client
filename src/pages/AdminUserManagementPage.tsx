@@ -1,31 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { 
+} from "@/components/ui/table";
+import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
-import { Spinner } from '@/components/ui/spinner';
-import { Search, ArrowLeft, UserCheck, UserX, UserPlus, Trash } from 'lucide-react';
-import userManagementService from '@/services/userManagementService';
-import authService from '@/services/authService';
-import CreateUserForm from '@/components/admin/CreateUserForm';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  Search,
+  ArrowLeft,
+  UserCheck,
+  UserX,
+  UserPlus,
+  Trash,
+} from "lucide-react";
+import userManagementService from "@/services/userManagementService";
+import authService from "@/services/authService";
+import CreateUserForm from "@/components/admin/CreateUserForm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +42,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
 interface User {
   _id: string;
@@ -57,10 +64,10 @@ const AdminUserManagementPage: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [processingUser, setProcessingUser] = useState<string | null>(null);
   const [showCreateUserForm, setShowCreateUserForm] = useState(false);
-  
+
   // State for delete confirmation dialog
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -70,17 +77,17 @@ const AdminUserManagementPage: React.FC = () => {
     const checkAdminStatus = async () => {
       try {
         const userData = await authService.getCurrentUser();
-        if (userData.data.role === 'admin') {
+        if (userData.data.role === "admin") {
           setIsAdmin(true);
           fetchUsers();
         } else {
-          toast.error('You do not have permission to access this page');
-          navigate('/');
+          toast.error("You do not have permission to access this page");
+          navigate("/");
         }
       } catch (error) {
-        console.error('Error checking admin status:', error);
-        toast.error('Authentication error');
-        navigate('/LoginPage');
+        console.error("Error checking admin status:", error);
+        toast.error("Authentication error");
+        navigate("/LoginPage");
       } finally {
         setLoading(false);
       }
@@ -96,8 +103,8 @@ const AdminUserManagementPage: React.FC = () => {
       const usersData = await userManagementService.getAllUsers();
       setUsers(usersData);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -107,21 +114,26 @@ const AdminUserManagementPage: React.FC = () => {
   const handleToggleEnrollment = async (userId: string) => {
     try {
       setProcessingUser(userId);
-      const updatedUser = await userManagementService.toggleUserEnrollmentAccess(userId);
-      
+      const updatedUser =
+        await userManagementService.toggleUserEnrollmentAccess(userId);
+
       // Update the user in the list
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user._id === userId 
-            ? { ...user, enrollmentEnabled: updatedUser.enrollmentEnabled } 
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === userId
+            ? { ...user, enrollmentEnabled: updatedUser.enrollmentEnabled }
             : user
         )
       );
-      
-      toast.success(`Enrollment access ${updatedUser.enrollmentEnabled ? 'enabled' : 'disabled'} for ${updatedUser.name}`);
+
+      toast.success(
+        `Enrollment access ${
+          updatedUser.enrollmentEnabled ? "enabled" : "disabled"
+        } for ${updatedUser.name}`
+      );
     } catch (error) {
-      console.error('Error toggling enrollment access:', error);
-      toast.error('Failed to update enrollment access');
+      console.error("Error toggling enrollment access:", error);
+      toast.error("Failed to update enrollment access");
     } finally {
       setProcessingUser(null);
     }
@@ -131,11 +143,11 @@ const AdminUserManagementPage: React.FC = () => {
   const handleUserCreationSuccess = () => {
     fetchUsers(); // Refresh the user list
     setShowCreateUserForm(false); // Hide the form
-    toast.success('User account has been created and is ready to hand over');
+    toast.success("User account has been created and is ready to hand over");
   };
 
   // Filter users based on search query
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase();
     return (
       user.name.toLowerCase().includes(query) ||
@@ -146,25 +158,27 @@ const AdminUserManagementPage: React.FC = () => {
 
   // Navigate back to admin dashboard
   const handleBackToAdmin = () => {
-    navigate('/admin');
+    navigate("/admin");
   };
 
   // Handle user deletion
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
-    
+
     try {
       setProcessingUser(userToDelete._id);
       await userManagementService.deleteUser(userToDelete._id);
-      
+
       // Remove the user from the list
-      setUsers(prevUsers => prevUsers.filter(user => user._id !== userToDelete._id));
-      
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user._id !== userToDelete._id)
+      );
+
       toast.success(`User ${userToDelete.name} has been deleted successfully`);
       setShowDeleteDialog(false);
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
     } finally {
       setProcessingUser(null);
       setUserToDelete(null);
@@ -195,9 +209,13 @@ const AdminUserManagementPage: React.FC = () => {
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
-            <p className="text-gray-600 mb-4">You do not have permission to access this page.</p>
-            <Button onClick={() => navigate('/')}>Return to Home</Button>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              Access Denied
+            </h1>
+            <p className="text-gray-600 mb-4">
+              You do not have permission to access this page.
+            </p>
+            <Button onClick={() => navigate("/")}>Return to Home</Button>
           </div>
         </div>
       </div>
@@ -208,26 +226,26 @@ const AdminUserManagementPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="container mx-auto py-8 px-4">
-        <Button
-          variant="ghost"
-          className="mb-4"
-          onClick={handleBackToAdmin}
-        >
+        <Button variant="ghost" className="mb-4" onClick={handleBackToAdmin}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Admin Dashboard
         </Button>
-        
+
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-            <p className="text-gray-600">Manage user access and create student accounts</p>
+            <h1 className="text-2xl font-bold text-gray-800">
+              User Management
+            </h1>
+            <p className="text-gray-600">
+              Manage user access and create student accounts
+            </p>
           </div>
-          <Button 
+          <Button
             onClick={() => setShowCreateUserForm(!showCreateUserForm)}
             className="bg-[#8A63FF] hover:bg-[#7047e0]"
           >
             <UserPlus className="mr-2 h-4 w-4" />
-            {showCreateUserForm ? 'Hide Form' : 'Create User Account'}
+            {showCreateUserForm ? "Hide Form" : "Create User Account"}
           </Button>
         </div>
 
@@ -254,7 +272,7 @@ const AdminUserManagementPage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             {filteredUsers.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -271,7 +289,9 @@ const AdminUserManagementPage: React.FC = () => {
                     <TableRow key={user._id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </TableCell>
                       <TableCell>
                         {user.enrollmentEnabled ? (
                           <Badge className="bg-green-100 text-green-800">
@@ -279,7 +299,10 @@ const AdminUserManagementPage: React.FC = () => {
                             Access Enabled
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-gray-500 border-gray-300">
+                          <Badge
+                            variant="outline"
+                            className="text-gray-500 border-gray-300"
+                          >
                             <UserX className="h-3 w-3 mr-1" />
                             Access Disabled
                           </Badge>
@@ -293,7 +316,9 @@ const AdminUserManagementPage: React.FC = () => {
                             <>
                               <Switch
                                 checked={user.enrollmentEnabled}
-                                onCheckedChange={() => handleToggleEnrollment(user._id)}
+                                onCheckedChange={() =>
+                                  handleToggleEnrollment(user._id)
+                                }
                                 disabled={processingUser === user._id}
                                 className="data-[state=checked]:bg-[#8A63FF]"
                               />
@@ -301,8 +326,15 @@ const AdminUserManagementPage: React.FC = () => {
                                 variant="destructive"
                                 size="sm"
                                 onClick={() => confirmDeleteUser(user)}
-                                disabled={processingUser === user._id || user.role === 'admin'}
-                                title={user.role === 'admin' ? 'Admin users cannot be deleted' : 'Delete user'}
+                                disabled={
+                                  processingUser === user._id ||
+                                  user.role === "admin"
+                                }
+                                title={
+                                  user.role === "admin"
+                                    ? "Admin users cannot be deleted"
+                                    : "Delete user"
+                                }
                                 className="ml-2"
                               >
                                 <Trash className="h-4 w-4" />
@@ -330,14 +362,14 @@ const AdminUserManagementPage: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {userToDelete?.name}? 
-              This action cannot be undone and will permanently remove the user account 
+              Are you sure you want to delete {userToDelete?.name}? This action
+              cannot be undone and will permanently remove the user account
               along with all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteUser}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -350,4 +382,4 @@ const AdminUserManagementPage: React.FC = () => {
   );
 };
 
-export default AdminUserManagementPage; 
+export default AdminUserManagementPage;

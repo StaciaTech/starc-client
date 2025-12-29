@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  ArrowRight,
+  CheckCircle2,
+} from "lucide-react";
 import { LoginSocialGoogle } from "reactjs-social-login";
 import Vector from "../Assets/Vector-3.png";
 import Star from "../Assets/star.png";
@@ -45,7 +52,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   setShowPassword,
   handleLogin,
   setView,
-  isLoading
+  isLoading,
 }) => {
   return (
     <div className="w-full h-screen flex items-center justify-center">
@@ -61,7 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             Sign in to continue your learning journey
           </p>
         </div>
-        
+
         <form className="space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
@@ -85,12 +92,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     setEmail(e.target.value)
                   }
                   className={`pl-10 h-12 rounded-xl border ${
-                    isEmailValid ? "border-gray-200 focus:border-[#8A63FF]" : "border-red-300"
+                    isEmailValid
+                      ? "border-gray-200 focus:border-[#8A63FF]"
+                      : "border-red-300"
                   } focus:ring-[#8A63FF] text-sm w-full`}
                 />
               </div>
             </div>
-            
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-gray-700 font-mont">
@@ -112,7 +121,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     setPassword(e.target.value)
                   }
                   className={`pl-10 h-12 rounded-xl border ${
-                    isPasswordValid ? "border-gray-200 focus:border-[#8A63FF]" : "border-red-300"
+                    isPasswordValid
+                      ? "border-gray-200 focus:border-[#8A63FF]"
+                      : "border-red-300"
                   } focus:ring-[#8A63FF] text-sm w-full pr-10`}
                 />
                 <button
@@ -159,7 +170,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
           <div className="relative flex items-center justify-center my-6">
             <div className="flex-grow h-px bg-gray-200"></div>
-            <span className="flex-shrink-0 px-4 text-gray-400 text-xs font-mont">or continue with</span>
+            <span className="flex-shrink-0 px-4 text-gray-400 text-xs font-mont">
+              or continue with
+            </span>
             <div className="flex-grow h-px bg-gray-200"></div>
           </div>
 
@@ -175,7 +188,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             </Link>
           </div>
         </form>
-        
+
         <div className="mt-8 text-center">
           <p className="text-gray-600 text-sm font-mont">
             Don't have an account?{" "}
@@ -205,9 +218,11 @@ const Login: React.FC = () => {
   const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex: RegExp = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleLogin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
-    
+
     const validEmail: boolean = emailRegex.test(email);
     const validPassword: boolean = passwordRegex.test(password);
 
@@ -217,31 +232,39 @@ const Login: React.FC = () => {
     if (validEmail && validPassword) {
       try {
         setIsLoading(true);
-        
+
         // Log the credentials being used
         console.log("Attempting login with:", { email, password });
-        
+
         const response = await authService.login({ email, password });
-        
+
         console.log("Login response:", response);
-        
+
         // Update authentication state after successful login
         checkAuthStatus();
-        
+
         // The login was successful if we got here without an exception
         toast.success("Login successful!");
-        
+
         // Add a small delay before navigation to ensure state updates
         setTimeout(() => {
-          navigate("/");
+          if (response.user.role === "admin") {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
         }, 100);
       } catch (error: any) {
         console.error("Login error:", error);
-        
+
         // Display more specific error messages based on the error
         if (error.response && error.response.status === 401) {
           toast.error("Invalid email or password. Please try again.");
-        } else if (error.response && error.response.data && error.response.data.message) {
+        } else if (
+          error.response &&
+          error.response.data &&
+          error.response.data.message
+        ) {
           toast.error(error.response.data.message);
         } else if (error.message) {
           toast.error(error.message);
@@ -315,7 +338,7 @@ const Signup: React.FC = () => {
       {/* Left side - Animated content */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-[#f5f3ff] to-[#ede9fe] relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgeT0iMSIgcj0iMSIgZmlsbD0iIzhBNjNGRjMzIi8+PC9zdmc+')] bg-repeat opacity-40"></div>
-        
+
         <div className="absolute top-8 left-8">
           <div className="flex items-center bg-white px-4 py-2 rounded-full shadow-md">
             <img src={Star} alt="Star" className="w-4 h-4 mr-2" />
@@ -324,19 +347,19 @@ const Signup: React.FC = () => {
             </span>
           </div>
         </div>
-        
+
         <div className="relative z-10 flex flex-col justify-center items-center w-full h-full px-12">
           <img
             src={Vector}
             alt="Background shape"
             className="absolute z-0 w-[120%] max-w-none opacity-20"
           />
-          
+
           <div className="relative z-10 text-center max-w-md">
             <div className="inline-block mb-6 px-4 py-1 bg-[#8A63FF] text-white text-xs font-medium rounded-full">
               SUPERVISED COURSES
             </div>
-            
+
             <div className="h-48 mb-8 flex items-center justify-center">
               <div key={currentSlide} className="animate-pop-slide">
                 <h1 className="text-4xl font-bold text-gray-900 mb-4 font-mont">
@@ -347,7 +370,7 @@ const Signup: React.FC = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex flex-col items-center gap-6">
               <Button
                 style={{
@@ -357,7 +380,7 @@ const Signup: React.FC = () => {
               >
                 Start Learning Now
               </Button>
-              
+
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
@@ -369,9 +392,11 @@ const Signup: React.FC = () => {
                     />
                   ))}
                 </div>
-                <span className="text-sm text-gray-600 font-mont">1k+ students</span>
+                <span className="text-sm text-gray-600 font-mont">
+                  1k+ students
+                </span>
               </div>
-              
+
               <div className="w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#8A63FF] rounded-full"
@@ -388,7 +413,7 @@ const Signup: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Right side - Login form */}
       <div className="w-full md:w-1/2">
         <Login />

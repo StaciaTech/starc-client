@@ -1,13 +1,11 @@
-import axios from 'axios';
-import { handleApiError } from '@/utils/apiUtils';
-import { getAuthHeader } from '@/utils/authUtils';
-
-// Fallback API URL in case proxy fails
-const FALLBACK_API_URL = 'https://server.edifai.in';
+import axios from "axios";
+import { handleApiError } from "@/utils/apiUtils";
+import { getAuthHeader } from "@/utils/authUtils";
+import { API_URL } from "@/config/api";
 
 // API endpoint
-const ADMIN_API_URL = `${FALLBACK_API_URL}/api/admin`;
-const COURSES_API_URL = `${FALLBACK_API_URL}/api/courses`;
+const ADMIN_API_URL = `${API_URL}/api/admin`;
+const COURSES_API_URL = `${API_URL}/api/courses`;
 
 interface User {
   _id: string;
@@ -39,7 +37,7 @@ interface CreateUserData {
   name: string;
   email: string;
   password: string;
-  role?: 'user' | 'admin';
+  role?: "user" | "admin";
   enrollmentEnabled?: boolean;
   assignedCourses?: string[];
 }
@@ -49,19 +47,19 @@ interface CreateUserData {
  */
 export const getAllUsers = async (): Promise<User[]> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
     const response = await axios.get(`${ADMIN_API_URL}/users`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching users:', error);
-    handleApiError(error, 'Error fetching users');
+    console.error("Error fetching users:", error);
+    handleApiError(error, "Error fetching users");
     return [];
   }
 };
@@ -71,19 +69,19 @@ export const getAllUsers = async (): Promise<User[]> => {
  */
 export const getAvailableCourses = async (): Promise<Course[]> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
     const response = await axios.get(COURSES_API_URL, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     return response.data.data || [];
   } catch (error) {
-    console.error('Error fetching courses:', error);
-    handleApiError(error, 'Error fetching courses');
+    console.error("Error fetching courses:", error);
+    handleApiError(error, "Error fetching courses");
     return [];
   }
 };
@@ -93,119 +91,121 @@ export const getAvailableCourses = async (): Promise<Course[]> => {
  */
 export const createUser = async (userData: CreateUserData): Promise<User> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
-    const response = await axios.post(
-      `${ADMIN_API_URL}/users`,
-      userData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const response = await axios.post(`${ADMIN_API_URL}/users`, userData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     return response.data.data;
   } catch (error) {
-    throw handleApiError(error, 'Error creating user');
+    throw handleApiError(error, "Error creating user");
   }
 };
 
 /**
  * Assign courses to a user (admin only)
  */
-export const assignCoursesToUser = async (userId: string, courseIds: string[]): Promise<User> => {
+export const assignCoursesToUser = async (
+  userId: string,
+  courseIds: string[]
+): Promise<User> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
     const response = await axios.put(
       `${ADMIN_API_URL}/users/${userId}/assign-courses`,
       { courses: courseIds },
       {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
     return response.data.data;
   } catch (error) {
-    throw handleApiError(error, 'Error assigning courses to user');
+    throw handleApiError(error, "Error assigning courses to user");
   }
 };
 
 /**
  * Toggle user enrollment access (admin only)
  */
-export const toggleUserEnrollmentAccess = async (userId: string): Promise<User> => {
+export const toggleUserEnrollmentAccess = async (
+  userId: string
+): Promise<User> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
     const response = await axios.put(
       `${ADMIN_API_URL}/users/${userId}/toggle-enrollment`,
       {},
       {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
     return response.data.data;
   } catch (error) {
-    throw handleApiError(error, 'Error toggling user enrollment access');
+    throw handleApiError(error, "Error toggling user enrollment access");
   }
 };
 
 /**
  * Get user enrollment status (admin only)
  */
-export const getUserEnrollmentStatus = async (userId: string): Promise<User> => {
+export const getUserEnrollmentStatus = async (
+  userId: string
+): Promise<User> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
     const response = await axios.get(
       `${ADMIN_API_URL}/users/${userId}/enrollment-status`,
       {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
     return response.data.data;
   } catch (error) {
-    throw handleApiError(error, 'Error getting user enrollment status');
+    throw handleApiError(error, "Error getting user enrollment status");
   }
 };
 
 /**
  * Delete a user (admin only)
  */
-export const deleteUser = async (userId: string): Promise<{ success: boolean, message: string }> => {
+export const deleteUser = async (
+  userId: string
+): Promise<{ success: boolean; message: string }> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
 
-    const response = await axios.delete(
-      `${ADMIN_API_URL}/users/${userId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const response = await axios.delete(`${ADMIN_API_URL}/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     return {
       success: true,
-      message: response.data.message
+      message: response.data.message,
     };
   } catch (error) {
-    throw handleApiError(error, 'Error deleting user');
+    throw handleApiError(error, "Error deleting user");
   }
 };
 
@@ -216,5 +216,5 @@ export default {
   assignCoursesToUser,
   toggleUserEnrollmentAccess,
   getUserEnrollmentStatus,
-  deleteUser
-}; 
+  deleteUser,
+};

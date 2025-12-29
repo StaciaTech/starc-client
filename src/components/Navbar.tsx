@@ -1,10 +1,20 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, Heart, User, ArrowRight, LogOut, Menu, X } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  User,
+  ArrowRight,
+  LogOut,
+  Menu,
+  X,
+  ShoppingCart,
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import logo from "../Assets/EDIFAI-1.svg"
+import logo from "../Assets/EDIFAI-1.svg";
 import authService from "@/services/authService";
 import { useAuth, AUTH_STATE_CHANGED_EVENT } from "@/App";
+import { useCartCount } from "@/hooks/useCart"; // ✅ NEW IMPORT
 
 const Navbar = () => {
   const { isAuthenticated, user, checkAuthStatus } = useAuth();
@@ -13,20 +23,26 @@ const Navbar = () => {
   const [authState, setAuthState] = useState({ isAuthenticated, user });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // ✅ Get cart count
+  const { data: cartCount = 0 } = useCartCount();
+
   // Listen for auth state changes
   useEffect(() => {
     // Update local state when context changes
     setAuthState({ isAuthenticated, user });
-    
+
     // Listen for auth state change events
     const handleAuthChange = (event: any) => {
       const { isAuthenticated, user } = event.detail;
-      console.log("Auth state changed event received in Navbar:", { isAuthenticated, user });
+      console.log("Auth state changed event received in Navbar:", {
+        isAuthenticated,
+        user,
+      });
       setAuthState({ isAuthenticated, user });
     };
-    
+
     window.addEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthChange);
-    
+
     return () => {
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthChange);
     };
@@ -45,7 +61,7 @@ const Navbar = () => {
   const handleLogout = () => {
     authService.logout();
     checkAuthStatus();
-    navigate('/');
+    navigate("/");
   };
 
   const navItems = [
@@ -53,7 +69,7 @@ const Navbar = () => {
     { id: "course", label: "Courses", path: "/course" },
     { id: "book", label: "Books", path: "/book" },
     { id: "about", label: "About Us", path: "/about" },
-    { id: "contact", label: "Contact Us", path: "/contact" }
+    { id: "contact", label: "Contact Us", path: "/contact" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -64,7 +80,11 @@ const Navbar = () => {
         {/* Logo */}
         <div className="flex-shrink-0">
           <Link to="/" className="flex items-center">
-            <img src={logo} className="w-[6rem] sm:w-[8rem]" alt="EDIFAI Logo" />
+            <img
+              src={logo}
+              className="w-[6rem] sm:w-[8rem]"
+              alt="EDIFAI Logo"
+            />
           </Link>
         </div>
 
@@ -84,7 +104,11 @@ const Navbar = () => {
             <Link
               key={item.id}
               to={item.path}
-              className={`text-xs lg:text-sm xl:text-sm 2xl:text-sm 3xl:text-[1rem] font-medium ${isActive(item.path) ? 'text-[#8A63FF]' : 'text-[#474747] hover:text-[#8A63FF]'}`}
+              className={`text-xs lg:text-sm xl:text-sm 2xl:text-sm 3xl:text-[1rem] font-medium ${
+                isActive(item.path)
+                  ? "text-[#8A63FF]"
+                  : "text-[#474747] hover:text-[#8A63FF]"
+              }`}
             >
               {item.label}
             </Link>
@@ -93,18 +117,41 @@ const Navbar = () => {
 
         {/* Auth Buttons - Desktop */}
         <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
+          {/* ✅ Cart Button with Badge */}
+          <Link to="/cart" className="hidden sm:block relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[#8A63FF] border rounded-[50%] border-[#8A63FF] hover:bg-[#8A63FF] hover:text-white h-8 w-8 sm:h-10 sm:w-10"
+              aria-label="Shopping Cart"
+            >
+              <ShoppingCart className="h-4 w-4 sm:h-6 sm:w-6" />
+            </Button>
+
+            {/* ✅ Cart Badge */}
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#8A63FF] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            )}
+          </Link>
+
           {authState.isAuthenticated ? (
             <div className="flex items-center space-x-2 lg:space-x-4">
-              
               <Link to="/profile">
-                <Button variant="outline" className="text-[#8A63FF] border-[#8A63FF] hover:bg-[#8A63FF] font-mont font-medium hover:text-white rounded-full flex items-center text-xs lg:text-sm px-3 lg:px-4 h-8 lg:h-10">
+                <Button
+                  variant="outline"
+                  className="text-[#8A63FF] border-[#8A63FF] hover:bg-[#8A63FF] font-mont font-medium hover:text-white rounded-full flex items-center text-xs lg:text-sm px-3 lg:px-4 h-8 lg:h-10"
+                >
                   <User className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
-                  <span className="truncate max-w-[100px]">{authState.user?.name || 'Profile'}</span>
+                  <span className="truncate max-w-[100px]">
+                    {authState.user?.name || "Profile"}
+                  </span>
                 </Button>
               </Link>
-              <Button 
-                onClick={handleLogout} 
-                variant="outline" 
+              <Button
+                onClick={handleLogout}
+                variant="outline"
                 className="text-[#8A63FF] border-[#8A63FF] hover:bg-[#8A63FF] font-mont font-medium hover:text-white rounded-full flex items-center text-xs lg:text-sm h-8 lg:h-10"
               >
                 <LogOut className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
@@ -129,40 +176,63 @@ const Navbar = () => {
           <div className="w-[70%] bg-white h-full shadow-xl p-4 overflow-auto">
             <div className="flex justify-between items-center mb-6">
               <img src={logo} className="w-[6rem]" alt="EDIFAI Logo" />
-              <button 
+              <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-200"
               >
                 <X size={20} />
               </button>
             </div>
-            
+
+            {/* ✅ Mobile Cart Link with Badge */}
+            <Link
+              to="/cart"
+              className="flex items-center justify-between p-3 mb-4 bg-purple-50 rounded-lg hover:bg-purple-100"
+            >
+              <div className="flex items-center">
+                <ShoppingCart className="h-5 w-5 mr-3 text-[#8A63FF]" />
+                <span className="text-gray-800 font-medium">Cart</span>
+              </div>
+              {cartCount > 0 && (
+                <span className="bg-[#8A63FF] text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                  {cartCount > 9 ? "9+" : cartCount}
+                </span>
+              )}
+            </Link>
+
             {/* Mobile Navigation Links */}
             <div className="flex flex-col space-y-4 mb-8">
               {navItems.map((item) => (
                 <Link
                   key={item.id}
                   to={item.path}
-                  className={`py-2 px-4 rounded-lg ${isActive(item.path) 
-                    ? 'bg-purple-100 text-[#8A63FF] font-medium' 
-                    : 'text-gray-700 hover:bg-gray-100'}`}
+                  className={`py-2 px-4 rounded-lg ${
+                    isActive(item.path)
+                      ? "bg-purple-100 text-[#8A63FF] font-medium"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
-            
+
             {/* Mobile Auth Buttons */}
             <div className="mt-auto border-t pt-4">
               {authState.isAuthenticated ? (
                 <div className="flex flex-col space-y-3">
-                  <Link to="/profile" className="flex items-center p-2 hover:bg-gray-100 rounded-lg">
+                  <Link
+                    to="/profile"
+                    className="flex items-center p-2 hover:bg-gray-100 rounded-lg"
+                  >
                     <User className="h-5 w-5 mr-3 text-[#8A63FF]" />
-                    <span className="text-gray-800">{authState.user?.name || 'Profile'}</span>
+                    <span className="text-gray-800">
+                      {authState.user?.name || "Profile"}
+                    </span>
                   </Link>
-                  
-                  <button 
-                    onClick={handleLogout} 
+
+                  <button
+                    onClick={handleLogout}
                     className="flex items-center p-2 hover:bg-gray-100 rounded-lg w-full text-left"
                   >
                     <LogOut className="h-5 w-5 mr-3 text-red-500" />
@@ -171,8 +241,8 @@ const Navbar = () => {
                 </div>
               ) : (
                 <div className="flex flex-col space-y-3">
-                  <Link 
-                    to="/LoginPage" 
+                  <Link
+                    to="/LoginPage"
                     className="bg-[#8A63FF] text-white font-medium rounded-lg py-3 px-4 text-center"
                   >
                     Log In
