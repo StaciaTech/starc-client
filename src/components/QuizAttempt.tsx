@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
+import quizService, {
   IQuiz,
   IQuizQuestion,
   IQuizSubmission,
@@ -36,12 +36,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import axios from "axios";
 
 const QuizAttempt: React.FC = () => {
   const { quizId, courseId } = useParams<{
     quizId: string;
     courseId: string;
   }>();
+  console.log(courseId);
+  console.log(quizId);
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -56,25 +59,32 @@ const QuizAttempt: React.FC = () => {
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [fullScreenWarning, setFullScreenWarning] = useState<boolean>(true);
 
-  // Load quiz data
-  useEffect(() => {
-    const fetchQuiz = async () => {
-      if (!quizId) return;
+  const fetchAllQuiz = async () => {
+    try {
+      setLoading(true);
+      if (!courseId || !quizId) return;
+      // Note: quizId here is actually the subchapterId passed from LearningModule
+      const quizData = await quizService.getQuizBySubchapter(courseId, quizId);
+      console.log("Fetched quiz:", quizData);
 
-      try {
-        setLoading(true);
-        const quizData = await getQuizById(quizId);
+      if (quizData) {
         setQuiz(quizData);
-        setTimeRemaining(quizData.timeLimit * 60); // in seconds
-      } catch (error) {
-        console.error("Error fetching quiz:", error);
-        toast.error("Failed to load quiz");
-      } finally {
-        setLoading(false);
+        setTimeRemaining(quizData.timeLimit * 60); // set timer based on quiz limit
+      } else {
+        toast.error("No quiz found for this subchapter");
       }
-    };
-    fetchQuiz();
-  }, [quizId]);
+    } catch (error) {
+      console.error("Error fetching quiz:", error);
+      toast.error("Failed to load quiz");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllQuiz();
+  }, []);
+  // Load quiz data
 
   // Request fullscreen on load
   useEffect(() => {
@@ -114,7 +124,9 @@ const QuizAttempt: React.FC = () => {
 
       if (!isCurrentlyFullScreen && !quizCompleted && quiz) {
         toast.error("You exited fullscreen. The quiz has been terminated.");
+        // Force immediate submission and completion
         handleSubmitQuiz();
+        setQuizCompleted(true);
       }
     };
 
@@ -127,25 +139,33 @@ const QuizAttempt: React.FC = () => {
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
       document.removeEventListener(
         "webkitfullscreenchange",
-        handleFullScreenChange
+        handleFullScreenChange,
       );
       document.removeEventListener(
         "mozfullscreenchange",
-        handleFullScreenChange
+        handleFullScreenChange,
       );
       document.removeEventListener(
         "MSFullscreenChange",
-        handleFullScreenChange
+        handleFullScreenChange,
       );
     };
   }, [quiz, quizCompleted]);
 
-  // Prevent Tab switch
+  // Prevent Tab switch / Minimize
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden && !quizCompleted && quiz) {
-        toast.error("Tab switch detected. The quiz has been terminated.");
+      if (
+        (document.hidden || document.visibilityState === "hidden") &&
+        !quizCompleted &&
+        quiz
+      ) {
+        toast.error(
+          "Tab switch/Minimize detected. The quiz has been terminated.",
+        );
+        // Force immediate submission and completion
         handleSubmitQuiz();
+        setQuizCompleted(true);
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -292,13 +312,14 @@ const QuizAttempt: React.FC = () => {
         ([qIndex, selected]) => ({
           questionIndex: parseInt(qIndex),
           selectedOptionIndex: parseInt(selected[0]),
-        })
+          questionId: quiz.questions[parseInt(qIndex)]._id,
+        }),
       );
       const submission: IQuizSubmission = {
         answers: formattedAnswers,
         timeTaken: quiz.timeLimit * 60 - timeRemaining,
       };
-      const result = await submitQuizAttempt(quizId, submission);
+      const result = await submitQuizAttempt(quiz._id, submission);
       setQuizResult(result);
       setQuizCompleted(true);
     } catch (err) {
@@ -317,7 +338,7 @@ const QuizAttempt: React.FC = () => {
   const calculateProgress = () => {
     if (!quiz) return 0;
     return Math.round(
-      (Object.keys(answers).length / quiz.questions.length) * 100
+      (Object.keys(answers).length / quiz.questions.length) * 100,
     );
   };
 
@@ -392,6 +413,7 @@ const QuizAttempt: React.FC = () => {
   }
 
   const currentQuestion = getCurrentQuestion();
+  console.log("Current Question:", currentQuestion);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-gray-50">

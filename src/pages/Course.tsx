@@ -18,6 +18,8 @@ import {
 import { useEnrollments } from "@/hooks/useEnrollments"; // ✅ Import enrollments hook
 import { toast } from "sonner";
 import { useAuth } from "@/App";
+import EntranceTestModal from "@/components/EntranceTestModal";
+import { assessmentService } from "@/services/assessmentService";
 
 interface Course {
   title: string;
@@ -128,28 +130,28 @@ const Course: React.FC = () => {
       filtered = filtered.filter((c) =>
         (c.category || "")
           .toLowerCase()
-          .includes(selectedCategory.toLowerCase())
+          .includes(selectedCategory.toLowerCase()),
       );
     }
 
     if (searchQuery.trim()) {
       filtered = filtered.filter((c) =>
-        c.title.toLowerCase().includes(searchQuery.toLowerCase())
+        c.title.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
     if (statusFilter !== "All Courses") {
       if (statusFilter === "In Progress") {
         filtered = filtered.filter((c) =>
-          userCourses.find((uc) => uc.courseId === c._id && !uc.completed)
+          userCourses.find((uc) => uc.courseId === c._id && !uc.completed),
         );
       } else if (statusFilter === "Completed") {
         filtered = filtered.filter((c) =>
-          userCourses.find((uc) => uc.courseId === c._id && uc.completed)
+          userCourses.find((uc) => uc.courseId === c._id && uc.completed),
         );
       } else if (statusFilter === "Not Started") {
         filtered = filtered.filter(
-          (c) => !userCourses.find((uc) => uc.courseId === c._id)
+          (c) => !userCourses.find((uc) => uc.courseId === c._id),
         );
       }
     }
@@ -271,7 +273,7 @@ const Course: React.FC = () => {
                       onClick={() => {
                         setActiveIndex(index);
                         filterCards(
-                          index === 0 ? "all" : category.toLowerCase()
+                          index === 0 ? "all" : category.toLowerCase(),
                         );
                       }}
                       className={`py-3 px-4 text-sm xl:text-base cursor-pointer w-full border-b-[0.1px] transition-colors ${
@@ -366,10 +368,10 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
     false;
 
   // ✅ Check if course is enrolled (State 3 - after checkout)
-  const isEnrolled =
-    enrollmentsData?.data?.some(
-      (enrollment: any) => enrollment.courseId._id === course._id
-    ) || false;
+  const userEnrollment = enrollmentsData?.data?.find(
+    (enrollment: any) => enrollment.courseId._id === course._id,
+  );
+  const isEnrolled = !!userEnrollment;
 
   // ✅ Check if course is in wishlist
   const isInWishlist =
@@ -400,6 +402,35 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
     removeFromCartMutation.mutate(course._id);
   };
 
+  const [isQualified, setIsQualified] = useState(true); // Default true for basic courses
+  const [showEntranceModal, setShowEntranceModal] = useState(false);
+  const [checkingQualification, setCheckingQualification] = useState(false);
+
+  useEffect(() => {
+    const checkQualification = async () => {
+      // Only check for Intermediate or Advanced courses
+      if (
+        (course.level === "Intermediate" || course.level === "Advanced") &&
+        isAuthenticated &&
+        course._id
+      ) {
+        setCheckingQualification(true);
+        try {
+          const status = await assessmentService.getQualificationStatus(
+            course._id,
+          );
+          setIsQualified(status.qualified);
+        } catch (error) {
+          console.error("Error checking qualification:", error);
+        } finally {
+          setCheckingQualification(false);
+        }
+      }
+    };
+
+    checkQualification();
+  }, [course._id, course.level, isAuthenticated]);
+
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -420,6 +451,15 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
     }
   };
 
+  const handleTakeExitTest = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate("/Signup", { state: { from: location.pathname } });
+      return;
+    }
+    setShowEntranceModal(true);
+  };
+
   const isWishlistLoading =
     addToWishlistMutation.isPending || removeFromWishlistMutation.isPending;
 
@@ -435,23 +475,37 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
           <div className="flex gap-2">
             {/* ✅ THREE STATES: Not in cart, In cart, Enrolled */}
             {isEnrolled ? (
-              // ✅ STATE 3: After Checkout - Show "Will be Unlocked Soon" (LOCKED)
-              <div className="flex-1 flex flex-col gap-1">
+              userEnrollment?.paymentStatus === "completed" ? (
+                // ✅ STATE 4: Enrolled & Approved - Show "Access Course" (GREEN/ACTION)
                 <Button
-                  disabled
-                  className="w-full bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300 shadow-lg text-xs sm:text-sm h-9 px-3"
-                  onClick={(e) => e.stopPropagation()}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg text-xs sm:text-sm h-9 px-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/course/${course._id}`);
+                  }}
                 >
-                  <Lock className="w-4 h-4 mr-1.5" />
-                  <span className="hidden sm:inline">
-                    Will be Unlocked Soon
-                  </span>
-                  <span className="sm:hidden">Locked</span>
+                  <span className="hidden sm:inline">Access Course</span>
+                  <span className="sm:hidden">Access</span>
                 </Button>
-                <p className="text-[10px] text-gray-600 text-center">
-                  Team will contact you
-                </p>
-              </div>
+              ) : (
+                // ✅ STATE 3: Enrolled but Pending - Show "Will be Unlocked Soon" (LOCKED)
+                <div className="flex-1 flex flex-col gap-1">
+                  <Button
+                    disabled
+                    className="w-full bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300 shadow-lg text-xs sm:text-sm h-9 px-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Lock className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">
+                      Will be Unlocked Soon
+                    </span>
+                    <span className="sm:hidden">Locked</span>
+                  </Button>
+                  <p className="text-[10px] text-gray-600 text-center">
+                    Payment Approval Pending
+                  </p>
+                </div>
+              )
             ) : isInCart ? (
               // ✅ STATE 2: In Cart (before checkout) - Show "Remove from Cart" (RED)
               <Button
@@ -466,6 +520,22 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
                     <ShoppingCart className="w-4 h-4 mr-1.5" />
                     <span className="hidden sm:inline">Remove from Cart</span>
                     <span className="sm:hidden">Remove</span>
+                  </>
+                )}
+              </Button>
+            ) : !isQualified ? (
+              // ✅ STATE 1.5: Entrance Test Required (BLUE)
+              <Button
+                onClick={handleTakeExitTest}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm h-9 px-3"
+              >
+                {checkingQualification ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Take Entrance Test</span>
+                    <span className="sm:hidden">Test</span>
                   </>
                 )}
               </Button>
@@ -527,6 +597,16 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
           </div>
         </div>
       )}
+
+      {showEntranceModal && (
+        <EntranceTestModal
+          isOpen={showEntranceModal}
+          onClose={() => setShowEntranceModal(false)}
+          courseId={course._id || ""}
+          courseTitle={course.title}
+          onPass={() => setIsQualified(true)}
+        />
+      )}
     </div>
   );
 };
@@ -556,7 +636,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   onStatusFilterChange,
 }) => {
   const [activeButton, setActiveButton] = useState(
-    initialActiveButton || "supervised"
+    initialActiveButton || "supervised",
   );
 
   const handleToggle = (button: "supervised" | "unsupervised") => {

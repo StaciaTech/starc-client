@@ -55,12 +55,14 @@ import CreateSupervisedCourse from "./pages/AdminCourseCreation";
 // Create AuthContext
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   user: any | null;
   checkAuthStatus: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
+  isLoading: true,
   user: null,
   checkAuthStatus: () => {},
 });
@@ -71,47 +73,72 @@ export const AUTH_STATE_CHANGED_EVENT = "auth-state-changed";
 // AuthProvider component
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
 
-  const checkAuthStatus = () => {
-    const hasToken = authService.isAuthenticated();
-    const wasAuthenticated = isAuthenticated;
+  const checkAuthStatus = async () => {
+    try {
+      const hasToken = authService.isAuthenticated();
+      const wasAuthenticated = isAuthenticated;
 
-    setIsAuthenticated(hasToken);
-
-    if (hasToken) {
-      try {
-        const userStr = localStorage.getItem("user");
-        if (userStr) {
-          const userData = JSON.parse(userStr);
-          setUser(userData);
-
-          // Only dispatch event if state actually changed
-          if (!wasAuthenticated) {
-            // Dispatch custom event for components that might miss context updates
+      if (hasToken) {
+        // Validate token with server
+        const token = localStorage.getItem("token");
+        if (token) {
+          const isValid = await authService.verifyToken(token);
+          if (!isValid) {
+            console.log("Token expired or invalid, logging out");
+            authService.logout();
+            setIsAuthenticated(false);
+            setUser(null);
+            // Dispatch logout event
             window.dispatchEvent(
               new CustomEvent(AUTH_STATE_CHANGED_EVENT, {
-                detail: { isAuthenticated: true, user: userData },
-              })
+                detail: { isAuthenticated: false, user: null },
+              }),
             );
+            return;
           }
         }
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        setUser(null);
-      }
-    } else {
-      setUser(null);
 
-      // Only dispatch event if state actually changed
-      if (wasAuthenticated) {
-        // Dispatch custom event for logout
-        window.dispatchEvent(
-          new CustomEvent(AUTH_STATE_CHANGED_EVENT, {
-            detail: { isAuthenticated: false, user: null },
-          })
-        );
+        setIsAuthenticated(true);
+
+        try {
+          const userStr = localStorage.getItem("user");
+          if (userStr) {
+            const userData = JSON.parse(userStr);
+            setUser(userData);
+
+            // Only dispatch event if state actually changed
+            if (!wasAuthenticated) {
+              // Dispatch custom event for components that might miss context updates
+              window.dispatchEvent(
+                new CustomEvent(AUTH_STATE_CHANGED_EVENT, {
+                  detail: { isAuthenticated: true, user: userData },
+                }),
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          setUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+
+        // Only dispatch event if state actually changed
+        if (wasAuthenticated) {
+          // Dispatch custom event for logout
+          window.dispatchEvent(
+            new CustomEvent(AUTH_STATE_CHANGED_EVENT, {
+              detail: { isAuthenticated: false, user: null },
+            }),
+          );
+        }
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -127,7 +154,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, checkAuthStatus }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, isLoading, user, checkAuthStatus }}
+    >
       {children}
     </AuthContext.Provider>
   );

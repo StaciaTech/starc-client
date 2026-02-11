@@ -55,7 +55,7 @@ const CardDetail: React.FC = () => {
   // ✅ Check enrollment status (after checkout)
   const isEnrolled =
     enrollmentsData?.data?.some(
-      (enrollment: any) => enrollment.courseId._id === id
+      (enrollment: any) => enrollment.courseId._id === id,
     ) || false;
 
   // ✅ Check if course is in cart (before checkout)
@@ -101,12 +101,12 @@ const CardDetail: React.FC = () => {
             setError(
               `Failed to load course details: ${
                 err.response.data.message || "Server error"
-              }`
+              }`,
             );
           }
         } else if (err.request) {
           setError(
-            "Network error. Please check your connection and try again."
+            "Network error. Please check your connection and try again.",
           );
         } else {
           setError("Failed to load course details. Please try again.");
@@ -159,7 +159,7 @@ const CardDetail: React.FC = () => {
       },
       onError: (error: any) => {
         toast.error(
-          error.response?.data?.message || "Failed to remove from cart"
+          error.response?.data?.message || "Failed to remove from cart",
         );
       },
     });
