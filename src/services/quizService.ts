@@ -258,6 +258,23 @@ export const getQuizBySubchapter = async (
   }
 };
 
+// Get full quiz for a specific subchapter (Admin)
+export const getAdminQuizBySubchapter = async (
+  subchapterId: string,
+): Promise<IQuiz> => {
+  try {
+    console.log(`Calling API: /api/quizzes/admin/subchapter/${subchapterId}`);
+    const response = await api.get(
+      `/api/quizzes/admin/subchapter/${subchapterId}`,
+    );
+    console.log(`API Response (getAdminQuizBySubchapter):`, response.data.data);
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching admin subchapter quiz:", error);
+    throw error;
+  }
+};
+
 // Default export
 const quizService = {
   getQuizzesByCourse,
@@ -272,6 +289,7 @@ const quizService = {
   getQuizAttemptsByQuiz,
   getUserQuizAttempts,
   getQuizBySubchapter,
+  getAdminQuizBySubchapter,
 };
 
 export default quizService;

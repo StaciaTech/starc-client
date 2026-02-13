@@ -11,6 +11,7 @@ export interface ICourse {
   description: string;
   thumbnail: string;
   duration: number;
+  totalWeeks?: number; // ✅ Added for course duration in weeks
   instructor: any;
   price: number;
   discount?: number;
@@ -18,6 +19,8 @@ export interface ICourse {
   category: string;
   tags: string[];
   lessons: ILesson[];
+  technologies?: string[]; // ✅ Added for tech stack
+  learningObjectives?: string[]; // ✅ Added for learning goals
   enrolledUsers: string[];
   rating: number;
   reviews: IReview[];
@@ -77,13 +80,13 @@ export const getCourses = async (): Promise<ICourse[]> => {
     // Check if it's a network error
     if (error.message === "Network Error") {
       toast.error(
-        "Cannot connect to server. Please check your internet connection."
+        "Cannot connect to server. Please check your internet connection.",
       );
     } else if (error.code === "ECONNABORTED") {
       toast.error("Request timed out. Server may be down or unreachable.");
     } else if (error.response) {
       toast.error(
-        `Server error: ${error.response.status}. Please try again later.`
+        `Server error: ${error.response.status}. Please try again later.`,
       );
     } else if (error.request) {
       toast.error("No response from server. Please try again later.");
@@ -107,7 +110,7 @@ export const getCourseById = async (id: string): Promise<ICourse> => {
 
 // Create a new course
 export const createCourse = async (
-  courseData: Partial<ICourse>
+  courseData: Partial<ICourse>,
 ): Promise<ICourse> => {
   try {
     const headers = await getAuthHeader();
@@ -122,7 +125,7 @@ export const createCourse = async (
 // Update a course
 export const updateCourse = async (
   id: string,
-  courseData: Partial<ICourse>
+  courseData: Partial<ICourse>,
 ): Promise<ICourse> => {
   try {
     const headers = await getAuthHeader();
@@ -154,7 +157,7 @@ export const enrollInCourse = async (courseId: string): Promise<ICourse> => {
     const response = await axios.put(
       `${API_ENDPOINT}/${courseId}/enroll`,
       {},
-      { headers }
+      { headers },
     );
     return response.data.data;
   } catch (error) {
@@ -167,14 +170,14 @@ export const enrollInCourse = async (courseId: string): Promise<ICourse> => {
 export const addCourseReview = async (
   courseId: string,
   rating: number,
-  comment: string
+  comment: string,
 ): Promise<ICourse> => {
   try {
     const headers = await getAuthHeader();
     const response = await axios.post(
       `${API_ENDPOINT}/${courseId}/reviews`,
       { rating, comment },
-      { headers }
+      { headers },
     );
     return response.data.data;
   } catch (error) {
@@ -204,7 +207,7 @@ export const getMentors = async (): Promise<IMentor[]> => {
     if (error.message === "Network Error") {
       console.error("Network connectivity issue detected");
       toast.error(
-        "Cannot connect to server. Please check your internet connection."
+        "Cannot connect to server. Please check your internet connection.",
       );
     } else if (error.code === "ECONNABORTED") {
       console.error("Request timeout");
@@ -215,10 +218,10 @@ export const getMentors = async (): Promise<IMentor[]> => {
       console.error(
         "Server responded with error:",
         error.response.status,
-        error.response.data
+        error.response.data,
       );
       toast.error(
-        `Server error: ${error.response.status}. Please try again later.`
+        `Server error: ${error.response.status}. Please try again later.`,
       );
     } else if (error.request) {
       // The request was made but no response was received
@@ -244,13 +247,13 @@ export const getMentorById = async (id: string): Promise<IMentor> => {
 
 // Get mentor courses
 export const getMentorCourses = async (
-  mentorId: string
+  mentorId: string,
 ): Promise<ICourse[]> => {
   try {
     const headers = await getAuthHeader();
     const response = await axios.get(
       `${MENTORS_ENDPOINT}/${mentorId}/courses`,
-      { headers }
+      { headers },
     );
     return response.data.data;
   } catch (error) {
@@ -262,7 +265,7 @@ export const getMentorCourses = async (
 // Set course completion announcement and status
 export const setCourseCompletion = async (
   courseId: string,
-  data: { completionAnnouncement?: string; isCompleted?: boolean }
+  data: { completionAnnouncement?: string; isCompleted?: boolean },
 ): Promise<any> => {
   try {
     const response = await axios.put(
@@ -272,7 +275,7 @@ export const setCourseCompletion = async (
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
     return response.data.data;
   } catch (error) {
@@ -280,9 +283,42 @@ export const setCourseCompletion = async (
   }
 };
 
+// Check if student has access to a course
+export const checkCourseAccess = async (
+  courseId: string,
+): Promise<{
+  success: boolean;
+  access: boolean;
+  reason: string;
+  batchStartDate?: string;
+  googleMeetLink?: string;
+  isClassToday?: boolean;
+  isActiveSession?: boolean;
+  sessionSchedule?: {
+    dayOfWeek: string;
+    time: string;
+    duration: number;
+  };
+}> => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/api/courses/${courseId}/access`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error checking course access:", error);
+    throw handleApiError(error, "Failed to check course access");
+  }
+};
+
 // Get completed users for a course (admin only)
 export const getCompletedCourseUsers = async (
-  courseId: string
+  courseId: string,
 ): Promise<any[]> => {
   try {
     const response = await axios.get(
@@ -291,7 +327,7 @@ export const getCompletedCourseUsers = async (
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
     return response.data.data || [];
   } catch (error) {
@@ -312,6 +348,7 @@ const courseService = {
   getMentorById,
   getMentorCourses,
   setCourseCompletion,
+  checkCourseAccess,
   getCompletedCourseUsers,
 };
 

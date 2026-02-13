@@ -18,6 +18,8 @@ interface Subchapter {
   title: string;
   description: string;
   sections: Section[];
+  studyMaterialUrl?: string; // New field
+  videoUrl?: string; // New field
   quiz?: {
     _id: string;
     title: string;
@@ -31,6 +33,7 @@ interface Chapter {
   title: string;
   description: string;
   subchapters: Subchapter[];
+  videoUrl?: string; // New field
 }
 
 interface CourseStructure {
