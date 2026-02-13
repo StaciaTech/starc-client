@@ -29,6 +29,10 @@ import {
   UserX,
   UserPlus,
   Trash,
+  CheckCircle,
+  Pencil,
+  BookOpen,
+  CreditCard,
 } from "lucide-react";
 import userManagementService from "@/services/userManagementService";
 import authService from "@/services/authService";
@@ -43,6 +47,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface Enrollment {
+  _id: string;
+  courseId: string;
+  courseName: string;
+  paymentStatus: "pending" | "completed" | "failed";
+  enrolledAt: string;
+}
 
 interface User {
   _id: string;
@@ -50,6 +77,7 @@ interface User {
   email: string;
   role: string;
   enrollmentEnabled: boolean;
+  enrollments?: Enrollment[]; // ✅ New field
   createdAt: string;
   updatedAt: string;
   location?: string;
@@ -59,11 +87,17 @@ interface User {
   username?: string;
 }
 
+interface Course {
+  _id: string;
+  title: string;
+}
+
 const AdminUserManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [processingUser, setProcessingUser] = useState<string | null>(null);
   const [showCreateUserForm, setShowCreateUserForm] = useState(false);
@@ -72,6 +106,14 @@ const AdminUserManagementPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
+  // State for Change Course dialog
+  const [showChangeCourseDialog, setShowChangeCourseDialog] = useState(false);
+  const [selectedUserForChange, setSelectedUserForChange] =
+    useState<User | null>(null);
+  const [selectedEnrollmentForChange, setSelectedEnrollmentForChange] =
+    useState<Enrollment | null>(null);
+  const [newCourseId, setNewCourseId] = useState<string>("");
+
   // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -79,7 +121,7 @@ const AdminUserManagementPage: React.FC = () => {
         const userData = await authService.getCurrentUser();
         if (userData.data.role === "admin") {
           setIsAdmin(true);
-          fetchUsers();
+          fetchData();
         } else {
           toast.error("You do not have permission to access this page");
           navigate("/");
@@ -96,15 +138,19 @@ const AdminUserManagementPage: React.FC = () => {
     checkAdminStatus();
   }, [navigate]);
 
-  // Fetch all users
-  const fetchUsers = async () => {
+  // Fetch all users and courses
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const usersData = await userManagementService.getAllUsers();
+      const [usersData, coursesData] = await Promise.all([
+        userManagementService.getAllUsers(),
+        userManagementService.getAvailableCourses(),
+      ]);
       setUsers(usersData);
+      setAvailableCourses(coursesData);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Failed to load users");
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load users or courses");
     } finally {
       setLoading(false);
     }
@@ -122,14 +168,14 @@ const AdminUserManagementPage: React.FC = () => {
         prevUsers.map((user) =>
           user._id === userId
             ? { ...user, enrollmentEnabled: updatedUser.enrollmentEnabled }
-            : user
-        )
+            : user,
+        ),
       );
 
       toast.success(
         `Enrollment access ${
           updatedUser.enrollmentEnabled ? "enabled" : "disabled"
-        } for ${updatedUser.name}`
+        } for ${updatedUser.name}`,
       );
     } catch (error) {
       console.error("Error toggling enrollment access:", error);
@@ -139,11 +185,70 @@ const AdminUserManagementPage: React.FC = () => {
     }
   };
 
+  // Handle Approve Enrollment
+  const handleApproveEnrollment = async (userId: string, courseId: string) => {
+    try {
+      setProcessingUser(userId);
+      await userManagementService.approveEnrollment(userId, courseId);
+
+      // Refresh data to reflect changes
+      await fetchData();
+      toast.success("Enrollment approved successfully");
+    } catch (error) {
+      console.error("Error approving enrollment:", error);
+      toast.error("Failed to approve enrollment");
+    } finally {
+      setProcessingUser(null);
+    }
+  };
+
+  // Open Change Course Dialog
+  const openChangeCourseDialog = (user: User, enrollment: Enrollment) => {
+    setSelectedUserForChange(user);
+    setSelectedEnrollmentForChange(enrollment);
+    setNewCourseId(enrollment.courseId); // Pre-select current course
+    setShowChangeCourseDialog(true);
+  };
+
+  // Handle Change Course Submit
+  const handleChangeCourse = async () => {
+    if (!selectedUserForChange || !selectedEnrollmentForChange || !newCourseId)
+      return;
+
+    // Don't do anything if course hasn't changed
+    if (newCourseId === selectedEnrollmentForChange.courseId) {
+      setShowChangeCourseDialog(false);
+      return;
+    }
+
+    try {
+      setProcessingUser(selectedUserForChange._id);
+
+      await userManagementService.changeUserCourse(
+        selectedUserForChange._id,
+        selectedEnrollmentForChange.courseId,
+        newCourseId,
+      );
+
+      toast.success("Course changed successfully");
+      setShowChangeCourseDialog(false);
+      await fetchData(); // Refresh list
+    } catch (error) {
+      console.error("Error changing course:", error);
+      toast.error("Failed to change course");
+    } finally {
+      setProcessingUser(null);
+      setSelectedUserForChange(null);
+      setSelectedEnrollmentForChange(null);
+      setNewCourseId("");
+    }
+  };
+
   // Handle user creation success
   const handleUserCreationSuccess = () => {
-    fetchUsers(); // Refresh the user list
+    fetchData(); // Refresh the user list
     setShowCreateUserForm(false); // Hide the form
-    toast.success("User account has been created and is ready to hand over");
+    toast.success("User account has been created");
   };
 
   // Filter users based on search query
@@ -171,7 +276,7 @@ const AdminUserManagementPage: React.FC = () => {
 
       // Remove the user from the list
       setUsers((prevUsers) =>
-        prevUsers.filter((user) => user._id !== userToDelete._id)
+        prevUsers.filter((user) => user._id !== userToDelete._id),
       );
 
       toast.success(`User ${userToDelete.name} has been deleted successfully`);
@@ -237,7 +342,7 @@ const AdminUserManagementPage: React.FC = () => {
               User Management
             </h1>
             <p className="text-gray-600">
-              Manage user access and create student accounts
+              Manage user access, verify payments, and manage enrollments
             </p>
           </div>
           <Button
@@ -257,9 +362,11 @@ const AdminUserManagementPage: React.FC = () => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Users</CardTitle>
+            {/* ... */}
+            <CardTitle className="text-lg">Users & Enrollments</CardTitle>
             <CardDescription>
-              Manage users: toggle enrollment access, and delete user accounts.
+              View student enrollments, approve pending payments, and manage
+              course access.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -277,9 +384,8 @@ const AdminUserManagementPage: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Registration Date</TableHead>
+                    <TableHead className="w-[200px]">User Info</TableHead>
+                    <TableHead>Enrolled Courses</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -287,61 +393,126 @@ const AdminUserManagementPage: React.FC = () => {
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user._id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        {new Date(user.createdAt).toLocaleDateString()}
+                      {/* User Info Column */}
+                      <TableCell className="align-top">
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{user.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {user.email}
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1">
+                            {user.phone || "No phone"}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        {user.enrollmentEnabled ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            <UserCheck className="h-3 w-3 mr-1" />
-                            Access Enabled
-                          </Badge>
+
+                      {/* Enrolled Courses Column */}
+                      <TableCell className="align-top">
+                        {user.enrollments && user.enrollments.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {user.enrollments.map((enrollment) => (
+                              <div
+                                key={enrollment._id}
+                                className="p-2 bg-gray-50 rounded-md border text-sm flex justify-between items-center group"
+                              >
+                                <div>
+                                  <div className="font-medium">
+                                    {enrollment.courseName}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(
+                                      enrollment.enrolledAt,
+                                    ).toLocaleDateString()}
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-1">
+                                  {/* Edit Course Button */}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Change Course"
+                                    onClick={() =>
+                                      openChangeCourseDialog(user, enrollment)
+                                    }
+                                  >
+                                    <Pencil className="h-3 w-3 text-gray-600" />
+                                  </Button>
+
+                                  {/* Status Badge */}
+                                  {enrollment.paymentStatus === "completed" ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="bg-green-50 text-green-700 border-green-200"
+                                    >
+                                      Paid
+                                    </Badge>
+                                  ) : (
+                                    <div className="flex items-center gap-1">
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-yellow-50 text-yellow-700 border-yellow-200"
+                                      >
+                                        Pending
+                                      </Badge>
+                                      {/* Approve Payment Button */}
+                                      <Button
+                                        size="sm"
+                                        className="h-6 px-2 bg-green-600 hover:bg-green-700 text-white text-xs"
+                                        onClick={() =>
+                                          handleApproveEnrollment(
+                                            user._id,
+                                            enrollment.courseId,
+                                          )
+                                        }
+                                        disabled={processingUser === user._id}
+                                      >
+                                        Approve
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-gray-500 border-gray-300"
-                          >
-                            <UserX className="h-3 w-3 mr-1" />
-                            Access Disabled
-                          </Badge>
+                          <span className="text-gray-400 text-sm italic">
+                            No enrollments
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {processingUser === user._id ? (
-                            <Spinner className="h-4 w-4 mr-2" />
-                          ) : (
-                            <>
-                              <Switch
-                                checked={user.enrollmentEnabled}
-                                onCheckedChange={() =>
-                                  handleToggleEnrollment(user._id)
-                                }
-                                disabled={processingUser === user._id}
-                                className="data-[state=checked]:bg-[#8A63FF]"
-                              />
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => confirmDeleteUser(user)}
-                                disabled={
-                                  processingUser === user._id ||
-                                  user.role === "admin"
-                                }
-                                title={
-                                  user.role === "admin"
-                                    ? "Admin users cannot be deleted"
-                                    : "Delete user"
-                                }
-                                className="ml-2"
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
+
+                      {/* Account Status Column */}
+                      <TableCell className="align-top">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Switch
+                            checked={user.enrollmentEnabled}
+                            onCheckedChange={() =>
+                              handleToggleEnrollment(user._id)
+                            }
+                            disabled={processingUser === user._id}
+                            className="data-[state=checked]:bg-[#8A63FF]"
+                          />
+                          <span className="text-sm">
+                            {user.enrollmentEnabled ? "Enabled" : "Disabled"}
+                          </span>
                         </div>
+                      </TableCell>
+
+                      {/* Actions Column */}
+                      <TableCell className="text-right align-top">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => confirmDeleteUser(user)}
+                          disabled={
+                            processingUser === user._id || user.role === "admin"
+                          }
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -355,6 +526,71 @@ const AdminUserManagementPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Change Course Dialog */}
+      <Dialog
+        open={showChangeCourseDialog}
+        onOpenChange={setShowChangeCourseDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Enrolled Course</DialogTitle>
+            <DialogDescription>
+              Change the course assignment for{" "}
+              <span className="font-semibold">
+                {selectedUserForChange?.name}
+              </span>
+              .
+              <br />
+              Current: {selectedEnrollmentForChange?.courseName}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">
+              Select New Course
+            </label>
+            <Select value={newCourseId} onValueChange={setNewCourseId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a course" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableCourses.map((course) => (
+                  <SelectItem key={course._id} value={course._id}>
+                    {course.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-yellow-600 mt-2 bg-yellow-50 p-2 rounded">
+              Warning: Changing the course will reset the student's progress for
+              the old course.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowChangeCourseDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleChangeCourse}
+              disabled={
+                !newCourseId ||
+                newCourseId === selectedEnrollmentForChange?.courseId
+              }
+            >
+              {processingUser ? (
+                <Spinner className="h-4 w-4" />
+              ) : (
+                "Confirm Change"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

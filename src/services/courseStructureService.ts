@@ -4,8 +4,8 @@ import { getAuthHeader } from "@/utils/authUtils";
 import { API_URL } from "../config/api";
 
 interface Section {
-  id: string;
-  _id?: string;
+  _id: string;
+  id?: string;
   title: string;
   content: string;
   generatedContent?: string;
@@ -13,17 +13,27 @@ interface Section {
 }
 
 interface Subchapter {
-  id: string;
+  _id: string;
+  id?: string;
   title: string;
   description: string;
   sections: Section[];
+  studyMaterialUrl?: string; // New field
+  videoUrl?: string; // New field
+  quiz?: {
+    _id: string;
+    title: string;
+    passingScore?: number;
+  };
 }
 
 interface Chapter {
-  id: string;
+  _id: string;
+  id?: string;
   title: string;
   description: string;
   subchapters: Subchapter[];
+  videoUrl?: string; // New field
 }
 
 interface CourseStructure {
@@ -51,7 +61,9 @@ interface Quiz {
 
 const courseStructureService = {
   // Get course structure
-  getCourseStructure: async (courseId: string): Promise<CourseStructure> => {
+  getCourseStructure: async (
+    courseId: string,
+  ): Promise<CourseStructure | null> => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -64,17 +76,24 @@ const courseStructureService = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       // Check response structure and extract data
       if (response.data && response.data.success && response.data.data) {
+        console.log("API Response (getCourseStructure):", response.data.data);
         return response.data.data;
       } else {
         console.error("Unexpected API response format:", response.data);
         throw new Error("Invalid API response format");
       }
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.warn(
+          "Course structure not found (this is normal for new courses)",
+        );
+        return null;
+      }
       throw handleApiError(error, "Error fetching course structure");
     }
   },
@@ -82,7 +101,7 @@ const courseStructureService = {
   // Save course structure
   saveCourseStructure: async (
     courseId: string,
-    structure: CourseStructure
+    structure: CourseStructure,
   ): Promise<CourseStructure> => {
     try {
       const token = localStorage.getItem("token");
@@ -97,7 +116,7 @@ const courseStructureService = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -108,7 +127,7 @@ const courseStructureService = {
   // Preview AI-generated content
   previewAIContent: async (
     courseId: string,
-    section: Section
+    section: Section,
   ): Promise<{ content: string }> => {
     try {
       const token = localStorage.getItem("token");
@@ -123,7 +142,7 @@ const courseStructureService = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -134,7 +153,7 @@ const courseStructureService = {
   // Generate course content
   generateCourseContent: async (
     courseId: string,
-    structure: CourseStructure
+    structure: CourseStructure,
   ): Promise<CourseStructure> => {
     try {
       const token = localStorage.getItem("token");
@@ -149,7 +168,7 @@ const courseStructureService = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -160,7 +179,7 @@ const courseStructureService = {
   // Update course structure
   updateCourseStructure: async (
     courseId: string,
-    structure: CourseStructure
+    structure: CourseStructure,
   ): Promise<CourseStructure> => {
     try {
       const token = localStorage.getItem("token");
@@ -174,7 +193,7 @@ const courseStructureService = {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       return response.data.data;
@@ -197,7 +216,7 @@ const courseStructureService = {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       return response.data.data;
@@ -215,7 +234,7 @@ const courseStructureService = {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
       return response.data.data;
     } catch (error) {

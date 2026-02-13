@@ -63,7 +63,7 @@ const getAuthHeaders = () => {
 
 // Get all published assignments for a course
 export const getAssignments = async (
-  courseId: string
+  courseId: string,
 ): Promise<Assignment[]> => {
   try {
     if (!hasValidToken()) {
@@ -72,8 +72,9 @@ export const getAssignments = async (
 
     const response = await axios.get(
       `${API_ENDPOINT}/course/${courseId}`,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
+    console.log("API Response (getAssignments):", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching assignments:", error);
@@ -89,6 +90,7 @@ export const getAssignment = async (id: string): Promise<Assignment> => {
     }
 
     const response = await axios.get(`${API_ENDPOINT}/${id}`, getAuthHeaders());
+    console.log("API Response (getAssignment):", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching assignment:", error);
@@ -99,7 +101,7 @@ export const getAssignment = async (id: string): Promise<Assignment> => {
 // Submit an assignment
 export const submitAssignment = async (
   assignmentId: string,
-  submissionUrl: string
+  submissionUrl: string,
 ): Promise<AssignmentSubmission> => {
   try {
     if (!hasValidToken()) {
@@ -109,7 +111,7 @@ export const submitAssignment = async (
     const response = await axios.post(
       `${API_ENDPOINT}/${assignmentId}/submit`,
       { submissionUrl },
-      getAuthHeaders()
+      getAuthHeaders(),
     );
     return response.data.data;
   } catch (error) {
@@ -120,7 +122,7 @@ export const submitAssignment = async (
 
 // Get user's submissions for an assignment
 export const getUserSubmissions = async (
-  assignmentId: string
+  assignmentId: string,
 ): Promise<AssignmentSubmission[]> => {
   try {
     if (!hasValidToken()) {
@@ -129,8 +131,9 @@ export const getUserSubmissions = async (
 
     const response = await axios.get(
       `${API_ENDPOINT}/${assignmentId}/submissions`,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
+    console.log("API Response (getUserSubmissions):", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching user submissions:", error);
@@ -142,7 +145,7 @@ export const getUserSubmissions = async (
 
 // Get all assignments for a course (including unpublished)
 export const getAllAssignments = async (
-  courseId: string
+  courseId: string,
 ): Promise<Assignment[]> => {
   try {
     if (!hasValidToken()) {
@@ -151,8 +154,9 @@ export const getAllAssignments = async (
 
     const response = await axios.get(
       `${ADMIN_API_ENDPOINT}/course/${courseId}`,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
+    console.log("API Response (getAllAssignments):", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching all assignments:", error);
@@ -163,7 +167,7 @@ export const getAllAssignments = async (
 // Create a new assignment
 export const createAssignment = async (
   courseId: string,
-  assignmentData: CreateAssignmentData
+  assignmentData: CreateAssignmentData,
 ): Promise<Assignment> => {
   try {
     if (!hasValidToken()) {
@@ -173,7 +177,7 @@ export const createAssignment = async (
     const response = await axios.post(
       `${ADMIN_API_ENDPOINT}/course/${courseId}`,
       assignmentData,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
     return response.data.data;
   } catch (error) {
@@ -185,7 +189,7 @@ export const createAssignment = async (
 // Update an assignment
 export const updateAssignment = async (
   id: string,
-  assignmentData: UpdateAssignmentData
+  assignmentData: UpdateAssignmentData,
 ): Promise<Assignment> => {
   try {
     if (!hasValidToken()) {
@@ -195,7 +199,7 @@ export const updateAssignment = async (
     const response = await axios.put(
       `${ADMIN_API_ENDPOINT}/${id}`,
       assignmentData,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
     return response.data.data;
   } catch (error) {
@@ -221,7 +225,7 @@ export const deleteAssignment = async (id: string): Promise<void> => {
 // Reorder assignments
 export const reorderAssignments = async (
   courseId: string,
-  assignmentIds: string[]
+  assignmentIds: string[],
 ): Promise<Assignment[]> => {
   try {
     if (!hasValidToken()) {
@@ -231,7 +235,7 @@ export const reorderAssignments = async (
     const response = await axios.put(
       `${ADMIN_API_ENDPOINT}/course/${courseId}/reorder`,
       { assignmentIds },
-      getAuthHeaders()
+      getAuthHeaders(),
     );
     return response.data.data;
   } catch (error) {
@@ -242,7 +246,7 @@ export const reorderAssignments = async (
 
 // Get all submissions for an assignment (admin only)
 export const getAllSubmissions = async (
-  assignmentId: string
+  assignmentId: string,
 ): Promise<AssignmentSubmission[]> => {
   try {
     if (!hasValidToken()) {
@@ -251,8 +255,9 @@ export const getAllSubmissions = async (
 
     const response = await axios.get(
       `${ADMIN_API_ENDPOINT}/${assignmentId}/submissions`,
-      getAuthHeaders()
+      getAuthHeaders(),
     );
+    console.log("API Response (getAllSubmissions):", response.data.data);
     return response.data.data;
   } catch (error) {
     console.error("Error fetching all submissions:", error);
@@ -264,7 +269,7 @@ export const getAllSubmissions = async (
 export const provideSubmissionFeedback = async (
   submissionId: string,
   feedback: string,
-  grade?: number
+  grade?: number,
 ): Promise<AssignmentSubmission> => {
   try {
     if (!hasValidToken()) {
@@ -274,11 +279,32 @@ export const provideSubmissionFeedback = async (
     const response = await axios.put(
       `${ADMIN_API_ENDPOINT}/submissions/${submissionId}`,
       { feedback, grade },
-      getAuthHeaders()
+      getAuthHeaders(),
     );
     return response.data.data;
   } catch (error) {
     console.error("Error providing submission feedback:", error);
+    throw error;
+  }
+};
+// Get assignment by chapter
+export const getAssignmentByChapter = async (
+  courseId: string,
+  chapterId: string,
+): Promise<Assignment> => {
+  try {
+    if (!hasValidToken()) {
+      throw new Error("Authentication token is missing or expired");
+    }
+
+    const response = await axios.get(
+      `${API_ENDPOINT}/course/${courseId}/chapter/${chapterId}`,
+      getAuthHeaders(),
+    );
+    console.log("API Response (getAssignmentByChapter):", response.data.data);
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching assignment by chapter:", error);
     throw error;
   }
 };

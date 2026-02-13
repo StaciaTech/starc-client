@@ -69,7 +69,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
     } catch (profileError) {
       console.log(
         "Could not fetch from profile API, falling back to auth/me",
-        profileError
+        profileError,
       );
       // Fall back to the auth/me endpoint
     }
@@ -111,7 +111,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
 // Update user profile
 export const updateUserProfile = async (
-  profileData: Partial<UserProfile>
+  profileData: Partial<UserProfile>,
 ): Promise<UserProfile> => {
   try {
     const token = localStorage.getItem("token");
@@ -165,7 +165,7 @@ export const getUserSchedule = async (): Promise<ScheduleEvent[]> => {
 
 // Add a schedule event
 export const addScheduleEvent = async (
-  eventData: Omit<ScheduleEvent, "_id">
+  eventData: Omit<ScheduleEvent, "_id">,
 ): Promise<ScheduleEvent> => {
   try {
     const response = await axios.post(`${API_URL}/api/schedule`, eventData);
@@ -179,12 +179,12 @@ export const addScheduleEvent = async (
 // Update a schedule event
 export const updateScheduleEvent = async (
   eventId: string,
-  eventData: Partial<ScheduleEvent>
+  eventData: Partial<ScheduleEvent>,
 ): Promise<ScheduleEvent> => {
   try {
     const response = await axios.put(
       `${API_URL}/api/schedule/${eventId}`,
-      eventData
+      eventData,
     );
     return response.data.data;
   } catch (error) {
@@ -263,7 +263,7 @@ export const updateCourseProgress = async (
     currentLesson?: number;
     completed?: boolean;
     completedSections?: string[];
-  }
+  },
 ): Promise<any> => {
   try {
     // Check if token is valid
@@ -280,7 +280,7 @@ export const updateCourseProgress = async (
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
     return response.data.data;
   } catch (error) {
@@ -290,7 +290,7 @@ export const updateCourseProgress = async (
 };
 
 export const uploadProfilePicture = async (
-  file: File
+  file: File,
 ): Promise<{ avatar: string }> => {
   try {
     const token = localStorage.getItem("token");
@@ -328,7 +328,7 @@ export const getUserCourseDetails = async (courseId: string): Promise<any> => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
     return response.data.data;
   } catch (error) {
@@ -339,6 +339,7 @@ export const getUserCourseDetails = async (courseId: string): Promise<any> => {
       completed: false,
       currentLesson: 0,
       completedSections: [],
+      unlockedSubchapters: [],
       completedQuizzes: [],
     };
   }

@@ -1,56 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  AlertCircle, 
-  Calendar, 
-  Edit, 
-  FileText, 
-  Plus, 
-  Trash2, 
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertCircle,
+  Calendar,
+  Edit,
+  FileText,
+  Plus,
+  Trash2,
   ChevronUp,
   ChevronDown,
-  Users
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { 
-  Assignment, 
-  getAllAssignments, 
-  createAssignment, 
-  updateAssignment, 
-  deleteAssignment, 
+  Users,
+} from "lucide-react";
+import { format } from "date-fns";
+import {
+  Assignment,
+  getAllAssignments,
+  createAssignment,
+  updateAssignment,
+  deleteAssignment,
   reorderAssignments,
   getAllSubmissions,
   AssignmentSubmission,
-  provideSubmissionFeedback
-} from '@/services/assignmentService';
+  provideSubmissionFeedback,
+} from "@/services/assignmentService";
 
 interface AssignmentsManagerProps {
   courseId: string;
 }
 
-const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => {
+const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({
+  courseId,
+}) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,20 +61,22 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [submissionsDialogOpen, setSubmissionsDialogOpen] = useState(false);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<Assignment | null>(null);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<AssignmentSubmission | null>(null);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-  
+
   // Form states
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [isPublished, setIsPublished] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [grade, setGrade] = useState<string>('');
-  
+  const [feedback, setFeedback] = useState("");
+  const [grade, setGrade] = useState<string>("");
+
   // Operation states
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -80,14 +84,15 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
   // Fetch assignments
   useEffect(() => {
     const fetchAssignments = async () => {
+      if (!courseId) return;
       try {
         setLoading(true);
         const data = await getAllAssignments(courseId);
         setAssignments(data);
         setError(null);
       } catch (err) {
-        console.error('Error fetching assignments:', err);
-        setError('Failed to load assignments. Please try again later.');
+        console.error("Error fetching assignments:", err);
+        setError("Failed to load assignments. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -120,14 +125,14 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
   const handleViewSubmissionsClick = async (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setLoadingSubmissions(true);
-    
+
     try {
       const submissionsData = await getAllSubmissions(assignment._id);
       setSubmissions(submissionsData);
       setSubmissionsDialogOpen(true);
     } catch (err) {
-      console.error('Error fetching submissions:', err);
-      setError('Failed to load submissions. Please try again later.');
+      console.error("Error fetching submissions:", err);
+      setError("Failed to load submissions. Please try again later.");
     } finally {
       setLoadingSubmissions(false);
     }
@@ -135,44 +140,44 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
 
   const handleFeedbackClick = (submission: AssignmentSubmission) => {
     setSelectedSubmission(submission);
-    setFeedback(submission.feedback || '');
-    setGrade(submission.grade?.toString() || '');
+    setFeedback(submission.feedback || "");
+    setGrade(submission.grade?.toString() || "");
     setFeedbackDialogOpen(true);
   };
 
   const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setInstructions('');
-    setDeadline('');
+    setTitle("");
+    setDescription("");
+    setInstructions("");
+    setDeadline("");
     setIsPublished(false);
     setFormError(null);
   };
 
   const validateForm = () => {
     if (!title.trim()) {
-      setFormError('Title is required');
+      setFormError("Title is required");
       return false;
     }
     if (!description.trim()) {
-      setFormError('Description is required');
+      setFormError("Description is required");
       return false;
     }
     if (!instructions.trim()) {
-      setFormError('Instructions are required');
+      setFormError("Instructions are required");
       return false;
     }
     if (!deadline) {
-      setFormError('Deadline is required');
+      setFormError("Deadline is required");
       return false;
     }
-    
+
     const deadlineDate = new Date(deadline);
     if (isNaN(deadlineDate.getTime())) {
-      setFormError('Please enter a valid deadline date');
+      setFormError("Please enter a valid deadline date");
       return false;
     }
-    
+
     return true;
   };
 
@@ -182,20 +187,23 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
     try {
       setSubmitting(true);
       setFormError(null);
-      
+
       const newAssignment = await createAssignment(courseId, {
         title,
         description,
         instructions,
-        deadline
+        deadline,
       });
-      
+
       setAssignments([...assignments, newAssignment]);
       setCreateDialogOpen(false);
       resetForm();
     } catch (err: any) {
-      console.error('Error creating assignment:', err);
-      setFormError(err.response?.data?.message || 'Failed to create assignment. Please try again.');
+      console.error("Error creating assignment:", err);
+      setFormError(
+        err.response?.data?.message ||
+          "Failed to create assignment. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -207,25 +215,28 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
     try {
       setSubmitting(true);
       setFormError(null);
-      
+
       const updatedAssignment = await updateAssignment(selectedAssignment._id, {
         title,
         description,
         instructions,
         deadline,
-        isPublished
+        isPublished,
       });
-      
+
       setAssignments(
-        assignments.map(a => 
-          a._id === updatedAssignment._id ? updatedAssignment : a
-        )
+        assignments.map((a) =>
+          a._id === updatedAssignment._id ? updatedAssignment : a,
+        ),
       );
-      
+
       setEditDialogOpen(false);
     } catch (err: any) {
-      console.error('Error updating assignment:', err);
-      setFormError(err.response?.data?.message || 'Failed to update assignment. Please try again.');
+      console.error("Error updating assignment:", err);
+      setFormError(
+        err.response?.data?.message ||
+          "Failed to update assignment. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -236,17 +247,17 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
 
     try {
       setSubmitting(true);
-      
+
       await deleteAssignment(selectedAssignment._id);
-      
+
       setAssignments(
-        assignments.filter(a => a._id !== selectedAssignment._id)
+        assignments.filter((a) => a._id !== selectedAssignment._id),
       );
-      
+
       setDeleteDialogOpen(false);
     } catch (err: any) {
-      console.error('Error deleting assignment:', err);
-      setError('Failed to delete assignment. Please try again.');
+      console.error("Error deleting assignment:", err);
+      setError("Failed to delete assignment. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -254,34 +265,40 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
 
   const handleSubmitFeedback = async () => {
     if (!selectedSubmission) return;
-    
+
     // Validate grade if provided
-    if (grade && (isNaN(Number(grade)) || Number(grade) < 0 || Number(grade) > 10)) {
-      setFormError('Grade must be a number between 0 and 10');
+    if (
+      grade &&
+      (isNaN(Number(grade)) || Number(grade) < 0 || Number(grade) > 10)
+    ) {
+      setFormError("Grade must be a number between 0 and 10");
       return;
     }
-    
+
     try {
       setSubmitting(true);
       setFormError(null);
-      
+
       const updatedSubmission = await provideSubmissionFeedback(
         selectedSubmission._id,
         feedback,
-        grade ? Number(grade) : undefined
+        grade ? Number(grade) : undefined,
       );
-      
+
       // Update the submission in the list
       setSubmissions(
-        submissions.map(s => 
-          s._id === updatedSubmission._id ? updatedSubmission : s
-        )
+        submissions.map((s) =>
+          s._id === updatedSubmission._id ? updatedSubmission : s,
+        ),
       );
-      
+
       setFeedbackDialogOpen(false);
     } catch (err: any) {
-      console.error('Error providing feedback:', err);
-      setFormError(err.response?.data?.message || 'Failed to submit feedback. Please try again.');
+      console.error("Error providing feedback:", err);
+      setFormError(
+        err.response?.data?.message ||
+          "Failed to submit feedback. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -289,23 +306,23 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
 
   const handleMoveUp = async (index: number) => {
     if (index <= 0) return;
-    
+
     const reorderedAssignments = Array.from(assignments);
     const temp = reorderedAssignments[index];
     reorderedAssignments[index] = reorderedAssignments[index - 1];
     reorderedAssignments[index - 1] = temp;
-    
+
     // Update local state immediately for better UX
     setAssignments(reorderedAssignments);
-    
+
     // Send reorder request to backend
     try {
-      const assignmentIds = reorderedAssignments.map(a => a._id);
+      const assignmentIds = reorderedAssignments.map((a) => a._id);
       await reorderAssignments(courseId, assignmentIds);
     } catch (err) {
-      console.error('Error reordering assignments:', err);
-      setError('Failed to reorder assignments. Please try again.');
-      
+      console.error("Error reordering assignments:", err);
+      setError("Failed to reorder assignments. Please try again.");
+
       // Fetch assignments again to reset order
       const data = await getAllAssignments(courseId);
       setAssignments(data);
@@ -314,35 +331,45 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
 
   const handleMoveDown = async (index: number) => {
     if (index >= assignments.length - 1) return;
-    
+
     const reorderedAssignments = Array.from(assignments);
     const temp = reorderedAssignments[index];
     reorderedAssignments[index] = reorderedAssignments[index + 1];
     reorderedAssignments[index + 1] = temp;
-    
+
     // Update local state immediately for better UX
     setAssignments(reorderedAssignments);
-    
+
     // Send reorder request to backend
     try {
-      const assignmentIds = reorderedAssignments.map(a => a._id);
+      const assignmentIds = reorderedAssignments.map((a) => a._id);
       await reorderAssignments(courseId, assignmentIds);
     } catch (err) {
-      console.error('Error reordering assignments:', err);
-      setError('Failed to reorder assignments. Please try again.');
-      
+      console.error("Error reordering assignments:", err);
+      setError("Failed to reorder assignments. Please try again.");
+
       // Fetch assignments again to reset order
       const data = await getAllAssignments(courseId);
       setAssignments(data);
     }
   };
 
-  const formatDate = (dateString: string | Date) => {
-    return format(new Date(dateString), 'MMM d, yyyy');
+  const formatDate = (dateString: string | Date | undefined | null) => {
+    if (!dateString) return "N/A";
+    try {
+      return format(new Date(dateString), "MMM d, yyyy");
+    } catch (e) {
+      return "Invalid Date";
+    }
   };
 
-  const formatDateForInput = (dateString: string | Date) => {
-    return format(new Date(dateString), 'yyyy-MM-dd');
+  const formatDateForInput = (dateString: string | Date | undefined | null) => {
+    if (!dateString) return "";
+    try {
+      return format(new Date(dateString), "yyyy-MM-dd");
+    } catch (e) {
+      return "";
+    }
   };
 
   if (loading) {
@@ -358,7 +385,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
           Add Assignment
         </Button>
       </div>
-      
+
       {error && (
         <Alert variant="destructive" className="my-4">
           <AlertCircle className="h-4 w-4" />
@@ -366,38 +393,41 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {assignments.length === 0 ? (
         <Alert className="my-4">
           <FileText className="h-4 w-4" />
           <AlertTitle>No Assignments</AlertTitle>
-          <AlertDescription>There are no assignments for this course yet. Click "Add Assignment" to create one.</AlertDescription>
+          <AlertDescription>
+            There are no assignments for this course yet. Click "Add Assignment"
+            to create one.
+          </AlertDescription>
         </Alert>
       ) : (
         <div className="space-y-4">
           {assignments.map((assignment, index) => (
             <Card key={assignment._id} className="relative">
               <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col space-y-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
                   onClick={() => handleMoveUp(index)}
                   disabled={index === 0}
                 >
                   <ChevronUp className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
                   onClick={() => handleMoveDown(index)}
                   disabled={index === assignments.length - 1}
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <CardHeader className="pl-12">
                 <div className="flex justify-between items-start">
                   <div>
@@ -406,39 +436,43 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                       Due: {formatDate(assignment.deadline)}
                     </CardDescription>
                   </div>
-                  <Badge variant={assignment.isPublished ? "default" : "outline"}>
-                    {assignment.isPublished ? 'Published' : 'Draft'}
+                  <Badge
+                    variant={assignment.isPublished ? "default" : "outline"}
+                  >
+                    {assignment.isPublished ? "Published" : "Draft"}
                   </Badge>
                 </div>
               </CardHeader>
-              
+
               <CardContent>
-                <p className="text-sm text-gray-600 mb-2">{assignment.description}</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  {assignment.description}
+                </p>
                 <div className="flex items-center text-sm text-gray-500">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>Unlocks on {formatDate(assignment.unlockDate)}</span>
                 </div>
               </CardContent>
-              
+
               <CardFooter className="flex justify-end space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => handleViewSubmissionsClick(assignment)}
                 >
                   <Users className="h-4 w-4 mr-1" />
                   Submissions
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => handleEditClick(assignment)}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   size="sm"
                   onClick={() => handleDeleteClick(assignment)}
                 >
@@ -450,17 +484,18 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
           ))}
         </div>
       )}
-      
+
       {/* Create Assignment Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Assignment</DialogTitle>
             <DialogDescription>
-              Add a new assignment to this course. Students will see it when it's published.
+              Add a new assignment to this course. Students will see it when
+              it's published.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
@@ -471,7 +506,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -482,7 +517,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 rows={2}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="instructions">Instructions</Label>
               <Textarea
@@ -493,7 +528,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 rows={4}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="deadline">Deadline</Label>
               <Input
@@ -503,10 +538,11 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 onChange={(e) => setDeadline(e.target.value)}
               />
               <p className="text-xs text-gray-500">
-                The assignment will unlock automatically 7 days before this deadline.
+                The assignment will unlock automatically 7 days before this
+                deadline.
               </p>
             </div>
-            
+
             {formError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -514,25 +550,22 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               </Alert>
             )}
           </div>
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setCreateDialogOpen(false)}
               disabled={submitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleCreate}
-              disabled={submitting}
-            >
-              {submitting ? 'Creating...' : 'Create Assignment'}
+            <Button onClick={handleCreate} disabled={submitting}>
+              {submitting ? "Creating..." : "Create Assignment"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Assignment Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
@@ -542,7 +575,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               Update the assignment details.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-title">Title</Label>
@@ -553,7 +586,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
               <Textarea
@@ -564,7 +597,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 rows={2}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-instructions">Instructions</Label>
               <Textarea
@@ -575,7 +608,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 rows={4}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-deadline">Deadline</Label>
               <Input
@@ -585,10 +618,11 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 onChange={(e) => setDeadline(e.target.value)}
               />
               <p className="text-xs text-gray-500">
-                The assignment will unlock automatically 7 days before this deadline.
+                The assignment will unlock automatically 7 days before this
+                deadline.
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Switch
                 id="published"
@@ -597,7 +631,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               />
               <Label htmlFor="published">Published</Label>
             </div>
-            
+
             {formError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -605,70 +639,66 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               </Alert>
             )}
           </div>
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setEditDialogOpen(false)}
               disabled={submitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleUpdate}
-              disabled={submitting}
-            >
-              {submitting ? 'Updating...' : 'Update Assignment'}
+            <Button onClick={handleUpdate} disabled={submitting}>
+              {submitting ? "Updating..." : "Update Assignment"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Assignment</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this assignment? This action cannot be undone.
-              All student submissions for this assignment will also be deleted.
+              Are you sure you want to delete this assignment? This action
+              cannot be undone. All student submissions for this assignment will
+              also be deleted.
             </DialogDescription>
           </DialogHeader>
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
               disabled={submitting}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={submitting}
             >
-              {submitting ? 'Deleting...' : 'Delete Assignment'}
+              {submitting ? "Deleting..." : "Delete Assignment"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Submissions Dialog */}
-      <Dialog 
-        open={submissionsDialogOpen} 
+      <Dialog
+        open={submissionsDialogOpen}
         onOpenChange={setSubmissionsDialogOpen}
       >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>
-              {selectedAssignment?.title} - Submissions
-            </DialogTitle>
+            <DialogTitle>{selectedAssignment?.title} - Submissions</DialogTitle>
             <DialogDescription>
               View all student submissions for this assignment.
             </DialogDescription>
           </DialogHeader>
-          
+
           {loadingSubmissions ? (
             <div className="p-4 text-center">Loading submissions...</div>
           ) : submissions.length === 0 ? (
@@ -691,19 +721,22 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                   {submissions.map((submission) => (
                     <tr key={submission._id} className="border-b">
                       <td className="p-2">
-                        {typeof submission.userId === 'object' && submission.userId !== null ? (
+                        {typeof submission.userId === "object" &&
+                        submission.userId !== null ? (
                           <>
                             <div>{(submission.userId as any).name}</div>
-                            <div className="text-xs text-gray-500">{(submission.userId as any).email}</div>
+                            <div className="text-xs text-gray-500">
+                              {(submission.userId as any).email}
+                            </div>
                           </>
                         ) : (
-                          'Unknown User'
+                          "Unknown User"
                         )}
                       </td>
                       <td className="p-2">
-                        <a 
-                          href={submission.submissionUrl} 
-                          target="_blank" 
+                        <a
+                          href={submission.submissionUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
@@ -711,14 +744,19 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                         </a>
                       </td>
                       <td className="p-2">
-                        {format(new Date(submission.submissionDate), 'MMM d, yyyy h:mm a')}
+                        {format(
+                          new Date(submission.submissionDate),
+                          "MMM d, yyyy h:mm a",
+                        )}
                       </td>
                       <td className="p-2">
-                        {submission.grade !== undefined ? `${submission.grade}/10` : 'Not graded'}
+                        {submission.grade !== undefined
+                          ? `${submission.grade}/10`
+                          : "Not graded"}
                       </td>
                       <td className="p-2 text-right">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleFeedbackClick(submission)}
                         >
@@ -731,17 +769,15 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               </table>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button 
-              onClick={() => setSubmissionsDialogOpen(false)}
-            >
+            <Button onClick={() => setSubmissionsDialogOpen(false)}>
               Close
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Feedback Dialog */}
       <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
         <DialogContent>
@@ -751,20 +787,20 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               Add feedback and grade for this submission.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <p className="font-medium">Submission URL:</p>
-              <a 
-                href={selectedSubmission?.submissionUrl} 
-                target="_blank" 
+              <a
+                href={selectedSubmission?.submissionUrl}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
               >
                 {selectedSubmission?.submissionUrl}
               </a>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="feedback">Feedback</Label>
               <Textarea
@@ -775,7 +811,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 rows={4}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="grade">Grade (0-10)</Label>
               <Input
@@ -788,7 +824,7 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
                 onChange={(e) => setGrade(e.target.value)}
               />
             </div>
-            
+
             {formError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -796,20 +832,17 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
               </Alert>
             )}
           </div>
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setFeedbackDialogOpen(false)}
               disabled={submitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleSubmitFeedback}
-              disabled={submitting}
-            >
-              {submitting ? 'Submitting...' : 'Submit Feedback'}
+            <Button onClick={handleSubmitFeedback} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Feedback"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -818,4 +851,4 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({ courseId }) => 
   );
 };
 
-export default AssignmentsManager; 
+export default AssignmentsManager;

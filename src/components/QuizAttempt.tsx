@@ -1,19 +1,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  IQuiz,
-  IQuizQuestion,
+  submitQuizAttempt,
   IQuizSubmission,
   IQuizResult,
-  getQuizById,
-  submitQuizAttempt,
 } from "@/services/quizService";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -24,10 +20,8 @@ import {
   AlertCircle,
   Clock,
   Maximize,
-  Minimize,
+  ShieldAlert,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -37,353 +31,397 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+// --- API Types ---
+interface IAPIQuestion {
+  _id?: string;
+  question?: string;
+  questionText?: string;
+  title?: string;
+  options: string[];
+  points: number;
+  correctAnswer: number;
+}
+
+interface IAPIQuiz {
+  _id: string;
+  title: string;
+  timeLimit: number;
+  questions: IAPIQuestion[];
+  passingScore: number;
+}
+
+type QuizStatus =
+  | "loading"
+  | "active"
+  | "submitting"
+  | "completed"
+  | "error"
+  | "terminated";
+
 const QuizAttempt: React.FC = () => {
   const { quizId, courseId } = useParams<{
     quizId: string;
     courseId: string;
   }>();
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const [quiz, setQuiz] = useState<IQuiz | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  // We use this ref to detect if the component is mounted
+  const isMounted = useRef(true);
+
+  // --- Refs for Logic ---
+  const submissionInProgress = useRef(false);
+  const endTimeRef = useRef<number | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- State ---
+  const [status, setStatus] = useState<QuizStatus>("loading");
+  const [quiz, setQuiz] = useState<IAPIQuiz | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-  const [answers, setAnswers] = useState<Record<number, string[]>>({});
+  const [answers, setAnswers] = useState<Record<number, number>>({});
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [quizResult, setQuizResult] = useState<IQuizResult | null>(null);
-  const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
-  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+
+  // --- Dialog States ---
   const [fullScreenWarning, setFullScreenWarning] = useState<boolean>(true);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState<boolean>(false);
 
-  // Load quiz data
-  useEffect(() => {
-    const fetchQuiz = async () => {
-      if (!quizId) return;
+  // --- 1. Fetch Quiz ---
+  const fetchAllQuiz = async () => {
+    try {
+      setStatus("loading");
+      if (!courseId || !quizId) throw new Error("Missing params");
 
-      try {
-        setLoading(true);
-        const quizData = await getQuizById(quizId);
-        setQuiz(quizData);
-        setTimeRemaining(quizData.timeLimit * 60); // in seconds
-      } catch (error) {
-        console.error("Error fetching quiz:", error);
-        toast.error("Failed to load quiz");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchQuiz();
-  }, [quizId]);
-
-  // Request fullscreen on load
-  useEffect(() => {
-    if (!loading && quiz && !quizCompleted) {
-      const isFullScreenActive = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/quizzes/course/${courseId}/subchapter?subchapterId=${quizId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
       );
-      setIsFullScreen(isFullScreenActive);
-      if (!isFullScreenActive) {
-        setFullScreenWarning(true);
+
+      if (!res.ok) throw new Error("Failed to fetch quiz");
+
+      const responseData = await res.json();
+
+      if (
+        responseData.success &&
+        responseData.data &&
+        responseData.data.length > 0
+      ) {
+        const quizData = responseData.data[0];
+
+        if (!quizData.questions || quizData.questions.length === 0) {
+          toast.error("This quiz has no questions.");
+          setStatus("error");
+          return;
+        }
+
+        if (isMounted.current) {
+          setQuiz(quizData);
+          const timeLimit = quizData.timeLimit || 10;
+          const durationMs = timeLimit * 60 * 1000;
+          endTimeRef.current = Date.now() + durationMs;
+          setTimeRemaining(timeLimit * 60);
+          setStatus("active");
+
+          // Lock navigation history
+          window.history.pushState(null, "", window.location.href);
+        }
       } else {
-        setFullScreenWarning(false);
+        toast.error("No quiz found for this section.");
+        setStatus("error");
       }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error loading quiz. Please try again.");
+      setStatus("error");
     }
-  }, [loading, quiz, quizCompleted]);
+  };
 
-  // Push dummy state to control history
   useEffect(() => {
-    if (!loading && quiz && !quizCompleted) {
-      window.history.pushState(null, "", window.location.href);
-    }
-  }, [loading, quiz, quizCompleted]);
+    isMounted.current = true;
+    fetchAllQuiz();
+    return () => {
+      isMounted.current = false;
+      clearTimer();
+    };
+  }, []);
 
-  // Listen for fullscreen exit
+  // --- 2. Timer Logic ---
+  const clearTimer = () => {
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+  };
+
+  useEffect(() => {
+    if (status !== "active" || !endTimeRef.current) return;
+
+    timerIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const msRemaining = endTimeRef.current! - now;
+      const secondsRemaining = Math.ceil(msRemaining / 1000);
+
+      if (secondsRemaining <= 0) {
+        clearTimer();
+        if (isMounted.current) setTimeRemaining(0);
+        handleSubmitQuiz(true); // Auto-submit
+      } else {
+        if (isMounted.current) setTimeRemaining(secondsRemaining);
+      }
+    }, 1000);
+
+    return () => clearTimer();
+  }, [status]);
+
+  // --- 3. Security: Fullscreen & Visibility Enforcement ---
+  const handleSecurityViolation = useCallback(
+    (reason: string) => {
+      // Ignore if already submitting or finished
+      if (status !== "active" || submissionInProgress.current) return;
+
+      setStatus("terminated");
+      clearTimer();
+
+      toast.error(reason, {
+        duration: 4000,
+        icon: <ShieldAlert className="h-5 w-5 text-red-600" />,
+        style: {
+          border: "1px solid #ef4444",
+          background: "#fef2f2",
+          color: "#b91c1c",
+        },
+      });
+
+      // Exit fullscreen if active
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+
+      // Delay navigation slightly so user sees the error
+      setTimeout(() => {
+        navigate(`/course/${courseId}/learning`, { replace: true });
+      }, 2500);
+    },
+    [status, courseId, navigate],
+  );
+
   useEffect(() => {
     const handleFullScreenChange = () => {
-      const isCurrentlyFullScreen = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
-      );
-      setIsFullScreen(isCurrentlyFullScreen);
+      // If we lose fullscreen AND we are active AND we passed the initial warning
+      if (
+        !document.fullscreenElement &&
+        status === "active" &&
+        !fullScreenWarning
+      ) {
+        handleSecurityViolation("Fullscreen exited! Quiz suspended.");
+      }
+    };
 
-      if (!isCurrentlyFullScreen && !quizCompleted && quiz) {
-        toast.error("You exited fullscreen. The quiz has been terminated.");
-        handleSubmitQuiz();
+    const handleVisibilityChange = () => {
+      if (document.hidden && status === "active" && !fullScreenWarning) {
+        handleSecurityViolation("Tab switched! Quiz suspended.");
       }
     };
 
     document.addEventListener("fullscreenchange", handleFullScreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullScreenChange);
-    document.addEventListener("mozfullscreenchange", handleFullScreenChange);
-    document.addEventListener("MSFullscreenChange", handleFullScreenChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
-      document.removeEventListener(
-        "webkitfullscreenchange",
-        handleFullScreenChange
-      );
-      document.removeEventListener(
-        "mozfullscreenchange",
-        handleFullScreenChange
-      );
-      document.removeEventListener(
-        "MSFullscreenChange",
-        handleFullScreenChange
-      );
-    };
-  }, [quiz, quizCompleted]);
-
-  // Prevent Tab switch
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && !quizCompleted && quiz) {
-        toast.error("Tab switch detected. The quiz has been terminated.");
-        handleSubmitQuiz();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [quiz, quizCompleted]);
-
-  // Timer
-  useEffect(() => {
-    if (!quiz || quizCompleted || timeRemaining <= 0) return;
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [quiz, quizCompleted, timeRemaining]);
-
-  // Disable Right Click (Context menu)
-  useEffect(() => {
-    const handleRightClick = (e: MouseEvent) => {
-      e.preventDefault();
     };
-    document.addEventListener("contextmenu", handleRightClick);
+  }, [status, fullScreenWarning, handleSecurityViolation]);
 
-    return () => document.removeEventListener("contextmenu", handleRightClick);
-  }, []);
+  // --- 4. Submission Logic (Direct API Call) ---
+  const handleSubmitQuiz = async (autoSubmit = false) => {
+    // 1. Guard clauses
+    if (submissionInProgress.current) return;
 
-  // Block Copy + Keyboard Shortcuts
-  const blockKeyActions = (e: KeyboardEvent) => {
-    if (
-      e.key === "F12" ||
-      (e.ctrlKey && e.shiftKey && ["I", "J"].includes(e.key)) ||
-      (e.ctrlKey && e.key === "u")
-    ) {
-      e.preventDefault();
+    // Ensure we have the real Quiz ID from the loaded data, NOT the URL param
+    if (!quiz || !quiz._id) {
+      toast.error("Quiz data is missing. Cannot submit.");
+      return;
     }
-  };
 
-  useEffect(() => {
-    const disableCopyPaste = (e: ClipboardEvent) => e.preventDefault();
-
-    document.addEventListener("keydown", blockKeyActions);
-    document.addEventListener("copy", disableCopyPaste);
-    document.addEventListener("cut", disableCopyPaste);
-    document.addEventListener("paste", disableCopyPaste);
-
-    return () => {
-      document.removeEventListener("keydown", blockKeyActions);
-      document.removeEventListener("copy", disableCopyPaste);
-      document.removeEventListener("cut", disableCopyPaste);
-      document.removeEventListener("paste", disableCopyPaste);
-    };
-  }, []);
-
-  const requestFullScreen = () => {
-    if (containerRef.current) {
-      try {
-        if (containerRef.current.requestFullscreen) {
-          containerRef.current.requestFullscreen();
-        } else if ((containerRef.current as any).webkitRequestFullscreen) {
-          (containerRef.current as any).webkitRequestFullscreen();
-        } else if ((containerRef.current as any).mozRequestFullScreen) {
-          (containerRef.current as any).mozRequestFullScreen();
-        } else if ((containerRef.current as any).msRequestFullscreen) {
-          (containerRef.current as any).msRequestFullscreen();
-        }
-        setFullScreenWarning(false);
-        setIsFullScreen(true);
-      } catch (err) {
-        console.error("Error requesting fullscreen:", err);
-        toast.error("Failed to enter fullscreen mode. Please try again.");
-      }
-    }
-  };
-
-  const exitFullScreen = () => {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if ((document as any).webkitExitFullscreen) {
-      (document as any).webkitExitFullscreen();
-    } else if ((document as any).mozCancelFullScreen) {
-      (document as any).mozCancelFullScreen();
-    } else if ((document as any).msExitFullscreen) {
-      (document as any).msExitFullscreen();
-    }
-  };
-
-  const toggleFullScreen = () => {
-    if (isFullScreen) {
-      exitFullScreen();
-    } else {
-      requestFullScreen();
-    }
-  };
-
-  const handleTimeUp = () => {
-    toast.error("Time is up! Submitting automatically...");
-    handleSubmitQuiz();
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const getCurrentQuestion = (): IQuizQuestion | null => {
-    if (!quiz) return null;
-    return quiz.questions[currentQuestionIndex];
-  };
-
-  const handleRadioSelection = (optionIndex: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQuestionIndex]: [optionIndex],
-    }));
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
-      setCurrentQuestionIndex((i) => i + 1);
-    }
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((i) => i - 1);
-    }
-  };
-
-  const handleSubmitQuiz = async () => {
-    if (!quiz || !quizId || !courseId) return;
     try {
-      setIsSubmitting(true);
-      const formattedAnswers = Object.entries(answers).map(
-        ([qIndex, selected]) => ({
-          questionIndex: parseInt(qIndex),
-          selectedOptionIndex: parseInt(selected[0]),
+      submissionInProgress.current = true;
+      setStatus("submitting");
+      clearTimer();
+
+      if (autoSubmit) toast.info("Time up! Submitting answers...");
+
+      // 2. Format Answers & Validate
+      const formattedAnswers = Object.entries(answers)
+        .map(([key, selectedIdx]) => {
+          const qIndex = parseInt(key);
+          const questionObj = quiz.questions[qIndex];
+
+          if (!questionObj) return null;
+
+          return {
+            questionIndex: qIndex,
+            selectedOptionIndex: selectedIdx,
+            // CRITICAL: Send the Question ID for backend validation
+            questionId: questionObj._id,
+          };
         })
-      );
-      const submission: IQuizSubmission = {
+        .filter(Boolean); // Remove nulls
+
+      // 3. Calculate Time Taken
+      let timeTaken = 0;
+      if (endTimeRef.current) {
+        const durationSeconds = (quiz.timeLimit || 10) * 60;
+        const elapsed =
+          (Date.now() - (endTimeRef.current - durationSeconds * 1000)) / 1000;
+        timeTaken = Math.min(elapsed, durationSeconds);
+      }
+
+      // 4. Payload
+      const payload = {
         answers: formattedAnswers,
-        timeTaken: quiz.timeLimit * 60 - timeRemaining,
+        timeTaken: Math.floor(timeTaken),
       };
-      const result = await submitQuizAttempt(quizId, submission);
-      setQuizResult(result);
-      setQuizCompleted(true);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to submit quiz");
-    } finally {
-      setIsSubmitting(false);
+
+      console.log(
+        "🚀 Submitting Payload to:",
+        `/api/quizzes/${quiz._id}/attempt`,
+      );
+
+      // 5. DIRECT API CALL
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/quizzes/${quiz._id}/submit`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      const resultData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(resultData.message || "Failed to submit quiz");
+      }
+
+      // 6. Success Handling
+      setQuizResult(resultData.data); // Extract the actual data payload
+      setStatus("completed");
+      toast.success("Quiz submitted successfully!");
+
+      // Exit fullscreen cleanup
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (error: any) {
+      console.error("Submission Error:", error);
+      toast.error(error.message || "Submission failed. Please try again.");
+
+      // Reset state so user can retry
+      submissionInProgress.current = false;
+      setStatus("active");
     }
   };
 
-  const handleFinishQuiz = () => {
-    if (isFullScreen) exitFullScreen();
-    navigate(`/course/${courseId}/learning`);
+  // --- Helpers ---
+  const requestFullScreen = async () => {
+    try {
+      // FIX: Use document.documentElement instead of containerRef
+      // This ensures standard Shadcn/Radix Dialogs (which portal to body) are visible
+      await document.documentElement.requestFullscreen();
+      setFullScreenWarning(false);
+    } catch {
+      toast.error("Fullscreen blocked. Please click 'Start' again.");
+    }
   };
 
-  const calculateProgress = () => {
-    if (!quiz) return 0;
-    return Math.round(
-      (Object.keys(answers).length / quiz.questions.length) * 100
-    );
+  const handleOptionSelect = (idx: number) => {
+    setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: idx }));
   };
 
-  const isQuestionAnswered = (questionIndex: number) => {
-    return !!answers[questionIndex]?.length;
+  const formatTimeStr = (seconds: number) => {
+    if (seconds < 0) return "00:00";
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = Math.floor(seconds % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${m}:${s}`;
   };
 
-  if (loading) {
+  // --- RENDER ---
+
+  // 1. Loading
+  if (status === "loading") {
     return (
-      <div
-        className="flex justify-center items-center h-[50vh]"
-        ref={containerRef}
-      >
-        <Spinner className="h-8 w-8" />
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
+        <Spinner className="h-10 w-10 text-[#8A63FF] mb-4" />
+        <p className="text-gray-500">Preparing secure quiz environment...</p>
       </div>
     );
   }
 
-  if (!quiz) {
+  // 2. Error or Terminated
+  if (status === "error" || status === "terminated" || !quiz) {
     return (
-      <div className="text-center p-8" ref={containerRef}>
-        <h2 className="text-xl font-semibold mb-2">Quiz Not Found</h2>
-        <p className="text-gray-600 mb-4">The quiz is not available.</p>
-        hunting = true
-        <Button onClick={() => navigate(`/course/${courseId}/learning`)}>
-          Back to Course
-        </Button>
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="max-w-md w-full text-center p-8 border-red-100 shadow-lg">
+          <ShieldAlert className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            {status === "terminated" ? "Quiz Suspended" : "Unable to Load Quiz"}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {status === "terminated"
+              ? "You exited the secure environment. Your attempt has been suspended and you are being redirected."
+              : "The quiz data could not be retrieved."}
+          </p>
+          <Button
+            onClick={() => navigate(`/course/${courseId}/learning`)}
+            variant="outline"
+          >
+            Return to Course
+          </Button>
+        </Card>
       </div>
     );
   }
 
-  if (quizCompleted && quizResult) {
-    const { score, maxScore, percentage, passed } = quizResult;
+  // 3. Results (Passed/Failed)
+  if (status === "completed" && quizResult) {
     return (
-      <div ref={containerRef} className="min-h-screen p-4 bg-gray-50">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Quiz Completed</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 text-center">
-            {passed ? (
-              <div className="bg-green-100 text-green-800 p-6 rounded-lg mb-6">
-                <Check className="h-16 w-16 mx-auto mb-2 text-green-600" />
-                <h3 className="text-xl font-bold mb-2">Congratulations!</h3>
-                <p>You passed the quiz successfully.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-xl w-full">
+          <CardContent className="pt-8 pb-8 text-center space-y-6">
+            {quizResult.passed ? (
+              <div className="mx-auto h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="h-10 w-10 text-green-600" />
               </div>
             ) : (
-              <div className="bg-red-100 text-red-800 p-6 rounded-lg mb-6">
-                <AlertCircle className="h-16 w-16 mx-auto mb-2 text-red-600" />
-                <h3 className="text-xl font-bold mb-2">Try Again</h3>
-                <p>You did not pass this time.</p>
+              <div className="mx-auto h-20 w-20 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-10 w-10 text-red-600" />
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <strong>Score:</strong> {score}/{maxScore}
-              </div>
-              <div>
-                <strong>Percentage:</strong> {percentage}%
-              </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {quizResult.passed ? "Quiz Passed!" : "Quiz Failed"}
+              </h2>
+              <p className="text-gray-500 mt-1">
+                You scored {quizResult.percentage}% ({quizResult.score}/
+                {quizResult.maxScore})
+              </p>
             </div>
+
             <Button
-              onClick={handleFinishQuiz}
-              className="bg-[#8A63FF] hover:bg-[#7A53EF]"
+              className="w-full bg-[#8A63FF] hover:bg-[#7a53ef]"
+              onClick={() => navigate(`/course/${courseId}/learning`)}
             >
-              Continue Learning
+              Return to Module
             </Button>
           </CardContent>
         </Card>
@@ -391,115 +429,181 @@ const QuizAttempt: React.FC = () => {
     );
   }
 
-  const currentQuestion = getCurrentQuestion();
+  // 4. Active Quiz Interface
+  const question = quiz.questions[currentQuestionIndex];
+  // Fallback for missing text fields based on unstable API
+  const questionText =
+    question.question ||
+    question.questionText ||
+    question.title ||
+    "Question text unavailable";
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50">
-      <Dialog open={fullScreenWarning} onOpenChange={setFullScreenWarning}>
-        <DialogContent>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* FULLSCREEN WARNING MODAL
+        Note: z-[9999] is used to ensure visibility 
+      */}
+      <Dialog open={fullScreenWarning} onOpenChange={() => {}}>
+        <DialogContent
+          className="sm:max-w-md z-[9999]"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
-            <DialogTitle>Fullscreen Required</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <Maximize className="h-5 w-5" /> Proctored Mode
+            </DialogTitle>
             <DialogDescription>
-              This quiz requires fullscreen mode to proceed.
+              This quiz requires fullscreen.{" "}
+              <b>
+                Exiting fullscreen or switching tabs will immediately suspend
+                the quiz.
+              </b>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              onClick={() => navigate(`/course/${courseId}/learning`)}
-              variant="outline"
-            >
-              Exit Quiz
+            <Button variant="ghost" onClick={() => navigate(-1)}>
+              Exit
             </Button>
-            <Button
-              onClick={requestFullScreen}
-              className="bg-[#8A63FF] hover:bg-[#7A53EF]"
-            >
-              Enter Fullscreen
+            {/* Starts Fullscreen on Document Level */}
+            <Button onClick={requestFullScreen} className="bg-[#8A63FF]">
+              Start Quiz
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">{quiz.title}</h1>
-          <div className="flex items-center gap-4">
-            <Clock className="h-5 w-5 text-orange-500" />
-            <span>{formatTime(timeRemaining)}</span>
-            <Button onClick={toggleFullScreen} size="sm" variant="outline">
-              {isFullScreen ? (
-                <Minimize className="h-4 w-4" />
-              ) : (
-                <Maximize className="h-4 w-4" />
-              )}
+      {/* SUBMIT CONFIRMATION MODAL
+        Problem Solved: Since we fullscreen the documentElement, 
+        this portal (which attaches to body) is now visible.
+      */}
+      <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <DialogContent className="z-[9999]">
+          <DialogHeader>
+            <DialogTitle>Finish Quiz?</DialogTitle>
+            <DialogDescription>
+              You have answered {Object.keys(answers).length} of{" "}
+              {quiz.questions.length} questions.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSubmitConfirm(false)}
+            >
+              Cancel
             </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                setShowSubmitConfirm(false);
+                handleSubmitQuiz();
+              }}
+            >
+              Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main Content Area */}
+      {!fullScreenWarning && (
+        <div className="container max-w-4xl mx-auto p-4 py-6 flex-1 flex flex-col">
+          {/* Header */}
+          <div className="bg-white rounded-lg p-4 shadow-sm border mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+              <h1 className="font-bold text-gray-900">{quiz.title}</h1>
+              <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                <span>
+                  Question {currentQuestionIndex + 1} / {quiz.questions.length}
+                </span>
+                <Badge
+                  variant="secondary"
+                  className="bg-red-50 text-red-600 border-red-100"
+                >
+                  <ShieldAlert className="h-3 w-3 mr-1" /> Monitored
+                </Badge>
+              </div>
+            </div>
+            <div className="bg-gray-100 px-4 py-2 rounded-full flex items-center gap-2 font-mono font-bold text-lg text-[#8A63FF]">
+              <Clock className="h-5 w-5" />
+              {formatTimeStr(timeRemaining)}
+            </div>
           </div>
-        </div>
 
-        <Progress value={calculateProgress()} className="mb-4" />
+          {/* Progress Bar */}
+          <Progress
+            value={(Object.keys(answers).length / quiz.questions.length) * 100}
+            className="h-2 mb-6"
+          />
 
-        {currentQuestion && (
-          <Card className="mb-4">
-            <CardContent className="pt-6">
-              <h2 className="text-xl mb-4">{currentQuestion.questionText}</h2>
+          {/* Question Card */}
+          <Card className="flex-1 shadow-md border-t-4 border-t-[#8A63FF]">
+            <CardContent className="p-6 sm:p-10">
+              <h2 className="text-xl font-medium text-gray-900 mb-8">
+                {questionText}
+              </h2>
+
               <RadioGroup
-                value={answers[currentQuestionIndex]?.[0] || ""}
-                onValueChange={handleRadioSelection}
-                className="space-y-4"
+                value={answers[currentQuestionIndex]?.toString() ?? ""}
+                onValueChange={(val) => handleOptionSelect(parseInt(val))}
+                className="space-y-3"
               >
-                {currentQuestion.options.map((opt, i) => (
-                  <div
-                    key={i}
-                    className="border p-3 rounded hover:bg-gray-50 flex items-start"
+                {question.options.map((optString, idx) => (
+                  <label
+                    key={idx}
+                    className={`flex items-start p-4 border rounded-lg cursor-pointer transition-colors ${
+                      answers[currentQuestionIndex] === idx
+                        ? "border-[#8A63FF] bg-purple-50"
+                        : "border-gray-200 hover:bg-gray-50"
+                    }`}
                   >
                     <RadioGroupItem
-                      value={i.toString()}
-                      id={`option-${i}`}
-                      className="mr-2"
+                      value={idx.toString()}
+                      className="mt-1 mr-3 text-[#8A63FF]"
                     />
-                    <label htmlFor={`option-${i}`} className="cursor-pointer">
-                      {opt.optionText}
-                    </label>
-                  </div>
+                    <span className="text-gray-700 font-medium select-none">
+                      {optString}
+                    </span>
+                  </label>
                 ))}
               </RadioGroup>
             </CardContent>
           </Card>
-        )}
 
-        <div className="flex justify-between mt-4">
-          <Button
-            onClick={handlePrevQuestion}
-            disabled={currentQuestionIndex === 0}
-            variant="outline"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Previous
-          </Button>
-          {currentQuestionIndex < quiz.questions.length - 1 ? (
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-6">
             <Button
-              onClick={handleNextQuestion}
-              disabled={!isQuestionAnswered(currentQuestionIndex)}
-              className="bg-[#8A63FF] hover:bg-[#7A53EF]"
+              variant="outline"
+              onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
+              disabled={currentQuestionIndex === 0 || status === "submitting"}
             >
-              Next <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowLeft className="h-4 w-4 mr-2" /> Previous
             </Button>
-          ) : (
-            <Button
-              onClick={handleSubmitQuiz}
-              disabled={
-                !isQuestionAnswered(currentQuestionIndex) || isSubmitting
-              }
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isSubmitting ? (
-                <Spinner className="h-4 w-4 mr-2" />
-              ) : (
-                "Submit Quiz"
-              )}
-            </Button>
-          )}
+
+            {currentQuestionIndex < quiz.questions.length - 1 ? (
+              <Button
+                className="bg-[#8A63FF] hover:bg-[#7a53ef]"
+                onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
+                disabled={status === "submitting"}
+              >
+                Next <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : (
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => setShowSubmitConfirm(true)}
+                disabled={status === "submitting"}
+              >
+                {status === "submitting" ? (
+                  <Spinner className="h-4 w-4" />
+                ) : (
+                  "Submit Quiz"
+                )}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

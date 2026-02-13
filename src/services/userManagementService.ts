@@ -111,7 +111,7 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
  */
 export const assignCoursesToUser = async (
   userId: string,
-  courseIds: string[]
+  courseIds: string[],
 ): Promise<User> => {
   try {
     const token = localStorage.getItem("token");
@@ -124,7 +124,7 @@ export const assignCoursesToUser = async (
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     return response.data.data;
@@ -137,7 +137,7 @@ export const assignCoursesToUser = async (
  * Toggle user enrollment access (admin only)
  */
 export const toggleUserEnrollmentAccess = async (
-  userId: string
+  userId: string,
 ): Promise<User> => {
   try {
     const token = localStorage.getItem("token");
@@ -150,7 +150,7 @@ export const toggleUserEnrollmentAccess = async (
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     return response.data.data;
@@ -163,7 +163,7 @@ export const toggleUserEnrollmentAccess = async (
  * Get user enrollment status (admin only)
  */
 export const getUserEnrollmentStatus = async (
-  userId: string
+  userId: string,
 ): Promise<User> => {
   try {
     const token = localStorage.getItem("token");
@@ -175,7 +175,7 @@ export const getUserEnrollmentStatus = async (
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     return response.data.data;
@@ -188,7 +188,7 @@ export const getUserEnrollmentStatus = async (
  * Delete a user (admin only)
  */
 export const deleteUser = async (
-  userId: string
+  userId: string,
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const token = localStorage.getItem("token");
@@ -209,6 +209,67 @@ export const deleteUser = async (
   }
 };
 
+/**
+ * Approve user enrollment for a specific course
+ */
+export const approveEnrollment = async (
+  userId: string,
+  courseId: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await axios.put(
+      `${ADMIN_API_URL}/users/${userId}/enrollment/${courseId}/approve`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    return {
+      success: true,
+      message: response.data.message,
+    };
+  } catch (error) {
+    throw handleApiError(error, "Error approving enrollment");
+  }
+};
+
+/**
+ * Change user's course to a different one
+ */
+export const changeUserCourse = async (
+  userId: string,
+  courseId: string,
+  newCourseId: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await axios.put(
+      `${ADMIN_API_URL}/users/${userId}/enrollment/${courseId}/change`,
+      { newCourseId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    return {
+      success: true,
+      message: response.data.message,
+    };
+  } catch (error) {
+    throw handleApiError(error, "Error changing course");
+  }
+};
+
 export default {
   getAllUsers,
   getAvailableCourses,
@@ -217,4 +278,6 @@ export default {
   toggleUserEnrollmentAccess,
   getUserEnrollmentStatus,
   deleteUser,
+  approveEnrollment,
+  changeUserCourse,
 };

@@ -1,8 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { IoArrowBack } from "react-icons/io5";
+import { ShoppingCart, Heart, Lock, BookOpen, Video } from "lucide-react";
+
+// Components
+import Navbar from "./Navbar";
 import WallOfLove from "./WallOfLove";
 import PurpleBox from "./PurpleBox";
 import Footer from "./Footer";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
+// Services & Hooks
+import courseService, { ICourse } from "@/services/courseService";
+import { useEnrollments } from "@/hooks/useEnrollments";
+import { useCart, useAddToCart, useRemoveFromCart } from "@/hooks/useCart";
+import {
+  useWishlist,
+  useAddToWishlist,
+  useRemoveFromWishlist,
+} from "@/hooks/useWishlist";
+import { useAuth } from "@/App";
+
+// Assets
 import Behance from "../Assets/ion_logo-behance.png";
 import linkedin from "../Assets/mdi_linkedin.png";
 import resume from "../Assets/pepicons-print_cv.png";
@@ -12,107 +33,97 @@ import reference from "../Assets/Group 18499.png";
 import skill from "../Assets/Group 18500.png";
 import mentor from "../Assets/Group 18501.png";
 import frame from "../Assets/Frame.png";
-import { useNavigate, useParams } from "react-router-dom";
-import { IoArrowBack } from "react-icons/io5";
-import Navbar from "./Navbar";
-import courseService, { ICourse } from "@/services/courseService";
-import { Spinner } from "@/components/ui/spinner";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { useEnrollments } from "@/hooks/useEnrollments";
-import { useCart } from "@/hooks/useCart";
-import { ShoppingCart, Heart, Lock } from "lucide-react"; // ✅ Added Lock icon
-import { useAddToCart, useRemoveFromCart } from "../hooks/useCart";
-import {
-  useAddToWishlist,
-  useRemoveFromWishlist,
-  useWishlist,
-} from "../hooks/useWishlist";
-import { useAuth } from "@/App";
 
 const CardDetail: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
+
+  // Local State
   const [course, setCourse] = useState<ICourse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [accessStatus, setAccessStatus] = useState<{
+    access: boolean;
+    reason: string;
+    batchStartDate?: string;
+    googleMeetLink?: string;
+    isClassToday?: boolean;
+    isActiveSession?: boolean;
+    sessionSchedule?: {
+      dayOfWeek: string;
+      time: string;
+      duration: number;
+    };
+  } | null>(null);
+  const [checkingAccess, setCheckingAccess] = useState<boolean>(false);
 
-  // ✅ Auth state
+  // Auth & Global State
   const { isAuthenticated } = useAuth();
-
-  // ✅ Enrollment, cart, and wishlist data
   const { data: enrollmentsData, isLoading: enrollmentsLoading } =
     useEnrollments();
   const { data: cartData } = useCart();
   const { data: wishlistData } = useWishlist();
 
-  // ✅ Mutations for cart and wishlist
+  // Mutations
   const addToCartMutation = useAddToCart();
   const removeFromCartMutation = useRemoveFromCart();
   const addToWishlistMutation = useAddToWishlist();
   const removeFromWishlistMutation = useRemoveFromWishlist();
 
-  // ✅ Check enrollment status (after checkout)
+  // Computed Statuses
   const isEnrolled =
     enrollmentsData?.data?.some(
-      (enrollment: any) => enrollment.courseId._id === id
+      (enrollment: any) => enrollment.courseId._id === id,
     ) || false;
 
-  // ✅ Check if course is in cart (before checkout)
   const isInCart =
     cartData?.data?.items?.some((item: any) => item.course._id === id) || false;
 
-  // ✅ Check wishlist status
   const isInWishlist =
     wishlistData?.data?.items?.some((item: any) => item.course._id === id) ||
     false;
 
-  // Fetch course details
+  // Format Duration Helper
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0 && mins > 0) return `${hours} hr ${mins} min`;
+    if (hours > 0) return `${hours} hr`;
+    return `${mins} min`;
+  };
+
+  // Calculate Price Helper
+  const discountedPrice = course?.discount
+    ? course.price - course.price * (course.discount / 100)
+    : course?.price || 0;
+
+  // Fetch Data
   useEffect(() => {
     const fetchCourseDetails = async () => {
       if (!id) {
-        console.error("Course ID is undefined or null");
-        setError("Course ID not found in URL parameters");
+        setError("Course ID not found");
         setLoading(false);
         return;
       }
 
       try {
-        console.log(`Fetching course with ID: ${id}`);
         setLoading(true);
         const courseData = await courseService.getCourseById(id);
+        console.log(courseData);
 
         if (!courseData) {
-          console.error("Course data is empty or undefined");
           setError("Course not found");
-          setLoading(false);
-          return;
+        } else {
+          setCourse(courseData);
         }
-
-        console.log("Course data fetched successfully:", courseData);
-        setCourse(courseData);
       } catch (err: any) {
-        console.error("Error fetching course details:", err);
-
-        if (err.response) {
-          if (err.response.status === 404) {
-            setError("Course not found. It may have been deleted or moved.");
-          } else {
-            setError(
-              `Failed to load course details: ${
-                err.response.data.message || "Server error"
-              }`
-            );
-          }
-        } else if (err.request) {
-          setError(
-            "Network error. Please check your connection and try again."
-          );
+        console.error("Error fetching course:", err);
+        if (err.response?.status === 404) {
+          setError("Course not found.");
         } else {
           setError("Failed to load course details. Please try again.");
         }
-
-        toast.error("Failed to load course details");
       } finally {
         setLoading(false);
       }
@@ -121,60 +132,54 @@ const CardDetail: React.FC = () => {
     fetchCourseDetails();
   }, [id]);
 
-  // ✅ Handlers
-  const handleGoBack = () => {
-    navigate("/course");
+  // Check course access when enrolled
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!id || !isEnrolled || !isAuthenticated) return;
+
+      try {
+        setCheckingAccess(true);
+        const accessData = await courseService.checkCourseAccess(id);
+        setAccessStatus(accessData);
+      } catch (err) {
+        console.error("Error checking access:", err);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [id, isEnrolled, isAuthenticated]);
+
+  // Handlers
+  const handleGoBack = () => navigate("/course");
+
+  const handleAuthRedirect = () => {
+    navigate("/Signup", { state: { from: location.pathname } });
   };
 
   const handleAddToCart = () => {
-    if (!isAuthenticated) {
-      navigate("/Signup", { state: { from: `/course/${id}` } });
-      return;
-    }
-
-    if (!id) {
-      toast.error("Course ID not found");
-      return;
-    }
+    if (!isAuthenticated) return handleAuthRedirect();
+    if (!id) return toast.error("Invalid Course ID");
 
     addToCartMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success("Course added to cart!");
-      },
-      onError: (error: any) => {
-        toast.error(error.response?.data?.message || "Failed to add to cart");
-      },
+      onSuccess: () => toast.success("Added to cart!"),
+      onError: (err: any) =>
+        toast.error(err.response?.data?.message || "Failed to add"),
     });
   };
 
   const handleRemoveFromCart = () => {
-    if (!id) {
-      toast.error("Course ID not found");
-      return;
-    }
-
+    if (!id) return;
     removeFromCartMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success("Course removed from cart!");
-      },
-      onError: (error: any) => {
-        toast.error(
-          error.response?.data?.message || "Failed to remove from cart"
-        );
-      },
+      onSuccess: () => toast.success("Removed from cart"),
+      onError: () => toast.error("Failed to remove"),
     });
   };
 
   const handleToggleWishlist = () => {
-    if (!isAuthenticated) {
-      navigate("/Signup", { state: { from: `/course/${id}` } });
-      return;
-    }
-
-    if (!id) {
-      toast.error("Course ID not found");
-      return;
-    }
+    if (!isAuthenticated) return handleAuthRedirect();
+    if (!id) return;
 
     if (isInWishlist) {
       removeFromWishlistMutation.mutate(id);
@@ -183,147 +188,108 @@ const CardDetail: React.FC = () => {
     }
   };
 
-  // Format duration
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-
-    if (hours > 0 && mins > 0) {
-      return `${hours} hour${hours > 1 ? "s" : ""} ${mins} minute${
-        mins > 1 ? "s" : ""
-      }`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? "s" : ""}`;
-    } else {
-      return `${mins} minute${mins > 1 ? "s" : ""}`;
-    }
-  };
-
-  // Calculate discounted price
-  const discountedPrice = course?.discount
-    ? course.price - course.price * (course.discount / 100)
-    : course?.price || 0;
-
-  // ✅ Render action buttons based on THREE states
+  // Render Action Button Logic
   const renderActionButton = () => {
-    // ✅ STATE 3: After checkout - Show LOCKED (Will be Unlocked Soon)
     if (isEnrolled) {
+      if (accessStatus?.access) {
+        return (
+          <Button
+            onClick={() => navigate(`/course/${id}/learn`)}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 font-semibold"
+          >
+            <BookOpen className="w-5 h-5 mr-2 inline" /> Start Learning
+          </Button>
+        );
+      }
+
       return (
         <div className="w-full">
           <Button
             disabled
-            className="w-full bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300 py-3 rounded-lg font-semibold"
+            className="w-full bg-gray-300 text-gray-600 cursor-not-allowed py-3 font-semibold"
           >
             <Lock className="w-5 h-5 mr-2 inline" />
-            Will be Unlocked Soon
+            {checkingAccess
+              ? "Checking..."
+              : accessStatus?.reason || "Access Pending"}
           </Button>
           <p className="text-xs text-gray-500 text-center mt-2">
-            Our team will contact you shortly to unlock your course access
+            {accessStatus?.reason === "Payment not completed"
+              ? "Your payment is being verified."
+              : accessStatus?.batchStartDate
+                ? `Batch starts on ${new Date(accessStatus.batchStartDate).toLocaleDateString()}`
+                : "Your enrollment is being processed."}
           </p>
         </div>
       );
     }
 
-    // ✅ STATE 2: In cart - Show "Remove from Cart" (RED)
     if (isInCart) {
       return (
         <Button
           onClick={handleRemoveFromCart}
           disabled={removeFromCartMutation.isPending}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition"
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-3 font-semibold"
         >
           {removeFromCartMutation.isPending ? (
             <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
           ) : (
             <>
-              <ShoppingCart className="w-5 h-5 mr-2 inline" />
-              Remove from Cart
+              <ShoppingCart className="w-5 h-5 mr-2 inline" /> Remove from Cart
             </>
           )}
         </Button>
       );
     }
 
-    // ✅ STATE 1: Default - Show "Add to Cart" (PURPLE)
     return (
       <Button
         onClick={handleAddToCart}
         disabled={addToCartMutation.isPending}
-        className="w-full bg-[#8A63FF] text-white py-3 rounded-lg font-semibold hover:bg-[#7A53EF] transition"
+        className="w-full bg-[#8A63FF] hover:bg-[#7A53EF] text-white py-3 font-semibold"
       >
         {addToCartMutation.isPending ? (
           <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
         ) : (
           <>
-            <ShoppingCart className="w-5 h-5 mr-2 inline" />
-            Add to Cart
+            <ShoppingCart className="w-5 h-5 mr-2 inline" /> Add to Cart
           </>
         )}
       </Button>
     );
   };
 
-  // Loading state
-  // Loading state
+  // --- SKELETON LOADING STATE ---
   if (loading || enrollmentsLoading) {
     return (
       <div className="flex-col min-h-screen bg-gray-50 font-mont">
         <Navbar />
         <div className="flex flex-col lg:flex-row">
-          {/* Main Content Skeleton */}
           <div className="w-full lg:w-2/3 p-4 lg:p-20">
-            {/* Back button skeleton */}
             <div className="mb-4 flex gap-2">
-              <div className="h-8 w-20 bg-gray-200 rounded-full animate-pulse"></div>
-              <div className="h-8 w-32 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="h-8 w-20 bg-gray-200 rounded-full animate-pulse" />
+              <div className="h-8 w-32 bg-gray-200 rounded-full animate-pulse" />
             </div>
-
-            {/* Title skeleton */}
-            <div className="h-10 w-3/4 bg-gray-200 rounded-lg animate-pulse mb-4"></div>
-
-            {/* Description skeleton */}
+            <div className="h-10 w-3/4 bg-gray-200 rounded-lg animate-pulse mb-4" />
             <div className="space-y-2 mb-6">
-              <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-4 w-5/6 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-4 w-4/6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 w-5/6 bg-gray-200 rounded animate-pulse" />
             </div>
-
-            {/* Course details skeleton */}
             <div className="flex gap-4 mb-8">
-              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
+              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
             </div>
-
-            {/* Content card skeleton */}
-            <div className="bg-white p-8 rounded-lg shadow-md">
-              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-5 w-5 bg-gray-200 rounded-full animate-pulse"></div>
-                    <div className="h-4 flex-1 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <div className="bg-white p-8 rounded-lg shadow-md h-64 animate-pulse" />
           </div>
-
-          {/* Sidebar skeleton */}
-          <div className="hidden lg:flex lg:w-1/3 items-start justify-center p-6">
-            <div className="w-full bg-white p-6 shadow-lg rounded-lg border border-gray-200">
-              <div className="h-8 w-3/4 bg-gray-200 rounded animate-pulse mb-4"></div>
-              <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-6"></div>
-              <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse mb-3"></div>
-              <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse"></div>
-            </div>
+          <div className="hidden lg:flex lg:w-1/3 p-6">
+            <div className="w-full bg-white p-6 shadow-lg rounded-lg border border-gray-200 h-96 animate-pulse" />
           </div>
         </div>
       </div>
     );
   }
 
-  // Error state
+  // --- ERROR STATE ---
   if (error || !course) {
     return (
       <div className="flex-col min-h-screen bg-gray-50 font-mont">
@@ -333,11 +299,8 @@ const CardDetail: React.FC = () => {
             <div className="text-red-500 text-xl mb-4">
               {error || "Course not found"}
             </div>
-            <Button
-              onClick={handleGoBack}
-              className="bg-[#8A63FF] text-white px-4 py-2 rounded-lg hover:bg-[#6D28D9] transition"
-            >
-              Go Back
+            <Button onClick={handleGoBack} className="bg-[#8A63FF] text-white">
+              Back to Courses
             </Button>
           </div>
         </div>
@@ -345,95 +308,93 @@ const CardDetail: React.FC = () => {
     );
   }
 
+  // --- MAIN CONTENT ---
   return (
     <div className="flex-col min-h-[800px] bg-gray-50 font-mont">
       <Navbar />
 
-      {/* ✅ Mobile Sticky Bottom Bar - Hidden if enrolled */}
+      {/* Mobile Sticky Bar */}
       {!isEnrolled && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg z-50 border-t border-gray-200">
-          <div className="flex gap-2">
-            {/* Action Button */}
-            <div className="flex-1">{renderActionButton()}</div>
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 shadow-lg z-50 border-t border-gray-200 flex gap-2">
+          <div className="flex-1">{renderActionButton()}</div>
+          {!isInCart && (
+            <Button
+              onClick={handleToggleWishlist}
+              disabled={
+                addToWishlistMutation.isPending ||
+                removeFromWishlistMutation.isPending
+              }
+              variant="outline"
+              size="icon"
+              className={`h-12 w-12 flex-shrink-0 ${
+                isInWishlist
+                  ? "bg-red-50 border-red-400"
+                  : "bg-white border-gray-300"
+              }`}
+            >
+              <Heart
+                className={`w-5 h-5 ${isInWishlist ? "text-red-600 fill-red-600" : "text-[#8A63FF]"}`}
+              />
+            </Button>
+          )}
 
-            {/* Wishlist Button - Hide if in cart */}
-            {!isInCart && (
+          {/* Mobile Join Mentoring Class Button */}
+          {isEnrolled && accessStatus?.googleMeetLink && (
+            <div className="relative flex-1">
+              {accessStatus.isActiveSession && (
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg opacity-75 blur animate-pulse" />
+              )}
               <Button
-                onClick={handleToggleWishlist}
-                disabled={
-                  addToWishlistMutation.isPending ||
-                  removeFromWishlistMutation.isPending
+                onClick={() =>
+                  window.open(accessStatus.googleMeetLink, "_blank")
                 }
-                variant="outline"
-                size="icon"
-                className={`h-12 w-12 flex-shrink-0 ${
-                  isInWishlist
-                    ? "bg-red-50 hover:bg-red-100 border-red-400"
-                    : "bg-white hover:bg-gray-100 border-gray-300"
+                className={`w-full relative py-3 font-semibold ${
+                  accessStatus.isActiveSession
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
-                {addToWishlistMutation.isPending ||
-                removeFromWishlistMutation.isPending ? (
-                  <div className="h-5 w-5 border-2 border-t-transparent rounded-full animate-spin border-[#8A63FF]" />
-                ) : (
-                  <Heart
-                    className={`w-5 h-5 ${
-                      isInWishlist
-                        ? "text-red-600 fill-red-600"
-                        : "text-[#8A63FF]"
-                    }`}
-                    style={{ fill: isInWishlist ? "currentColor" : "none" }}
-                  />
-                )}
+                <Video className="w-5 h-5 mr-2 inline" />
+                {accessStatus.isClassToday ? "Live" : "Join Class"}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Main Content */}
       <div className="flex flex-col lg:flex-row">
-        {/* Main Content Area */}
+        {/* Left Column: Content */}
         <div className="w-full lg:w-2/3 p-4 lg:p-20 pb-20 lg:pb-4">
-          {/* Back Button and Tags */}
+          {/* Breadcrumbs / Tags */}
           <div className="mb-4 flex flex-wrap items-center gap-2 lg:gap-3">
             <Button
               onClick={handleGoBack}
               className="flex items-center bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full hover:bg-[#6D28D9] transition"
             >
-              <IoArrowBack className="mr-1" />
-              Back
+              <IoArrowBack className="mr-1" /> Back
             </Button>
-            <span className="inline-block bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full">
-              {course.level.charAt(0).toUpperCase() + course.level.slice(1)}{" "}
-              Level
+            <span className="bg-[#8A63FF] text-white text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-2 rounded-full capitalize">
+              {course.level} Level
             </span>
             {course.category && (
-              <span className="inline-block bg-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-1 rounded-full">
+              <span className="bg-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 lg:px-4 lg:py-1 rounded-full">
                 {course.category}
               </span>
             )}
           </div>
 
-          {/* Title */}
-          <h1 className="text-2xl lg:text-4xl font-bold text-black mb-4 lg:mb-6">
+          <h1 className="text-2xl lg:text-4xl font-bold text-black mb-4">
             {course.title}
           </h1>
-
-          {/* Description */}
-          <p className="text-gray-600 text-sm lg:text-base mb-6 lg:mb-8">
+          <p className="text-gray-600 text-sm lg:text-base mb-6">
             {course.description}
           </p>
 
-          {/* Course Details */}
-          <div className="flex flex-wrap items-center gap-3 mb-6 lg:mb-8 text-sm text-gray-600">
+          {/* Quick Stats */}
+          <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-gray-600">
             <div className="flex items-center">
               <span className="font-semibold mr-1">Duration:</span>{" "}
-              {formatDuration(course.duration)}
-            </div>
-            <div className="flex items-center">
-              <span className="font-semibold mr-1">Rating:</span>{" "}
-              {course.rating?.toFixed(1) || "0.0"}/5
+              {course.totalWeeks} weeks
             </div>
             <div className="flex items-center">
               <span className="font-semibold mr-1">Students:</span>{" "}
@@ -441,236 +402,246 @@ const CardDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Course Content */}
-          <div className="bg-white p-4 lg:p-16 shadow-[0_0_10px_0_rgba(0,0,0,0.2)] rounded-lg">
-            {/* What You'll Learn */}
-            <div className="mb-6 lg:mb-8">
-              <div className="grid grid-cols-1 mb-4 w-full">
-                <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF]">
+          {/* Content Card */}
+          <div className="bg-white p-6 lg:p-16 shadow-lg rounded-lg">
+            {/* What You'll Learn - Technologies and Learning Objectives */}
+            <div className="mb-8">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-[#8A63FF]">
                   What You'll Learn
                 </h2>
-                <p className="">{course.title} Fundamentals:</p>
+                <p>Key topics and skills you'll master:</p>
               </div>
 
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                {course.lessons && course.lessons.length > 0 ? (
-                  <ul className="space-y-3 lg:space-y-5 mb-4 md:mb-0">
-                    {course.lessons
-                      .slice(0, Math.ceil(course.lessons.length / 2))
-                      .map((lesson: any, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center gap-2 text-sm lg:text-base text-gray-600"
-                        >
-                          <div className="flex items-center justify-center">
-                            <img
-                              src={frame}
-                              alt=""
-                              className="w-4 h-4 lg:w-5 lg:h-5"
-                            />
-                          </div>
-                          {lesson.title}
-                        </li>
-                      ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500 text-sm lg:text-base">
-                    Lesson content will be available soon.
-                  </p>
-                )}
-
-                {course.lessons && course.lessons.length > 1 && (
-                  <ul className="space-y-3 lg:space-y-5">
-                    {course.lessons
-                      .slice(Math.ceil(course.lessons.length / 2))
-                      .map((lesson: any, index) => (
-                        <li
-                          key={`second-${index}`}
-                          className="flex items-center text-sm lg:text-base text-gray-600"
-                        >
-                          <div className="flex items-center justify-center">
-                            <img
-                              src={frame}
-                              alt=""
-                              className="w-4 h-4 lg:w-5 lg:h-5"
-                            />
-                          </div>
-                          {lesson.title}
-                        </li>
-                      ))}
-                  </ul>
-                )}
+              {(course.technologies && course.technologies.length > 0) ||
+              (course.learningObjectives &&
+                course.learningObjectives.length > 0) ? (
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  {/* Map Technologies */}
+                  {course.technologies?.map((tech: string, index: number) => (
+                    <li
+                      key={`tech-${index}`}
+                      className="flex items-start gap-3 text-gray-600"
+                    >
+                      <img
+                        src={frame}
+                        alt="bullet"
+                        className="w-5 h-5 mt-0.5 flex-shrink-0"
+                      />
+                      <span className="text-sm lg:text-base">{tech}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 italic">
+                  Course details coming soon.
+                </p>
+              )}
+            </div>
+            <div>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-[#8A63FF]">
+                  Learning Objectives
+                </h2>
+                <p>What you'll achive:</p>
               </div>
+              {course.learningObjectives &&
+              course.learningObjectives.length > 0 ? (
+                <div className="my-4">
+                  {/* Map Learning Objectives */}
+                  {course.learningObjectives?.map(
+                    (objective: string, index: number) => (
+                      <div
+                        key={`objective-${index}`}
+                        className="flex items-start gap-3 text-gray-600"
+                      >
+                        <img
+                          src={frame}
+                          alt="bullet"
+                          className="w-5 h-5 mt-0.5 flex-shrink-0"
+                        />
+                        <span className="text-sm lg:text-base">
+                          {objective}
+                        </span>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">
+                  Course details coming soon.
+                </p>
+              )}
             </div>
 
-            <div className="border-t border-gray-200 mt-6 lg:mt-8 pt-6 lg:pt-8"></div>
+            <div className="border-t border-gray-200 my-8"></div>
 
-            {/* Value Beyond Classroom */}
-            <div className="mb-6 lg:mb-8">
-              <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF] mb-4">
+            {/* Value Props */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-[#8A63FF] mb-6">
                 VALUE BEYOND THE CLASSROOM
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={Behance} alt="" className="w-12 h-12" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  {
+                    img: Behance,
+                    title: "Behance Profile",
+                    desc: "Showcase projects",
+                  },
+                  {
+                    img: linkedin,
+                    title: "LinkedIn Profile",
+                    desc: "Highlight skills",
+                  },
+                  {
+                    img: resume,
+                    title: "Resume Building",
+                    desc: "Master resume",
+                  },
+                  {
+                    img: interview,
+                    title: "Interview Prep",
+                    desc: "Mock interviews",
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="text-center space-y-2">
+                    <img
+                      src={item.img}
+                      alt={item.title}
+                      className="w-12 h-12 mx-auto"
+                    />
+                    <p className="text-gray-800 font-semibold text-sm">
+                      {item.title}
+                    </p>
+                    <p className="text-gray-500 text-xs">{item.desc}</p>
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Behance Profile
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Showcase projects, collaborate, network
-                  </p>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={linkedin} alt="" className="w-12 h-12" />
-                  </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    LinkedIn Profile
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Highlight skills, projects
-                  </p>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={resume} alt="" className="w-12 h-12" />
-                  </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Resume Building
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Master communication skills
-                  </p>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={interview} alt="" className="w-12 h-12" />
-                  </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Interview Prep
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Mock interviews, feedback
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
 
-            <div className="border-t border-gray-200 mt-6 lg:mt-8 pt-6 lg:pt-8"></div>
+            <div className="border-t border-gray-200 my-8"></div>
 
-            {/* What You'll Get */}
+            {/* Deliverables */}
             <div>
-              <h2 className="text-lg lg:text-xl font-semibold text-[#8A63FF] mb-4">
+              <h2 className="text-xl font-semibold text-[#8A63FF] mb-6">
                 What You'll Get
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={coc} alt="" className="w-12 h-12" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { img: coc, title: "Certificate", desc: "Validate skills" },
+                  {
+                    img: reference,
+                    title: "Resources",
+                    desc: "Comprehensive material",
+                  },
+                  {
+                    img: skill,
+                    title: "Assessment",
+                    desc: "Evaluate expertise",
+                  },
+                  { img: mentor, title: "Mentorship", desc: "Expert guidance" },
+                ].map((item, i) => (
+                  <div key={i} className="text-center space-y-2">
+                    <img
+                      src={item.img}
+                      alt={item.title}
+                      className="w-12 h-12 mx-auto"
+                    />
+                    <p className="text-gray-800 font-semibold text-sm">
+                      {item.title}
+                    </p>
+                    <p className="text-gray-500 text-xs">{item.desc}</p>
                   </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Certificate
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Validate your skills
-                  </p>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={reference} alt="" className="w-12 h-12" />
-                  </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Reference Materials
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Comprehensive resources
-                  </p>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={skill} alt="" className="w-12 h-12" />
-                  </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Skill Assessment
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Evaluate your expertise
-                  </p>
-                </div>
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center">
-                    <img src={mentor} alt="" className="w-12 h-12" />
-                  </div>
-                  <p className="text-gray-600 font-mont font-semibold text-sm lg:text-base">
-                    Mentorship
-                  </p>
-                  <p className="text-gray-500 text-xs lg:text-sm">
-                    Expert guidance
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* ✅ Desktop Sidebar */}
+        {/* Right Column: Sidebar (Desktop) */}
         <div className="hidden lg:flex lg:w-1/3 items-start justify-center p-6 sticky top-0 h-screen overflow-y-auto">
-          <div className="w-full bg-white p-6 shadow-lg rounded-lg border border-[#8A63FF4D]">
-            {/* Course Info Header */}
+          <div className="w-full bg-white p-6 shadow-xl rounded-xl border border-[#8A63FF4D]">
             <div className="mb-6 pb-4 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-800 mb-2">
                 {course.title}
               </h2>
-              <div className="flex items-center mb-2">
-                <span className="text-gray-600 text-sm">Instructor: </span>
-                <span className="text-gray-800 text-sm ml-1 font-medium">
+              <div className="flex items-center text-sm text-gray-600 mb-4">
+                Instructor:{" "}
+                <span className="font-medium text-gray-800 ml-1">
                   {course.instructor?.name || "Expert Instructor"}
                 </span>
               </div>
 
-              {/* ✅ Show enrollment status if enrolled */}
-              {isEnrolled && (
-                <div className="flex items-center mb-4">
-                  <span className="text-gray-600 text-sm">Status: </span>
-                  <span className="text-yellow-600 text-sm ml-1 font-medium">
-                    ⏳ Pending Activation
-                  </span>
+              {isEnrolled ? (
+                <div
+                  className={`flex items-center gap-2 font-medium p-3 rounded-lg ${
+                    accessStatus?.access
+                      ? "text-green-700 bg-green-50"
+                      : "text-yellow-600 bg-yellow-50"
+                  }`}
+                >
+                  {accessStatus?.access ? (
+                    <>
+                      <BookOpen className="w-4 h-4" /> Access Granted
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      {checkingAccess
+                        ? "Checking..."
+                        : accessStatus?.reason || "Pending Activation"}
+                    </>
+                  )}
                 </div>
-              )}
-
-              {/* ✅ Show price if not enrolled */}
-              {!isEnrolled && (
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    {course.discount && course.discount > 0 ? (
-                      <>
-                        <span className="text-2xl font-bold text-gray-800">
-                          ₹{discountedPrice.toFixed(2)}
-                        </span>
-                        <span className="text-lg text-gray-500 line-through ml-2">
-                          ₹{course.price.toFixed(2)}
-                        </span>
-                        <span className="text-sm text-green-600 ml-2">
-                          ({course.discount}% off)
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-2xl font-bold text-gray-800">
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-gray-900">
+                    ₹{discountedPrice.toFixed(2)}
+                  </span>
+                  {course.discount > 0 && (
+                    <>
+                      <span className="text-lg text-gray-400 line-through">
                         ₹{course.price.toFixed(2)}
                       </span>
-                    )}
-                  </div>
+                      <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">
+                        {course.discount}% OFF
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-4">
               {renderActionButton()}
 
-              {/* ✅ Only show wishlist if not enrolled */}
+              {/* Join Mentoring Class Button */}
+              {isEnrolled && accessStatus?.googleMeetLink && (
+                <div className="relative">
+                  {accessStatus.isActiveSession && (
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg opacity-75 blur animate-pulse" />
+                  )}
+                  <Button
+                    onClick={() =>
+                      window.open(accessStatus.googleMeetLink, "_blank")
+                    }
+                    className={`w-full relative py-3 font-semibold ${
+                      accessStatus.isActiveSession
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                    }`}
+                  >
+                    <Video className="w-5 h-5 mr-2 inline" />
+                    Join Mentoring Class
+                    {accessStatus.isClassToday && (
+                      <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                        Live Now
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              )}
+
               {!isEnrolled && !isInCart && (
                 <Button
                   onClick={handleToggleWishlist}
@@ -679,52 +650,44 @@ const CardDetail: React.FC = () => {
                     removeFromWishlistMutation.isPending
                   }
                   variant="outline"
-                  className={`w-full ${
+                  className={`w-full py-3 ${
                     isInWishlist
-                      ? "bg-red-50 hover:bg-red-100 border-red-400 text-red-600"
-                      : "border-gray-300 hover:bg-gray-50"
+                      ? "bg-red-50 border-red-200 text-red-600"
+                      : "border-gray-300"
                   }`}
                 >
-                  {addToWishlistMutation.isPending ||
-                  removeFromWishlistMutation.isPending ? (
-                    <div className="h-5 w-5 border-2 border-t-transparent rounded-full animate-spin border-[#8A63FF] mx-auto" />
-                  ) : (
-                    <>
-                      <Heart
-                        className={`w-5 h-5 mr-2 ${
-                          isInWishlist ? "fill-red-600" : ""
-                        }`}
-                        style={{ fill: isInWishlist ? "currentColor" : "none" }}
-                      />
-                      {isInWishlist
-                        ? "Remove from Wishlist"
-                        : "Add to Wishlist"}
-                    </>
-                  )}
+                  <Heart
+                    className={`w-5 h-5 mr-2 ${isInWishlist ? "fill-red-600 text-red-600" : "text-[#8A63FF]"}`}
+                  />
+                  {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                 </Button>
               )}
             </div>
 
-            {/* Course Details */}
-            <div className="text-sm text-gray-600 space-y-2">
-              <div className="flex items-center">
-                <span className="font-semibold mr-2">Duration:</span>
-                <span>{formatDuration(course.duration)}</span>
+            <div className="mt-6 text-sm text-gray-600 space-y-2">
+              <div className="flex justify-between">
+                <span>Duration</span>
+                <span className="font-medium text-gray-900">
+                  {course.totalWeeks} weeks
+                </span>
               </div>
-              <div className="flex items-center">
-                <span className="font-semibold mr-2">Level:</span>
-                <span className="capitalize">{course.level}</span>
+              <div className="flex justify-between">
+                <span>Level</span>
+                <span className="font-medium text-gray-900 capitalize">
+                  {course.level}
+                </span>
               </div>
-              <div className="flex items-center">
-                <span className="font-semibold mr-2">Students:</span>
-                <span>{course.enrolledUsers?.length || 0}</span>
+              <div className="flex justify-between">
+                <span>Enrolled</span>
+                <span className="font-medium text-gray-900">
+                  {course.enrolledUsers?.length || 0} students
+                </span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Other Components */}
       <WallOfLove />
       <div className="flex justify-center mb-20 lg:mb-0">
         <PurpleBox />
