@@ -44,6 +44,8 @@ import AdminCourseStructurePage from "./pages/AdminCourseStructurePage";
 import AdminCourseDetails from "./pages/AdminCourseDetails";
 import AdminUserManagementPage from "./pages/AdminUserManagementPage";
 import CourseAssignmentsPage from "./pages/CourseAssignmentsPage";
+import AdminAssignmentDashboard from "./pages/admin/AdminAssignmentDashboard";
+import CourseSubmissionsPage from "./pages/admin/CourseSubmissionsPage";
 
 // Services
 import authService from "./services/authService";
@@ -307,6 +309,24 @@ const App: React.FC = () => {
                   element={
                     <AdminRoute>
                       <AdminDashboard />
+                    </AdminRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/assignments"
+                  element={
+                    <AdminRoute>
+                      <AdminAssignmentDashboard />
+                    </AdminRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/assignments/:courseId"
+                  element={
+                    <AdminRoute>
+                      <CourseSubmissionsPage />
                     </AdminRoute>
                   }
                 />

@@ -34,6 +34,8 @@ import {
   Users,
 } from "lucide-react";
 import { format } from "date-fns";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import {
   Assignment,
   getAllAssignments,
@@ -803,13 +805,20 @@ const AssignmentsManager: React.FC<AssignmentsManagerProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="feedback">Feedback</Label>
-              <Textarea
-                id="feedback"
-                placeholder="Provide feedback on the submission"
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                rows={4}
-              />
+              <div className="bg-white">
+                <ReactQuill
+                  theme="snow"
+                  value={feedback}
+                  onChange={setFeedback}
+                  modules={{
+                    toolbar: [
+                      ["bold", "italic", "underline", "strike"],
+                      [{ list: "ordered" }, { list: "bullet" }],
+                      ["link", "clean"],
+                    ],
+                  }}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

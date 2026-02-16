@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { getUserProfile } from "@/services/profileService";
-import { Button } from "@/components/ui/button";
+import { getUserProfile, getEnrolledCourses } from "@/services/profileService";
 import ProfileSidebar from "../components/ProfileSidebar";
 import ProfileTopNavbar from "../components/ProfileTopNavbar";
 import DashboardOverview from "../components/DashboardOverview";
 import RightSideBarComp from "@/components/RightSideBarComp";
-import { Menu, Calendar } from "lucide-react";
+import { Menu, Calendar, X } from "lucide-react";
 
 interface UserData {
   name: string;
@@ -17,7 +16,10 @@ const Profile = () => {
   const [user, setUser] = useState<UserData>({
     name: "Student",
   });
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // State for mobile drawers
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(false);
 
@@ -25,16 +27,23 @@ const Profile = () => {
     const fetchUserProfile = async () => {
       try {
         setLoading(true);
-        const userData = await getUserProfile();
+        const [userData, coursesData] = await Promise.all([
+          getUserProfile(),
+          getEnrolledCourses(),
+        ]);
+
         if (userData) {
           setUser({
             name: userData.name || "Student",
             email: userData.email,
-            role: userData.role
+            role: userData.role,
           });
         }
+        if (coursesData) {
+          setEnrolledCourses(coursesData);
+        }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error("Error fetching user profile:", error);
       } finally {
         setLoading(false);
       }
@@ -43,48 +52,99 @@ const Profile = () => {
     fetchUserProfile();
   }, []);
 
-  // Toggle mobile menus
+  // Handlers
   const toggleLeftSidebar = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-    if (isRightSidebarOpen) setIsRightSidebarOpen(false);
+    setIsMobileMenuOpen((prev) => !prev);
+    if (isRightSidebarOpen) setIsRightSidebarOpen(false); // Close other
   };
 
   const toggleRightSidebar = () => {
-    setIsRightSidebarOpen(!isRightSidebarOpen);
-    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    setIsRightSidebarOpen((prev) => !prev);
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false); // Close other
   };
 
-  // Memoize components to prevent unnecessary re-renders
+  // Close drawers when screen size increases to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
+      if (window.innerWidth >= 1024) setIsRightSidebarOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Memoize components
   const memoizedSidebar = useMemo(() => <ProfileSidebar user={user} />, [user]);
   const memoizedDashboard = useMemo(() => <DashboardOverview />, []);
-  const memoizedRightSidebar = useMemo(() => <RightSideBarComp />, []);
+  const memoizedRightSidebar = useMemo(
+    () => <RightSideBarComp enrolledCourses={enrolledCourses} />,
+    [enrolledCourses],
+  );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      <header className="sticky top-0 z-50">
-        <ProfileTopNavbar 
-          userName={user.name} 
+    // OUTER CONTAINER: h-screen ensures no body scroll, w-screen prevents horizontal scroll
+    <div className="flex flex-col h-screen w-screen bg-gray-100 overflow-hidden text-gray-900">
+      {/* HEADER: Fixed height, strict z-index */}
+      <header className="flex-none z-30 h-16 bg-white shadow-sm border-b">
+        <ProfileTopNavbar
+          userName={user.name}
           onMenuToggle={toggleLeftSidebar}
         />
       </header>
-      
-      <main className="flex flex-1 w-full overflow-hidden relative">
-        {/* Left sidebar - hidden on mobile, visible on md screens and up */}
-        <aside className={`hidden md:block md:w-1/4 lg:w-1/5 xl:w-1/5 p-2 md:p-4`}>
-          {memoizedSidebar}
+
+      {/* MAIN LAYOUT: Flex row for Sidebars + Content */}
+      <main className="flex flex-1 overflow-hidden relative">
+        {/* 1. LEFT SIDEBAR (DESKTOP) 
+            Hidden on mobile, visible on md+. 
+            Fixed widths help preserve center content ratio.
+        */}
+        <aside className="hidden md:flex flex-col flex-none w-60 lg:w-64 border-r border-gray-200 bg-white overflow-y-auto scrollbar-thin">
+          <div className="p-4">{memoizedSidebar}</div>
         </aside>
-        
-        {/* Mobile left sidebar drawer - visible only when menu is open */}
+
+        {/* 2. CENTER CONTENT 
+            flex-1: Takes remaining space.
+            min-w-0: CRITICAL. Prevents flex items from overflowing x-axis.
+            overflow-y-auto: Only this middle part scrolls.
+        */}
+        <section className="flex-1 flex flex-col min-w-0 overflow-y-auto overflow-x-hidden scroll-smooth bg-gray-50/50">
+          <div className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+            {loading ? (
+              <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8A63FF]"></div>
+              </div>
+            ) : (
+              memoizedDashboard
+            )}
+          </div>
+        </section>
+
+        {/* 3. RIGHT SIDEBAR (DESKTOP)
+            Hidden on mobile/tablet, visible on lg+.
+        */}
+        <aside className="hidden lg:flex flex-col flex-none w-72 xl:w-80 border-l border-gray-200 bg-white overflow-y-auto scrollbar-thin">
+          <div className="p-4">{memoizedRightSidebar}</div>
+        </aside>
+
+        {/* --- MOBILE DRAWERS --- */}
+
+        {/* Mobile Left Sidebar Overlay */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-40 md:hidden">
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={toggleLeftSidebar}></div>
-            <div className="fixed inset-y-0 left-0 flex flex-col w-[70%] max-w-xs bg-white shadow-xl">
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            {/* Drawer */}
+            <div className="relative flex flex-col w-[80%] max-w-[300px] bg-white h-full shadow-2xl animate-in slide-in-from-left duration-200">
               <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold">Menu</h2>
-                <button onClick={toggleLeftSidebar} className="p-2 rounded-md hover:bg-gray-100">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <h2 className="font-bold text-lg text-gray-800">Menu</h2>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
@@ -93,69 +153,57 @@ const Profile = () => {
             </div>
           </div>
         )}
-        
-        {/* Mobile right sidebar drawer - visible only when calendar is open */}
+
+        {/* Mobile Right Sidebar Overlay */}
         {isRightSidebarOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={toggleRightSidebar}></div>
-            <div className="fixed inset-y-0 right-0 flex flex-col w-[85%] max-w-sm bg-white shadow-xl">
+          <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+              onClick={() => setIsRightSidebarOpen(false)}
+            />
+            {/* Drawer */}
+            <div className="relative flex flex-col w-[85%] max-w-[320px] bg-white h-full shadow-2xl animate-in slide-in-from-right duration-200">
               <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold">Schedule</h2>
-                <button onClick={toggleRightSidebar} className="p-2 rounded-md hover:bg-gray-100">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <h2 className="font-bold text-lg text-gray-800">
+                  Schedule & Updates
+                </h2>
+                <button
+                  onClick={() => setIsRightSidebarOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-2 sm:p-3">
+              <div className="flex-1 overflow-y-auto p-4">
                 {memoizedRightSidebar}
               </div>
             </div>
           </div>
         )}
-        
-        {/* Main content - takes full width on mobile, adjusted on larger screens */}
-        <section className="flex flex-col md:flex-row flex-1 overflow-hidden w-full">
-          {/* Dashboard content */}
-          <div className="w-full md:w-full lg:w-4/5 overflow-y-auto relative">
-            {/* Mobile toggle buttons floating at the bottom */}
-            <div className="fixed bottom-4 right-4 flex space-x-3 md:hidden z-30">
-              {/* Toggle right sidebar button */}
-              <button 
-                onClick={toggleRightSidebar}
-                className="bg-[#8A63FF] text-white p-3 rounded-full shadow-lg"
-                aria-label="Toggle schedule"
-              >
-                <Calendar size={20} />
-              </button>
-              
-              {/* Toggle left sidebar button */}
-              <button 
-                onClick={toggleLeftSidebar}
-                className="bg-[#8A63FF] text-white p-3 rounded-full shadow-lg"
-                aria-label="Toggle menu"
-              >
-                <Menu size={20} />
-              </button>
-            </div>
-            
-            {/* Dashboard content */}
-            {loading ? (
-              <div className="flex items-center justify-center h-full min-h-[70vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8A63FF]"></div>
-              </div>
-            ) : (
-              <div className="h-full">
-                {memoizedDashboard}
-              </div>
-            )}
-          </div>
-          
-          {/* Right sidebar - hidden on mobile and small screens, visible on lg screens and up */}
-          <aside className="hidden lg:block lg:w-1/5 p-2 lg:p-3 h-screen overflow-y-auto">
-            {memoizedRightSidebar}
-          </aside>
-        </section>
+
+        {/* FLOATING ACTION BUTTONS (Mobile/Tablet only) */}
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-4 lg:hidden pointer-events-none">
+          {/* Buttons are pointer-events-auto so you can click them, but the container doesn't block clicks */}
+
+          {/* Show Schedule Button (visible below lg) */}
+          <button
+            onClick={toggleRightSidebar}
+            className="pointer-events-auto bg-white text-[#8A63FF] p-3 rounded-full shadow-lg border border-gray-100 hover:bg-gray-50 transition-transform active:scale-95"
+            aria-label="Toggle schedule"
+          >
+            <Calendar size={22} />
+          </button>
+
+          {/* Show Menu Button (visible below md only, because sidebar exists on md) */}
+          <button
+            onClick={toggleLeftSidebar}
+            className="md:hidden pointer-events-auto bg-[#8A63FF] text-white p-3.5 rounded-full shadow-xl shadow-purple-200 hover:bg-[#7a53ef] transition-transform active:scale-95"
+            aria-label="Toggle menu"
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </main>
     </div>
   );
