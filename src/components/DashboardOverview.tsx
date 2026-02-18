@@ -138,42 +138,42 @@ const DashboardOverview: React.FC = memo(() => {
           {/* Stats Cards Section */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
             {/* Purpose Card */}
-            <div className="bg-purple-600 relative rounded-xl overflow-hidden shadow-lg text-white p-3 sm:p-4 col-span-1 h-auto aspect-[4/3] sm:aspect-auto">
+            <div className="bg-purple-600 relative rounded-xl overflow-hidden shadow-lg text-white p-4 sm:p-5 md:p-6 col-span-1 flex flex-col justify-between min-h-[200px] sm:min-h-[240px]">
               <div
-                className="absolute inset-0 bg-cover bg-center"
+                className="absolute inset-0 bg-cover bg-center transition-opacity duration-300"
                 style={{ backgroundImage: `url(${awardbg})`, opacity: 0.8 }}
               ></div>
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div>
-                  <h2 className="text-base sm:text-lg md:text-xl font-bold mb-1 sm:mb-2 line-clamp-1">
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-4">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 leading-tight">
                     Achieve with purpose
                   </h2>
-                  <p className="text-purple-100 text-xs sm:text-sm mb-2 line-clamp-2">
+                  <p className="text-purple-100 text-xs sm:text-sm md:text-base line-clamp-3 sm:line-clamp-2 max-w-[90%]">
                     Track your progress and complete courses to earn
                     certificates.
                   </p>
                 </div>
 
-                <div>
-                  <div className="flex justify-between items-center mb-2 sm:mb-3">
-                    <div className="text-xl sm:text-2xl font-bold">
+                <div className="mt-auto">
+                  <div className="flex justify-between items-end mb-3 sm:mb-4">
+                    <div className="text-2xl sm:text-3xl font-bold">
                       {certificatesEarned}/{coursesEnrolled || 1}
                     </div>
                     <img
                       src={trophy}
                       alt="Trophy"
-                      className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain"
+                      className="h-10 w-10 sm:h-14 sm:w-14 lg:h-16 lg:w-16 object-contain"
                     />
                   </div>
-                  <div className="w-full bg-white/30 rounded-full h-1.5 mb-2 sm:mb-3">
+                  <div className="w-full bg-white/30 rounded-full h-1.5 sm:h-2 mb-3 sm:mb-4">
                     <div
-                      className="bg-white h-1.5 rounded-full"
+                      className="bg-white h-1.5 sm:h-2 rounded-full transition-all duration-500"
                       style={{
                         width: `${(certificatesEarned / (coursesEnrolled || 1)) * 100}%`,
                       }}
                     ></div>
                   </div>
-                  <button className="bg-white text-purple-600 text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5 rounded-full font-medium hover:bg-gray-100 w-auto truncate">
+                  <button className="bg-white text-purple-600 hover:bg-purple-50 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full shadow-sm transition-colors w-max">
                     Start Now
                   </button>
                 </div>

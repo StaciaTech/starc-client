@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldAlert, FileText, FileX, Maximize2 } from "lucide-react";
+import { ShieldAlert, FileText, FileX, Maximize2, Lock } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -9,17 +9,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { ExtendedChapter, ExtendedSubchapter } from "@/types/learning";
 import { CourseStructure } from "@/services/courseStructureService";
+import { format } from "date-fns";
 
 interface MaterialsTabProps {
   courseStructure: CourseStructure | null;
   signedUrls: Map<string, string>;
   onViewDocument: (url: string, title: string) => void;
+  isSubchapterUnlocked: (cIdx: number, sIdx: number) => boolean;
+  courseStartDate: Date | null;
 }
 
 const MaterialsTab: React.FC<MaterialsTabProps> = ({
   courseStructure,
   signedUrls,
   onViewDocument,
+  isSubchapterUnlocked,
+  courseStartDate,
 }) => {
   return (
     <div className="space-y-6">
@@ -30,7 +35,7 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
             Secure Reading Mode
           </h4>
           <p className="text-xs text-blue-700 mt-1">
-            Study materials are protected. Copying and screenshots are disabled.
+            Study materials are unlocked sequentially based on your batch schedule.
           </p>
         </div>
       </div>
@@ -54,25 +59,44 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
             <AccordionContent className="p-0">
               {chapter.subchapters.length > 0 ? (
                 chapter.subchapters.map((sub: ExtendedSubchapter, sIdx) => {
+                  const isUnlocked = isSubchapterUnlocked(index, sIdx);
                   const materialUrl = sub.studyMaterialUrl
                     ? signedUrls.get(sub.studyMaterialUrl) ||
                       sub.studyMaterialUrl
                     : null;
 
+                  // Calculate Unlock Date
+                  let unlockDateStr = "";
+                  if (!isUnlocked && courseStartDate) {
+                    const weeksToUnlock = 2 * index;
+                    const unlockDate = new Date(courseStartDate);
+                    unlockDate.setDate(
+                      unlockDate.getDate() + weeksToUnlock * 7,
+                    );
+                    unlockDate.setHours(0, 0, 0, 0);
+                    unlockDateStr = format(unlockDate, "MMM do, yyyy");
+                  }
+
                   return (
                     <div
                       key={sub._id}
-                      className="flex items-center justify-between p-4 border-t border-gray-100"
+                      className={`flex items-center justify-between p-4 border-t border-gray-100 ${
+                        !isUnlocked ? "bg-gray-50 opacity-75" : ""
+                      }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`p-2 rounded ${
-                            sub.studyMaterialUrl
-                              ? "bg-orange-100 text-orange-600"
-                              : "bg-gray-100 text-gray-400"
+                            !isUnlocked
+                              ? "bg-gray-200 text-gray-500"
+                              : sub.studyMaterialUrl
+                                ? "bg-orange-100 text-orange-600"
+                                : "bg-gray-100 text-gray-400"
                           }`}
                         >
-                          {sub.studyMaterialUrl ? (
+                          {!isUnlocked ? (
+                            <Lock className="h-4 w-4" />
+                          ) : sub.studyMaterialUrl ? (
                             <FileText className="h-4 w-4" />
                           ) : (
                             <FileX className="h-4 w-4" />
@@ -89,13 +113,15 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                             {sub.title}
                           </h5>
                           <p className="text-xs text-gray-500">
-                            {sub.studyMaterialUrl
-                              ? "Secure Document"
-                              : "No material uploaded"}
+                            {!isUnlocked
+                              ? `Locked • Available ${unlockDateStr}`
+                              : sub.studyMaterialUrl
+                                ? "Secure Document"
+                                : "No material uploaded"}
                           </p>
                         </div>
                       </div>
-                      {sub.studyMaterialUrl ? (
+                      {isUnlocked && sub.studyMaterialUrl ? (
                         <Button
                           size="sm"
                           className="gap-2 bg-gray-900 text-white hover:bg-black"
@@ -112,7 +138,7 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                           disabled
                           className="text-gray-400"
                         >
-                          Unavailable
+                          {!isUnlocked ? "Locked" : "Unavailable"}
                         </Button>
                       )}
                     </div>

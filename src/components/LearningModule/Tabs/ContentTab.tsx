@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { BookOpen, Lock, ArrowRight, FileQuestion, Trophy } from "lucide-react";
+import { BookOpen, Lock, ArrowRight, FileQuestion, Trophy, Ban } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -32,6 +32,7 @@ interface ContentTabProps {
 
   onSelectSection: (cIdx: number, sIdx: number, secIdx: number) => void;
   onTakeQuiz: (quizId: string, subchapterId: string) => void;
+  quizStats: { [quizId: string]: { score: number; attempts: number; passed: boolean } };
 }
 
 const ContentTab: React.FC<ContentTabProps> = ({
@@ -42,6 +43,7 @@ const ContentTab: React.FC<ContentTabProps> = ({
   signedUrls,
   onSelectSection,
   onTakeQuiz,
+  quizStats,
 }) => {
   if (!selectedSection) {
     return (
@@ -151,6 +153,11 @@ const ContentTab: React.FC<ContentTabProps> = ({
                                     ✓ Passed
                                   </span>
                                 )}
+                                {!quizPassed && quizId && quizStats[quizId]?.attempts >= 3 && (
+                                  <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                                    ⚠ Failed
+                                  </span>
+                                )}
                                 {isSubUnlocked ? (
                                   <ArrowRight className="h-4 w-4 text-[#8A63FF]" />
                                 ) : (
@@ -224,6 +231,13 @@ const ContentTab: React.FC<ContentTabProps> = ({
                   className="bg-green-100 text-green-700 border border-green-200 cursor-not-allowed"
                 >
                   <Trophy className="mr-2 h-4 w-4" /> Quiz Passed
+                </Button>
+              ) : quizStats[quizId]?.attempts >= 3 ? (
+                <Button
+                  disabled
+                  className="bg-red-100 text-red-700 border border-red-200 cursor-not-allowed"
+                >
+                  <Ban className="mr-2 h-4 w-4" /> Quiz Failed (Max Attempts)
                 </Button>
               ) : (
                 <Button

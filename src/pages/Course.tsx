@@ -408,9 +408,18 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
 
   useEffect(() => {
     const checkQualification = async () => {
+      const level = course.level?.toLowerCase() || "";
+
       // Only check for Intermediate or Advanced courses
+      // Beginner courses are automatically qualified (handled in render logic too)
+      if (level === "beginner") {
+          setIsQualified(true);
+          setCheckingQualification(false);
+          return;
+      }
+
       if (
-        (course.level === "Intermediate" || course.level === "Advanced") &&
+        (level === "intermediate" || level === "advanced") &&
         isAuthenticated &&
         course._id
       ) {
@@ -422,6 +431,7 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
           setIsQualified(status.qualified);
         } catch (error) {
           console.error("Error checking qualification:", error);
+          // If error (e.g. 404 test not found), maybe default to false to be safe?
         } finally {
           setCheckingQualification(false);
         }
@@ -604,7 +614,10 @@ const CourseCardWithActions: React.FC<CourseCardWithActionsProps> = ({
           onClose={() => setShowEntranceModal(false)}
           courseId={course._id || ""}
           courseTitle={course.title}
-          onPass={() => setIsQualified(true)}
+          onPass={() => {
+            setIsQualified(true);
+            addToCartMutation.mutate(course._id!);
+          }}
         />
       )}
     </div>

@@ -27,6 +27,8 @@ import learningService from "@/services/learningService";
 import { confetti } from "@/lib/confetti";
 import { ExtendedChapter, ExtendedSubchapter } from "@/types/learning";
 
+import CapstoneProjectCard from "./LearningModule/CapstoneProjectCard";
+
 // Sub-components
 import SecureDocViewer from "./LearningModule/Security/SecureDocViewer";
 import AssignmentsTab from "./LearningModule/Tabs/AssignmentsTab";
@@ -99,6 +101,8 @@ const LearningModule: React.FC = () => {
     videoUrl?: string;
   } | null>(null);
 
+  const [assignedCapstone, setAssignedCapstone] = useState<any>(null);
+
   const {
     courseId = "",
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -139,6 +143,7 @@ const LearningModule: React.FC = () => {
 
         // --- Process User Profile ---
         if (userProfile) {
+          console.log("DEBUG: userProfile:", userProfile);
           if (userProfile.startDate)
             setCourseStartDate(new Date(userProfile.startDate));
           if (userProfile.completedSections)
@@ -147,6 +152,9 @@ const LearningModule: React.FC = () => {
             setUnlockedSubchapters(new Set(userProfile.unlockedSubchapters));
           if (userProfile.currentSubchapter)
             setCurrentSubchapter(userProfile.currentSubchapter);
+          if (userProfile.assignedCapstone)
+            setAssignedCapstone(userProfile.assignedCapstone);
+
           setProgress(userProfile.progress || 0);
           setIsCompleted(userProfile.completed || false);
         }
@@ -439,6 +447,11 @@ const LearningModule: React.FC = () => {
   };
 
   const handleNavigateToQuiz = (quizId: string, subchapterId: string) => {
+    // Check if max attempts reached
+    if (quizStats[quizId]?.attempts >= 3 && !quizStats[quizId]?.passed) {
+      toast.error("You have reached the maximum number of attempts for this quiz.");
+      return;
+    }
     navigate(`/course/${id}/quiz/${subchapterId}`);
   };
 
@@ -494,6 +507,15 @@ const LearningModule: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Capstone Project Card */}
+          <div className="lg:col-span-3">
+             <CapstoneProjectCard
+              courseStructure={courseStructure}
+              courseStartDate={courseStartDate}
+              assignedCapstone={assignedCapstone}
+            />
+          </div>
+
           {/* LEFT: Tabs */}
           <div className="lg:col-span-2">
             <Tabs
@@ -539,6 +561,7 @@ const LearningModule: React.FC = () => {
                     signedUrls={signedUrls}
                     onSelectSection={handleSelectSection}
                     onTakeQuiz={handleNavigateToQuiz}
+                    quizStats={quizStats}
                   />
                 </TabsContent>
                 <TabsContent value="videos" className="mt-0">
@@ -552,6 +575,8 @@ const LearningModule: React.FC = () => {
                     courseStructure={courseStructure}
                     signedUrls={signedUrls}
                     onViewDocument={handleViewDocument}
+                    isSubchapterUnlocked={isSubchapterUnlocked}
+                    courseStartDate={courseStartDate}
                   />
                 </TabsContent>
                 <TabsContent value="assignments" className="mt-0">

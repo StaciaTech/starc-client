@@ -86,7 +86,7 @@ const SecureDocViewer: React.FC<SecureDocViewerProps> = ({
 
       {/* Document Area */}
       <div className="flex-1 relative bg-gray-800 overflow-hidden">
-        {/* Watermark overlay - pointer-events-none so scrolling works through it */}
+        {/* Watermark overlay */}
         <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden opacity-10 flex flex-wrap content-center justify-center gap-24 rotate-12 select-none">
           {Array.from({ length: 20 }).map((_, i) => (
             <div
@@ -98,14 +98,61 @@ const SecureDocViewer: React.FC<SecureDocViewerProps> = ({
           ))}
         </div>
 
-        {/* PDF iframe - z-10 so it's above background but below watermark, scrollable */}
-        <iframe
-          src={url}
-          className="w-full h-full border-0 bg-white relative z-10"
-          title="Secure Document"
-          onContextMenu={(e) => e.preventDefault()}
-          style={{ pointerEvents: "auto" }}
-        />
+        {/* Content Renderer */}
+        {(() => {
+          // Remove query params (common in S3 signed URLs) before extracting extension
+          const cleanUrl = url.split("?")[0];
+          const extension = cleanUrl.split(".").pop()?.toLowerCase();
+          
+          const isOffice = [
+            "doc",
+            "docx",
+            "ppt",
+            "pptx",
+            "xls",
+            "xlsx",
+          ].includes(extension || "");
+          const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(
+            extension || "",
+          );
+
+          if (isOffice) {
+            return (
+              <iframe
+                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+                  url,
+                )}`}
+                className="w-full h-full border-0 bg-white relative z-10"
+                title="Secure Document"
+                style={{ pointerEvents: "auto" }}
+              />
+            );
+          }
+
+          if (isImage) {
+            return (
+              <div className="w-full h-full flex items-center justify-center bg-gray-900 z-10 relative overflow-auto">
+                <img
+                  src={url}
+                  alt={title}
+                  className="max-w-full max-h-full object-contain pointer-events-auto"
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              </div>
+            );
+          }
+
+          // Default to PDF/Generic iframe viewer
+          return (
+            <iframe
+              src={url}
+              className="w-full h-full border-0 bg-white relative z-10"
+              title="Secure Document"
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ pointerEvents: "auto" }}
+            />
+          );
+        })()}
       </div>
     </div>
   );
