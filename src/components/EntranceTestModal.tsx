@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useRef } from "react";
 import { assessmentService } from "@/services/assessmentService";
 import { toast } from "sonner";
-import { Lock, CheckCircle, XCircle, ArrowRight } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
+import { Lock, CheckCircle, XCircle, ArrowRight, Shield, Maximize, AlertTriangle } from "lucide-react";
 
 interface EntranceTestModalProps {
   isOpen: boolean;
@@ -27,7 +24,8 @@ const EntranceTestModal: React.FC<EntranceTestModalProps> = ({
   courseTitle,
   onPass,
 }) => {
-  const [loading, setLoading] = useState(true);
+  const [phase, setPhase] = useState<"instructions" | "testing" | "result">("instructions");
+  const [loading, setLoading] = useState(false);
   const [testData, setTestData] = useState<{
     questions: Question[];
     passingScore: number;
@@ -44,30 +42,124 @@ const EntranceTestModal: React.FC<EntranceTestModalProps> = ({
     message: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [visited, setVisited] = useState<boolean[]>([]);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const testActiveRef = useRef(false);
 
+  // Timer
   useEffect(() => {
-    if (isOpen && courseId) {
-      loadTest();
-    }
-  }, [isOpen, courseId]);
+    if (phase !== "testing" || !testData) return;
+    const timer = setInterval(() => setSecondsElapsed((prev) => prev + 1), 1000);
+    return () => clearInterval(timer);
+  }, [phase, testData]);
 
-  const loadTest = async () => {
+  // Track visited questions
+  useEffect(() => {
+    if (testData && phase === "testing") {
+      setVisited((prev) => {
+        const updated = [...prev];
+        updated[currentQuestionIndex] = true;
+        return updated;
+      });
+    }
+  }, [currentQuestionIndex, testData, phase]);
+
+  // Reset when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setPhase("instructions");
+      setResult(null);
+      setError(null);
+      setCurrentQuestionIndex(0);
+      setAnswers({});
+      setVisited([]);
+      setSecondsElapsed(0);
+      setTestData(null);
+      testActiveRef.current = false;
+    }
+  }, [isOpen]);
+
+  // ===== CHEAT DETECTION: Only active during 'testing' phase =====
+  useEffect(() => {
+    if (phase !== "testing") {
+      testActiveRef.current = false;
+      return;
+    }
+
+    testActiveRef.current = true;
+
+    const handleFullScreenChange = () => {
+      if (!document.fullscreenElement && testActiveRef.current) {
+        failTest("Test terminated: You exited full screen mode.");
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && testActiveRef.current) {
+        failTest("Test terminated: You switched tabs/windows.");
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [phase]);
+
+  const enterFullScreen = async (): Promise<boolean> => {
+    try {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        await (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).msRequestFullscreen) {
+        await (elem as any).msRequestFullscreen();
+      }
+      return true;
+    } catch (err) {
+      console.error("Error attempting to enable full-screen mode:", err);
+      return false;
+    }
+  };
+
+  const exitFullScreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
+    }
+  };
+
+  // ===== START TEST: User clicks button → enter full screen → load questions =====
+  const handleStartTest = async () => {
+    // Enter full screen first (triggered by user gesture = will work!)
+    const success = await enterFullScreen();
+    if (!success) {
+      toast.error("Full screen is required for this test. Please allow it and try again.");
+      return;
+    }
+
+    // Load test data
     setLoading(true);
     setError(null);
     try {
-      // First check if already qualified
       const status = await assessmentService.getQualificationStatus(courseId);
       if (status.qualified) {
+        exitFullScreen();
         onPass();
         onClose();
         return;
       }
-
       const data = await assessmentService.getEntranceTest(courseId);
       setTestData(data as any);
+      setVisited(Array((data as any).questions.length).fill(false));
+      setPhase("testing"); // Now enter testing phase
     } catch (err: any) {
       console.error("Failed to load test:", err);
-      setError(err.response?.data?.message || "Failed to load entrance test. Please try again later.");
+      setError(err.response?.data?.message || "Failed to load entrance test.");
+      exitFullScreen();
     } finally {
       setLoading(false);
     }
@@ -85,13 +177,18 @@ const EntranceTestModal: React.FC<EntranceTestModalProps> = ({
   const handleNext = () => {
     if (currentQuestionIndex < (testData?.questions.length || 0) - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
-    } else {
-      submitTest();
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prev) => prev - 1);
     }
   };
 
   const submitTest = async () => {
     setSubmitting(true);
+    testActiveRef.current = false; // Stop cheat detection before result
     try {
       const res = await assessmentService.submitEntranceTest(courseId, answers);
       setResult({
@@ -101,12 +198,10 @@ const EntranceTestModal: React.FC<EntranceTestModalProps> = ({
         totalQuestions: res.totalQuestions,
         message: res.message,
       });
+      setPhase("result");
+      // Don't exit fullscreen here — show result inside fullscreen
       if (res.passed) {
         toast.success("Congratulations! You passed the entrance test.");
-        setTimeout(() => {
-          onPass();
-          onClose();
-        }, 2000);
       } else {
         toast.error("You did not pass. Please try again.");
       }
@@ -117,88 +212,23 @@ const EntranceTestModal: React.FC<EntranceTestModalProps> = ({
     }
   };
 
-  /* Cheat Detection Logic */
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // 1. Enter Full Screen Logic
-    const enterFullScreen = async () => {
-      try {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-          await elem.requestFullscreen();
-        } else if ((elem as any).webkitRequestFullscreen) { /* Safari */
-          await (elem as any).webkitRequestFullscreen();
-        } else if ((elem as any).msRequestFullscreen) { /* IE11 */
-          await (elem as any).msRequestFullscreen();
-        }
-      } catch (err) {
-        console.error("Error attempting to enable full-screen mode:", err);
-      }
-    };
-    
-    // Only attempt full screen if we are not showing results/errors and data is loaded (or loading)
-    if (!result && !error) {
-       enterFullScreen();
-    }
-
-    // 2. Full Screen Change Listener
-    const handleFullScreenChange = () => {
-      if (!document.fullscreenElement && !result && !error) {
-        // User exited full screen - FAIL THE TEST
-        failTest("Test terminated: You exited full screen mode.");
-      }
-    };
-
-    // 3. Visibility Change (Tab Switch) Listener
-    const handleVisibilityChange = () => {
-      if (document.hidden && !result && !error) {
-         // User switched tabs - FAIL THE TEST
-         failTest("Test terminated: You switched tabs/windows.");
-      }
-    };
-
-    // 4. Blur Listener (Clicking outside/Alt-Tab)
-    const handleBlur = () => {
-        if (!result && !error) {
-             // Optional: can be too strict, maybe just use visibilityChange
-             // failTest("Test terminated: Window lost focus.");
-        }
-    }
-
-    document.addEventListener("fullscreenchange", handleFullScreenChange);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    // window.addEventListener("blur", handleBlur); // Too strict for some browsers
-
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullScreenChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      // window.removeEventListener("blur", handleBlur);
-      
-      // Exit full screen on cleanup
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => console.error("Exit full screen error", err));
-      }
-    };
-  }, [isOpen, result, error]);
-
   const failTest = (reason: string) => {
-      // Immediately fail the test locally
-      setResult({
-          passed: false,
-          score: 0,
-          correctCount: 0,
-          totalQuestions: testData?.questions.length || 0,
-          message: reason
-      });
-      // Optionally notify backend of cheating attempt
+    testActiveRef.current = false;
+    setResult({
+      passed: false,
+      score: 0,
+      correctCount: 0,
+      totalQuestions: testData?.questions.length || 0,
+      message: reason,
+    });
+    setPhase("result");
+    // Don't exit fullscreen here — show result inside fullscreen
   };
 
   const handleExit = () => {
-      if (document.fullscreenElement) {
-          document.exitFullscreen().catch(console.error);
-      }
-      onClose();
+    testActiveRef.current = false;
+    exitFullScreen();
+    onClose();
   };
 
   const handleRetry = () => {
@@ -206,149 +236,337 @@ const EntranceTestModal: React.FC<EntranceTestModalProps> = ({
     setCurrentQuestionIndex(0);
     setAnswers({});
     setError(null);
-    loadTest(); 
+    setVisited([]);
+    setSecondsElapsed(0);
+    setTestData(null);
+    setPhase("instructions");
   };
 
+  const formatTime = (secs: number) => {
+    const hours = Math.floor(secs / 3600).toString().padStart(2, "0");
+    const mins = Math.floor((secs % 3600) / 60).toString().padStart(2, "0");
+    const sec = (secs % 60).toString().padStart(2, "0");
+    return `${hours}:${mins}:${sec}`;
+  };
+
+  const answeredCount = Object.keys(answers).length;
+  const totalQ = testData?.questions.length || 0;
+  const progressPercent = totalQ > 0 ? (answeredCount / totalQ) * 100 : 0;
+
+  const getStatusColor = (index: number) => {
+    const qId = testData?.questions[index]?._id || "";
+    if (answers[qId]) return "bg-purple-600 border-purple-600 text-white";
+    if (visited[index]) return "border-purple-400 text-black bg-white";
+    return "bg-gray-200 text-black border-gray-200";
+  };
+
+  const getOptionLetter = (option: string) => {
+    const match = option.match(/^([A-Za-z])[.\s:]/);
+    return match ? match[1].toUpperCase() : "";
+  };
 
   if (!isOpen) return null;
 
-  return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="w-full max-h-screen h-screen bg-white text-gray-900 border-none shadow-none rounded-none p-0 overflow-y-auto font-mont">
-        {/* Header */}
-        <div className="bg-[#8A63FF] px-6 py-4 text-white flex justify-between items-center sticky top-0 z-50">
-          <div className="flex items-center gap-3">
-             <div className="bg-white/20 p-2 rounded-full">
-               <Lock className="w-6 h-6 text-white" />
-             </div>
-             <div>
-                <DialogTitle className="text-xl font-bold">Entrance Test</DialogTitle>
-                <DialogDescription className="text-white/80 text-xs">
-                  {courseTitle}
-                </DialogDescription>
-             </div>
+  // ===== PHASE: INSTRUCTIONS (before entering full screen) =====
+  if (phase === "instructions") {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center font-mont">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-8 animate-in fade-in zoom-in duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-purple-100 p-3 rounded-full">
+              <Lock className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Entrance Test</h2>
+              <p className="text-sm text-gray-500">{courseTitle}</p>
+            </div>
           </div>
-          <div className="text-xs bg-white/20 px-3 py-1 rounded-full">
-            Full Screen Mode Enforced
-          </div>
-        </div>
 
-        <div className="p-4 sm:p-8 max-w-4xl mx-auto w-full">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Spinner className="w-12 h-12 text-[#8A63FF] mb-6" />
-              <p className="text-gray-500 text-lg">Preparing your assessment...</p>
-              <p className="text-sm text-gray-400 mt-2">Do not switch tabs or exit full screen.</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-20">
-              <XCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h3>
-              <p className="text-red-500 mb-8">{error}</p>
-              <Button onClick={onClose} variant="outline" className="px-8">Close</Button>
-            </div>
-          ) : result ? (
-            <div className="text-center py-20 animate-in fade-in zoom-in duration-300">
-              {result.passed ? (
-                <>
-                  <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="w-12 h-12 text-green-600" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-green-600 mb-2">Congratulations!</h3>
-                  <div className="mb-8">
-                      <p className="text-gray-600 text-lg">You passed the entrance test!</p>
-                      <p className="text-4xl font-bold text-[#8A63FF] mt-2">{result.score.toFixed(0)}%</p>
-                      <p className="text-gray-500 text-sm mt-1">({result.correctCount} / {result.totalQuestions} Correct)</p>
-                  </div>
-                  <Button onClick={() => { onPass(); onClose(); }} className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all">
-                    Proceed to Enrollment <ArrowRight className="ml-2" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <XCircle className="w-12 h-12 text-red-600" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-red-600 mb-2">Test Failed</h3>
-                   <div className="mb-8">
-                      <p className="text-gray-600 text-lg">
-                        {result.message || `You need ${testData?.passingScore}% to pass.`}
-                      </p>
-                      <p className="text-4xl font-bold text-red-500 mt-2">{result.score.toFixed(0)}%</p>
-                       <p className="text-gray-500 text-sm mt-1">({result.correctCount} / {result.totalQuestions} Correct)</p>
-                  </div>
-                  <div className="flex justify-center gap-4">
-                    <Button onClick={onClose} variant="outline" className="px-8 py-3">Exit</Button>
-                    <Button onClick={handleRetry} className="bg-[#8A63FF] text-white hover:bg-[#7047e0] px-8 py-3 rounded-full">Try Again</Button>
-                  </div>
-                </>
-              )}
+          {error ? (
+            <div className="text-center py-6">
+              <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <p className="text-red-500 mb-6">{error}</p>
+              <button onClick={onClose} className="px-6 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+                Close
+              </button>
             </div>
           ) : (
-            /* Question Area */
-            <div className="animate-in slide-in-from-bottom-5 duration-500">
-              <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-100">
-                <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Question {currentQuestionIndex + 1} / {testData?.questions.length}</span>
-                <span className="text-sm font-semibold bg-green-50 text-green-700 px-3 py-1 rounded-full">Pass: {testData?.passingScore}%</span>
-              </div>
-
-              {testData?.questions[currentQuestionIndex] && (
-                <div className="mb-10">
-                  <h3 className="text-2xl font-medium text-gray-900 mb-8 leading-relaxed">
-                    {testData.questions[currentQuestionIndex].question}
-                  </h3>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    {testData.questions[currentQuestionIndex].options.map((option, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => handleOptionSelect(option)}
-                        className={`p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-center gap-4 group ${
-                          answers[testData.questions[currentQuestionIndex]._id] === option
-                            ? "bg-purple-50 border-[#8A63FF] shadow-md"
-                            : "bg-white border-gray-100 hover:border-[#8A63FF]/30 hover:shadow-md"
-                        }`}
-                      >
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                           answers[testData.questions[currentQuestionIndex]._id] === option
-                            ? "border-[#8A63FF] bg-[#8A63FF]"
-                            : "border-gray-300 group-hover:border-[#8A63FF]"
-                        }`}>
-                          {answers[testData.questions[currentQuestionIndex]._id] === option && (
-                            <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                          )}
-                        </div>
-                        <span className={`text-lg ${
-                          answers[testData.questions[currentQuestionIndex]._id] === option ? "text-[#8A63FF] font-medium" : "text-gray-700"
-                        }`}>{option}</span>
-                      </div>
-                    ))}
+            <>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-amber-800 text-sm mb-2">Important Rules</h3>
+                    <ul className="text-sm text-amber-700 space-y-1.5">
+                      <li>• The test will run in <strong>full screen mode</strong></li>
+                      <li>• <strong>Exiting full screen</strong> will terminate the test</li>
+                      <li>• <strong>Switching tabs</strong> will terminate the test</li>
+                      <li>• You need <strong>80%</strong> to pass</li>
+                      <li>• 5 random questions will be presented</li>
+                    </ul>
                   </div>
                 </div>
-              )}
+              </div>
 
-              <DialogFooter className="flex justify-between items-center w-full mt-10 pt-6 border-t border-gray-100">
-                 <Button variant="ghost" onClick={handleExit} className="text-gray-500 hover:text-red-600 hover:bg-red-50">
-                    Exit Test
-                 </Button>
-                 <Button 
-                    onClick={handleNext} 
-                    disabled={!answers[testData?.questions[currentQuestionIndex]?._id || ""]}
-                    size="lg"
-                    className="bg-[#8A63FF] hover:bg-[#7047e0] text-white px-10 rounded-full text-lg shadow-lg hover:shadow-xl transition-all"
-                  >
-                    {currentQuestionIndex === (testData?.questions.length || 0) - 1 ? (
-                      submitting ? "Submitting..." : "Submit Test"
-                    ) : (
-                      <>Next Question <ArrowRight className="ml-2 w-5 h-5" /></>
-                    )}
-                  </Button>
-              </DialogFooter>
-            </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStartTest}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                >
+                  {loading ? (
+                    "Loading..."
+                  ) : (
+                    <>
+                      <Maximize className="w-4 h-4" />
+                      Start Test
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    );
+  }
+
+  // ===== PHASE: RESULT (shown inside fullscreen) =====
+  if (phase === "result" && result) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-gray-50 flex items-center justify-center font-mont">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 animate-in fade-in zoom-in duration-300 text-center">
+          {result.passed ? (
+            <>
+              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                <CheckCircle className="w-12 h-12 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-green-600 mb-2">Congratulations!</h3>
+              <p className="text-gray-600 mb-1">You passed the entrance test!</p>
+              <p className="text-4xl font-bold text-purple-600 my-3">{result.score.toFixed(0)}%</p>
+              <p className="text-gray-500 text-sm mb-1">{result.correctCount} / {result.totalQuestions} Correct</p>
+              <p className="text-gray-400 text-xs mb-6">Time: {formatTime(secondsElapsed)}</p>
+              <button
+                onClick={() => { exitFullScreen(); onPass(); onClose(); }}
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                Proceed to Enrollment <ArrowRight className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                <XCircle className="w-12 h-12 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-red-600 mb-2">Test Failed</h3>
+              <p className="text-gray-600 mb-1">{result.message}</p>
+              <p className="text-4xl font-bold text-red-500 my-3">{result.score.toFixed(0)}%</p>
+              <p className="text-gray-500 text-sm mb-1">{result.correctCount} / {result.totalQuestions} Correct</p>
+              <p className="text-gray-400 text-xs mb-6">Time: {formatTime(secondsElapsed)}</p>
+              <div className="flex gap-3">
+                <button onClick={() => { exitFullScreen(); onClose(); }} className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  Exit
+                </button>
+                <button onClick={() => { exitFullScreen(); handleRetry(); }} className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                  Try Again
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ===== PHASE: TESTING (Full screen quiz layout) =====
+  return (
+    <div className="fixed inset-0 z-[9999] bg-gray-50 flex flex-col font-mont">
+      {/* Top Header Bar */}
+      <div className="bg-[#8A63FF] px-6 py-3 text-white flex justify-between items-center flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-full">
+            <Lock className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold">Entrance Test</h1>
+            <p className="text-white/80 text-xs">{courseTitle}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-xs bg-white/20 px-3 py-1.5 rounded-full">
+            <Shield className="w-3.5 h-3.5" />
+            Full Screen Enforced
+          </div>
+        </div>
+      </div>
+
+      {/* Two-column quiz layout */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Left: Quiz Content (4/6) */}
+        <div className="w-full md:w-4/6 p-6 overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 h-full flex flex-col">
+            {/* Title + Progress */}
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold mb-2">{courseTitle} - Entrance Test</h2>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div
+                  className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-500">{Math.round(progressPercent)}% completed</p>
+            </div>
+
+            {/* Question Header */}
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-lg font-semibold">
+                Question {currentQuestionIndex + 1}:
+              </p>
+              <div className="text-sm flex items-center space-x-1">
+                <span>🕐</span>
+                <span className="text-green-600 font-semibold">{formatTime(secondsElapsed)}</span>
+              </div>
+            </div>
+
+            {/* Question Text */}
+            {testData?.questions[currentQuestionIndex] && (
+              <>
+                <p className="text-gray-700 mb-6 text-base leading-relaxed">
+                  {testData.questions[currentQuestionIndex].question}
+                </p>
+
+                {/* Options */}
+                <div className="space-y-4 flex-grow">
+                  {testData.questions[currentQuestionIndex].options.map((option, idx) => {
+                    const letter = getOptionLetter(option);
+                    const isSelected = answers[testData.questions[currentQuestionIndex]._id] === option;
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-center space-x-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-purple-50 border-purple-300"
+                            : "bg-white border-gray-200 hover:border-purple-200 hover:bg-purple-50/30"
+                        }`}
+                        onClick={() => handleOptionSelect(option)}
+                      >
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border flex-shrink-0 transition-colors ${
+                            isSelected
+                              ? "bg-purple-600 text-white border-purple-600"
+                              : "text-purple-600 border-purple-600"
+                          }`}
+                        >
+                          {letter}
+                        </div>
+                        <p className={`${isSelected ? "font-medium text-purple-700" : "text-gray-700"}`}>
+                          {option}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-end gap-4 items-center pt-6 mt-auto border-t border-gray-100">
+              <button
+                className="px-6 py-2 border border-purple-500 text-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 transition-colors"
+                onClick={handlePrev}
+                disabled={currentQuestionIndex === 0}
+              >
+                Previous
+              </button>
+              {currentQuestionIndex === totalQ - 1 ? (
+                <button
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  onClick={submitTest}
+                  disabled={submitting || answeredCount < totalQ}
+                >
+                  {submitting ? "Submitting..." : "Submit Test"}
+                </button>
+              ) : (
+                <button
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  onClick={handleNext}
+                >
+                  Next
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Sidebar (2/5) */}
+        <div className="w-full md:w-2/5 p-6 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-md p-7 h-full flex flex-col">
+            <h2 className="font-bold text-lg mb-4">Section: Questions</h2>
+
+            {/* Question number grid */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              {testData?.questions.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentQuestionIndex(index)}
+                  className={`w-10 h-10 rounded-full border font-semibold flex items-center justify-center text-sm transition-all ${getStatusColor(index)} ${
+                    currentQuestionIndex === index ? "ring-2 ring-purple-400 ring-offset-2" : ""
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center space-x-6 mt-auto pt-4 border-t border-gray-100">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white border border-purple-600 text-xs font-bold">
+                  A
+                </div>
+                <span className="text-xs mt-1.5 text-gray-500">Answered</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full border border-purple-400 flex items-center justify-center text-black text-xs font-bold bg-white">
+                  A
+                </div>
+                <span className="text-xs mt-1.5 text-gray-500">Viewed</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-black text-xs font-bold">
+                  A
+                </div>
+                <span className="text-xs mt-1.5 text-gray-500">Not Viewed</span>
+              </div>
+            </div>
+
+            {/* Pass info & Exit */}
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-gray-500">Pass Mark:</span>
+                <span className="text-sm font-semibold text-green-600">{testData?.passingScore}%</span>
+              </div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-500">Answered:</span>
+                <span className="text-sm font-semibold text-purple-600">{answeredCount} / {totalQ}</span>
+              </div>
+              <button
+                onClick={handleExit}
+                className="w-full px-4 py-2 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 text-sm transition-colors"
+              >
+                Exit Test
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
