@@ -25,6 +25,7 @@ import {
   GraduationCap,
   UserCheck,
   BookMarked,
+  ListChecks,
 } from "lucide-react";
 import authService from "@/services/authService";
 
@@ -117,15 +118,15 @@ const AdminDashboard: React.FC = () => {
       stats: `${stats.totalUsers} Users`,
     },
     {
-      title: "Revenue & Analytics",
-      description: "View sales reports and analytics",
-      icon: BarChart3,
+      title: "Assignments & Validation",
+      description: "Review and grade student submissions",
+      icon: ListChecks,
       color: "from-green-500 to-green-700",
       bgColor: "bg-green-50",
       iconColor: "text-green-600",
-      path: "/admin/analytics",
-      stats: `₹${(stats.totalRevenue / 1000).toFixed(1)}K`,
-      comingSoon: true,
+      path: "/admin/assignments",
+      stats: "Review Pending",
+      comingSoon: false,
     },
     {
       title: "Settings",

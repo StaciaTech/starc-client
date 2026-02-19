@@ -23,37 +23,37 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = memo(({ user = { name: 'St
   ], []);
 
   return (
-    <div className="bg-white rounded-[16px] h-[80vh] shadow-md p-4 lg:w-[190px] xl:w-[220px] 2xl:w-[250px] 3xl:w-[274px]">
+    <div className="bg-white rounded-[16px] h-full shadow-md p-4 w-full">
       {/* User Profile Section */}
       <div className="flex items-center mb-6">  
-        <div className="lg:w-12 lg:h-12 xl:w-16 xl:h-16 rounded-full overflow-hidden mr-4 bg-[#8A63FF]/10 flex items-center justify-center">
-          <User className="lg:w-6 lg:h-6 xl:w-8 xl:h-8 text-[#8A63FF]" />
+        <div className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full overflow-hidden mr-3 bg-[#8A63FF]/10 flex items-center justify-center">
+          <User className="w-5 h-5 lg:w-6 lg:h-6 text-[#8A63FF]" />
         </div>
-        <div>
-          <p className="text-gray-600 lg:text-[9px] xl:text-[11px] 2xl:text-sm">Hello!</p>
-          <h2 className="lg:text-xs xl:text-sm 2xl:text-base 3xl:text-lg font-semibold text-gray-900">{user.name}</h2>
+        <div className="min-w-0 flex-1">
+          <p className="text-gray-600 text-[10px] lg:text-xs truncate">Hello!</p>
+          <h2 className="text-sm lg:text-base font-semibold text-gray-900 truncate" title={user.name}>{user.name}</h2>
         </div>
       </div>  
 
       <hr className="border-gray-200 mb-6" />
 
       {/* Navigation Items */}
-      <nav>
+      <nav className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
         <ul className="space-y-2">
           {navItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center p-2 rounded-lg transition-colors ${
+                  `flex items-center p-2 rounded-lg transition-colors whitespace-nowrap ${
                     isActive
                       ? "bg-[#8A63FF] text-white"
                       : "text-gray-600 hover:bg-purple-50"
                   }`
                 }
               >
-                <span className="mr-3">{item.icon}</span>
-                <span className="lg:text-xs xl:text-sm 2xl:text-base">{item.label}</span>
+                <span className="mr-3 flex-shrink-0">{item.icon}</span>
+                <span className="text-sm font-medium truncate">{item.label}</span>
               </NavLink>
             </li>
           ))}

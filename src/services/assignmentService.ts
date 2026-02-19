@@ -6,9 +6,14 @@ import { API_URL } from "@/config/api";
 export interface Assignment {
   _id: string;
   courseId: string;
+  chapterId?: string; // Optional for backward compatibility, but ideally required
+  variantNumber?: number;
   title: string;
   description: string;
-  instructions: string;
+  instructions: string; // Kept for backward compatibility, might be deprecated in favor of tasks
+  tasks?: string[];
+  estimatedDuration?: string;
+  difficulty?: "Easy" | "Medium" | "Hard";
   deadline: Date | string;
   unlockDate: Date | string;
   order: number;
@@ -37,6 +42,10 @@ export interface CreateAssignmentData {
   description: string;
   instructions: string;
   deadline: string;
+  chapterId?: string;
+  tasks?: string[];
+  estimatedDuration?: string;
+  difficulty?: "Easy" | "Medium" | "Hard";
 }
 
 export interface UpdateAssignmentData {
@@ -45,6 +54,10 @@ export interface UpdateAssignmentData {
   instructions?: string;
   deadline?: string;
   isPublished?: boolean;
+  chapterId?: string;
+  tasks?: string[];
+  estimatedDuration?: string;
+  difficulty?: "Easy" | "Medium" | "Hard";
 }
 
 // API endpoints

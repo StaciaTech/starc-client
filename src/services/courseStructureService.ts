@@ -241,6 +241,34 @@ const courseStructureService = {
       throw handleApiError(error, "Failed to delete chapter");
     }
   },
+
+
+  // Add a new subchapter to a chapter
+  addSubchapter: async (
+    courseId: string,
+    chapterId: string,
+    subchapter: Subchapter
+  ): Promise<Subchapter> => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found");
+
+      const response = await axios.post(
+        `${API_URL}/api/courses/${courseId}/structure/chapters/${chapterId}/subchapters`,
+        subchapter,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      throw handleApiError(error, "Error adding new subchapter");
+    }
+  },
 };
 
 export default courseStructureService;

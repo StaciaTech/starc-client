@@ -54,19 +54,15 @@ import quizService, { IQuiz, IQuizQuestion } from "@/services/quizService";
 import courseStructureService, {
   CourseStructure,
 } from "@/services/courseStructureService";
-import StudyMaterialsManager from "@/components/admin/StudyMaterialsManager"; // Kept for reference if needed, but UI replaced below
 import AssignmentsManager from "@/components/admin/AssignmentsManager";
+import CapstoneManager from "@/components/admin/CapstoneManager";
 import QuizManager from "@/components/admin/QuizManager";
 import { API_URL } from "@/config/api";
 import { deleteS3File } from "@/services/learningService";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import CourseStructureEditor from "@/components/admin/CourseStructureEditor";
 
 const AdminCoursePage: React.FC = () => {
   const navigate = useNavigate();
@@ -409,6 +405,7 @@ const AdminCoursePage: React.FC = () => {
       // Update Subchapter Material
       if (
         subchapterIndex !== undefined &&
+        chapters[chapterIndex].subchapters && 
         chapters[chapterIndex].subchapters[subchapterIndex]
       ) {
         const subchapters = [...chapters[chapterIndex].subchapters];
@@ -444,6 +441,18 @@ const AdminCoursePage: React.FC = () => {
       toast.error("Failed to save resources.");
     } finally {
       setIsSavingResources(false);
+    }
+  };
+
+  const getFileNameFromUrl = (url: string) => {
+    if (!url) return "";
+    try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const decodedPath = decodeURIComponent(pathname);
+        return decodedPath.split('/').pop() || url;
+    } catch (e) {
+        return url.split('/').pop() || url;
     }
   };
 
@@ -502,7 +511,7 @@ const AdminCoursePage: React.FC = () => {
       type === "video"
         ? (courseStructure?.chapters[chapterIndex] as any)?.videoUrl
         : (
-            courseStructure?.chapters[chapterIndex]?.subchapters[
+            courseStructure?.chapters[chapterIndex]?.subchapters?.[
               subchapterIndex!
             ] as any
           )?.studyMaterialUrl;
@@ -529,16 +538,18 @@ const AdminCoursePage: React.FC = () => {
           ...chapters[chapterIndex],
           videoUrl: "",
         } as any;
-      } else if (subchapterIndex !== undefined) {
+      } else if (subchapterIndex !== undefined && chapters[chapterIndex].subchapters) {
         const subchapters = [...chapters[chapterIndex].subchapters];
-        subchapters[subchapterIndex] = {
-          ...subchapters[subchapterIndex],
-          studyMaterialUrl: "",
-        } as any;
-        chapters[chapterIndex] = {
-          ...chapters[chapterIndex],
-          subchapters,
-        };
+        if (subchapters[subchapterIndex]) {
+          subchapters[subchapterIndex] = {
+            ...subchapters[subchapterIndex],
+            studyMaterialUrl: "",
+          } as any;
+          chapters[chapterIndex] = {
+            ...chapters[chapterIndex],
+            subchapters,
+          };
+        }
       }
 
       newStructure.chapters = chapters;
@@ -605,7 +616,7 @@ const AdminCoursePage: React.FC = () => {
               <p className="text-sm text-blue-700 mt-1">
                 {type === "video"
                   ? "Upload video lectures for each CHAPTER. These will be stored securely on S3."
-                  : "Upload PDF study materials for each SUBCHAPTER. These will be stored securely on S3."}
+                  : "Upload study materials (PDF, Docs, etc.) for each SUBCHAPTER. These will be stored securely on S3."}
               </p>
             </div>
           </div>
@@ -669,6 +680,7 @@ const AdminCoursePage: React.FC = () => {
                           sub.id || sub._id || `${chapterIndex}-${subIndex}`;
                         const uploadKey = `material-${chapterIndex}-${subIndex}`;
                         const isUploading = uploadingState[uploadKey];
+                        const hasFile = !!(sub as any).studyMaterialUrl;
 
                         return (
                           <div
@@ -689,61 +701,69 @@ const AdminCoursePage: React.FC = () => {
 
                             {/* File Upload Area */}
                             <div className="flex-1 flex items-center gap-2">
-                              <div className="relative flex-grow">
-                                <Input
-                                  type="file"
-                                  accept=".pdf"
-                                  className="text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-                                  onChange={(e) => {
-                                    if (e.target.files?.[0]) {
-                                      handleFileUpload(
-                                        e.target.files[0],
-                                        "material",
-                                        chapterIndex,
-                                        subIndex,
-                                      );
-                                    }
-                                  }}
-                                  disabled={isUploading}
-                                />
-                                {isUploading && (
-                                  <span className="absolute right-12 top-2 text-xs text-blue-500 animate-pulse">
-                                    Uploading...
+                              {hasFile ? (
+                                <div className="flex items-center gap-2 w-full p-2 bg-gray-50 border border-gray-200 rounded-md">
+                                  <div className="bg-gray-200 p-1.5 rounded text-gray-600">
+                                     <FileText className="h-4 w-4" />
+                                  </div>
+                                  <span className="text-sm text-gray-700 truncate flex-1 font-medium" title={getFileNameFromUrl((sub as any).studyMaterialUrl)}>
+                                     {getFileNameFromUrl((sub as any).studyMaterialUrl)}
                                   </span>
-                                )}
-                              </div>
-
-                              {(sub as any).studyMaterialUrl && (
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-9 w-9 text-gray-400 hover:text-[#8A63FF]"
-                                    title="View PDF"
-                                    onClick={() =>
-                                      window.open(
-                                        (sub as any).studyMaterialUrl,
-                                        "_blank",
-                                      )
-                                    }
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-9 w-9 text-gray-400 hover:text-red-500"
-                                    title="Delete PDF from S3"
-                                    onClick={() =>
-                                      handleDeleteResource(
-                                        "material",
-                                        chapterIndex,
-                                        subIndex,
-                                      )
-                                    }
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-gray-400 hover:text-[#8A63FF]"
+                                      title="View File"
+                                      onClick={() =>
+                                        window.open(
+                                          (sub as any).studyMaterialUrl,
+                                          "_blank",
+                                        )
+                                      }
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-gray-400 hover:text-red-500"
+                                      title="Delete PDF from S3"
+                                      onClick={() =>
+                                        handleDeleteResource(
+                                          "material",
+                                          chapterIndex,
+                                          subIndex,
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="relative flex-grow">
+                                  <Input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.xls,.xlsx,.jpg,.jpeg,.png"
+                                    className="text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        handleFileUpload(
+                                          e.target.files[0],
+                                          "material",
+                                          chapterIndex,
+                                          subIndex,
+                                        );
+                                      }
+                                    }}
+                                    disabled={isUploading}
+                                  />
+                                  {isUploading && (
+                                    <span className="absolute right-12 top-2 text-xs text-blue-500 animate-pulse">
+                                      Uploading...
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -765,60 +785,67 @@ const AdminCoursePage: React.FC = () => {
                     <label className="text-sm font-medium text-purple-900 mb-1 block">
                       Chapter Video Upload (S3)
                     </label>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept="video/*"
-                        className="bg-white border-purple-200 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            handleFileUpload(
-                              e.target.files[0],
-                              "video",
-                              chapterIndex,
-                            );
-                          }
-                        }}
-                        disabled={uploadingState[`video-${chapterIndex}`]}
-                      />
-                      {uploadingState[`video-${chapterIndex}`] && (
-                        <span className="absolute right-2 top-2 text-xs text-purple-600 animate-pulse">
-                          Uploading video...
-                        </span>
-                      )}
-                    </div>
+                    {(chapter as any).videoUrl ? (
+                        <div className="flex items-center gap-3 p-3 bg-white border border-purple-100 rounded-md shadow-sm">
+                           <div className="bg-purple-50 p-1.5 rounded text-purple-600">
+                             <Video className="h-5 w-5" />
+                           </div>
+                           <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Video Uploaded</p>
+                              <p className="text-sm text-gray-900 truncate font-medium" title={getFileNameFromUrl((chapter as any).videoUrl)}>
+                                 {getFileNameFromUrl((chapter as any).videoUrl)}
+                              </p>
+                           </div>
+                           <div className="flex items-center gap-1 border-l border-gray-100 pl-2">
+                             <Button
+                               size="icon"
+                               variant="ghost"
+                               className="h-9 w-9 text-gray-400 hover:text-purple-600"
+                               title="View Video"
+                               onClick={() =>
+                                 window.open((chapter as any).videoUrl, "_blank")
+                               }
+                             >
+                               <ExternalLink className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               size="icon"
+                               variant="ghost"
+                               className="h-9 w-9 text-gray-400 hover:text-red-500"
+                               title="Delete Video from S3"
+                               onClick={() =>
+                                 handleDeleteResource("video", chapterIndex)
+                               }
+                             >
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </div>
+                        </div>
+                    ) : (
+                        <div className="relative">
+                          <Input
+                            type="file"
+                            accept="video/*"
+                            className="bg-white border-purple-200 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleFileUpload(
+                                  e.target.files[0],
+                                  "video",
+                                  chapterIndex,
+                                );
+                              }
+                            }}
+                            disabled={uploadingState[`video-${chapterIndex}`]}
+                          />
+                          {uploadingState[`video-${chapterIndex}`] && (
+                            <span className="absolute right-2 top-2 text-xs text-purple-600 animate-pulse">
+                              Uploading video...
+                            </span>
+                          )}
+                        </div>
+                    )}
                   </div>
-                  {(chapter as any).videoUrl && (
-                    <div className="flex flex-col items-center mt-6 gap-1">
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-10 w-10 text-gray-400 hover:text-purple-600"
-                          title="View Video"
-                          onClick={() =>
-                            window.open((chapter as any).videoUrl, "_blank")
-                          }
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-10 w-10 text-gray-400 hover:text-red-500"
-                          title="Delete Video from S3"
-                          onClick={() =>
-                            handleDeleteResource("video", chapterIndex)
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <span className="text-[10px] text-green-600 font-medium">
-                        Uploaded
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -951,6 +978,12 @@ const AdminCoursePage: React.FC = () => {
                   >
                     Videos
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="capstone"
+                    className="data-[state=active]:bg-white data-[state=active]:text-[#8A63FF] data-[state=active]:shadow-sm"
+                  >
+                    Capstone
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent
@@ -1031,23 +1064,18 @@ const AdminCoursePage: React.FC = () => {
                   value="lessons"
                   className="animate-in fade-in-50 duration-300"
                 >
-                  <div className="flex justify-between items-center bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <div>
-                      <h3 className="font-medium text-blue-900">
-                        Manage Course Structure
-                      </h3>
-                      <p className="text-sm text-blue-700">
-                        Add chapters, subchapters, and sections here.
-                      </p>
-                    </div>
-                    <Button
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() =>
-                        navigateToCourseStructure(selectedCourse?._id || "")
-                      }
-                    >
-                      Open Structure Editor
-                    </Button>
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+                     <CourseStructureEditor
+                        courseId={selectedCourse?._id || ""}
+                        courseStructure={courseStructure}
+                        onUpdate={(updatedStructure) => {
+                           setCourseStructure(updatedStructure);
+                           // Also refresh course data if needed
+                           if (selectedCourse?._id) {
+                               courseStructureService.getCourseStructure(selectedCourse._id);
+                           }
+                        }}
+                     />
                   </div>
                 </TabsContent>
 
@@ -1083,7 +1111,10 @@ const AdminCoursePage: React.FC = () => {
                   className="animate-in fade-in-50 duration-300"
                 >
                   <div className="bg-white rounded-lg">
-                    <AssignmentsManager courseId={selectedCourse?._id || ""} />
+                    <AssignmentsManager
+                      courseId={selectedCourse?._id || ""}
+                      courseStructure={courseStructure}
+                    />
                   </div>
                 </TabsContent>
 
@@ -1092,6 +1123,15 @@ const AdminCoursePage: React.FC = () => {
                   className="animate-in fade-in-50 duration-300"
                 >
                   {renderResourceMapper("video")}
+                </TabsContent>
+
+                <TabsContent
+                  value="capstone"
+                  className="animate-in fade-in-50 duration-300"
+                >
+                  <div className="bg-white rounded-lg">
+                    <CapstoneManager courseId={selectedCourse?._id || ""} />
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>

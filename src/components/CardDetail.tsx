@@ -22,6 +22,8 @@ import {
   useRemoveFromWishlist,
 } from "@/hooks/useWishlist";
 import { useAuth } from "@/App";
+import EntranceTestModal from "@/components/EntranceTestModal";
+import { assessmentService } from "@/services/assessmentService";
 
 // Assets
 import Behance from "../Assets/ion_logo-behance.png";
@@ -188,6 +190,40 @@ const CardDetail: React.FC = () => {
     }
   };
 
+  const [isQualified, setIsQualified] = useState(true);
+  const [showEntranceModal, setShowEntranceModal] = useState(false);
+  const [checkingQualification, setCheckingQualification] = useState(false);
+
+  useEffect(() => {
+    const checkQualification = async () => {
+      if (
+        course &&
+        (course.level === "intermediate" || course.level === "advanced") &&
+        isAuthenticated &&
+        id
+      ) {
+        setCheckingQualification(true);
+        try {
+          const status = await assessmentService.getQualificationStatus(id);
+          setIsQualified(status.qualified);
+        } catch (error) {
+          console.error("Error checking qualification:", error);
+        } finally {
+          setCheckingQualification(false);
+        }
+      }
+    };
+
+    if (course) {
+      checkQualification();
+    }
+  }, [id, course, isAuthenticated]);
+
+  const handleTakeEntranceTest = () => {
+    if (!isAuthenticated) return handleAuthRedirect();
+    setShowEntranceModal(true);
+  };
+
   // Render Action Button Logic
   const renderActionButton = () => {
     if (isEnrolled) {
@@ -236,6 +272,24 @@ const CardDetail: React.FC = () => {
           ) : (
             <>
               <ShoppingCart className="w-5 h-5 mr-2 inline" /> Remove from Cart
+            </>
+          )}
+        </Button>
+      );
+    }
+
+    // Entrance Test Check
+    if (!isQualified && (course?.level === "intermediate" || course?.level === "advanced")) {
+      return (
+        <Button
+          onClick={handleTakeEntranceTest}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 font-semibold"
+        >
+          {checkingQualification ? (
+            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+          ) : (
+            <>
+              <Lock className="w-5 h-5 mr-2 inline" /> Take Entrance Test
             </>
           )}
         </Button>
@@ -693,6 +747,18 @@ const CardDetail: React.FC = () => {
         <PurpleBox />
       </div>
       <Footer />
+      {showEntranceModal && (
+        <EntranceTestModal
+          isOpen={showEntranceModal}
+          onClose={() => setShowEntranceModal(false)}
+          courseId={course._id || ""}
+          courseTitle={course.title}
+          onPass={() => {
+            setIsQualified(true);
+            addToCartMutation.mutate(course._id!);
+          }}
+        />
+      )}
     </div>
   );
 };
