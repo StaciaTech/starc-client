@@ -92,6 +92,11 @@ const Recard: React.FC<CardProps> = ({ course }) => {
 
   // Determine the appropriate image based on course content
   const getImage = () => {
+    // ✅ If a real S3/HTTP thumbnail URL is provided, always use it
+    if (course.image && course.image.startsWith("http")) {
+      return course.image;
+    }
+
     if (
       titleLower.includes("software") ||
       titleLower.includes("programming") ||
@@ -191,7 +196,7 @@ const Recard: React.FC<CardProps> = ({ course }) => {
       ];
     }
 
-    return categoryImages.default;
+    return course.image || categoryImages.default;
   };
 
   // Only show badges that are NOT "AI Generated"
@@ -206,6 +211,10 @@ const Recard: React.FC<CardProps> = ({ course }) => {
           alt={course.title}
           className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            // Fallback to default SVG if S3 image fails to load
+            (e.target as HTMLImageElement).src = webDevImg;
+          }}
         />
 
         {/* ✅ Top Badges Container */}

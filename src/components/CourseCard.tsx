@@ -57,76 +57,81 @@ const CourseCard: React.FC<CourseCardProps> = ({
 }) => {
   // Determine the appropriate image based on course title or category keywords
   const getAppropriateImage = () => {
+    // ✅ If a real thumbnail URL is provided (e.g. S3 URL), always use it
+    if (image && image.startsWith("http")) {
+      return image;
+    }
+
     const titleLower = title.toLowerCase();
-    const categoryLower = category ? category.toLowerCase() : '';
-    
+    const categoryLower = category ? category.toLowerCase() : "";
+
     // Check for software-related keywords
     if (
-      titleLower.includes('software') ||
-      titleLower.includes('programming') ||
-      titleLower.includes('coding') ||
-      titleLower.includes('development') ||
-      titleLower.includes('web') ||
-      titleLower.includes('python') ||
-      titleLower.includes('java') ||
-      titleLower.includes('javascript') ||
-      categoryLower.includes('development') ||
-      categoryLower.includes('programming')
+      titleLower.includes("software") ||
+      titleLower.includes("programming") ||
+      titleLower.includes("coding") ||
+      titleLower.includes("development") ||
+      titleLower.includes("web") ||
+      titleLower.includes("python") ||
+      titleLower.includes("java") ||
+      titleLower.includes("javascript") ||
+      categoryLower.includes("development") ||
+      categoryLower.includes("programming")
     ) {
       return softwareImage;
     }
-    
+
     // Check for design-related keywords
     if (
-      titleLower.includes('design') ||
-      titleLower.includes('ui') ||
-      titleLower.includes('ux') ||
-      titleLower.includes('user interface') ||
-      titleLower.includes('user experience') ||
-      categoryLower.includes('design') ||
-      categoryLower.includes('ui') ||
-      categoryLower.includes('ux')
+      titleLower.includes("design") ||
+      titleLower.includes("ui") ||
+      titleLower.includes("ux") ||
+      titleLower.includes("user interface") ||
+      titleLower.includes("user experience") ||
+      categoryLower.includes("design") ||
+      categoryLower.includes("ui") ||
+      categoryLower.includes("ux")
     ) {
       return designImg;
     }
-    
+
     // Check for mechanical-related keywords
     if (
-      titleLower.includes('mechanical') ||
-      titleLower.includes('engineering') ||
-      titleLower.includes('machine') ||
-      categoryLower.includes('mechanical') ||
-      categoryLower.includes('engineering')
+      titleLower.includes("mechanical") ||
+      titleLower.includes("engineering") ||
+      titleLower.includes("machine") ||
+      categoryLower.includes("mechanical") ||
+      categoryLower.includes("engineering")
     ) {
       return mechanicalImage;
     }
-    
+
     // Check for AutoCAD-related keywords
     if (
-      titleLower.includes('autocad') ||
-      titleLower.includes('auto cad') ||
-      titleLower.includes('cad') ||
-      categoryLower.includes('autocad') ||
-      categoryLower.includes('cad')
+      titleLower.includes("autocad") ||
+      titleLower.includes("auto cad") ||
+      titleLower.includes("cad") ||
+      categoryLower.includes("autocad") ||
+      categoryLower.includes("cad")
     ) {
       return mechanicalImage; // Using mechanical image for AutoCAD
     }
-    
+
     // Check for 3D design keywords
     if (
-      titleLower.includes('3d') ||
-      titleLower.includes('modeling') ||
-      titleLower.includes('blender') ||
-      titleLower.includes('fusion') ||
-      categoryLower.includes('3d')
+      titleLower.includes("3d") ||
+      titleLower.includes("modeling") ||
+      titleLower.includes("blender") ||
+      titleLower.includes("fusion") ||
+      categoryLower.includes("3d")
     ) {
       return mechanicalImage; // Using mechanical image for 3D design
     }
-    
+
     // Use provided image or default if no keywords match
     return image || defaultImage;
   };
-  
+
   const courseImage = getAppropriateImage();
 
   // Only display badge if it's not "AI Generated"
@@ -166,14 +171,18 @@ const CourseCard: React.FC<CourseCardProps> = ({
           </div>
 
           <h3 className="font-semibold text-gray-800 mb-1">{title}</h3>
-          
+
           <div className="flex items-center mb-2">
             <div className="flex mr-1">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
                   size={14}
-                  className={i < Math.floor(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
+                  className={
+                    i < Math.floor(rating)
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-gray-300"
+                  }
                 />
               ))}
             </div>
