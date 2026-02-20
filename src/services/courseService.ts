@@ -63,13 +63,14 @@ const API_ENDPOINT = `${API_URL}/api/courses`;
 const MENTORS_ENDPOINT = `${API_URL}/api/mentors`;
 
 // Get all courses
-export const getCourses = async (): Promise<ICourse[]> => {
+export const getCourses = async (limit?: number): Promise<ICourse[]> => {
   try {
     console.log("Attempting to fetch courses from:", API_ENDPOINT);
     const headers = await getAuthHeader();
 
     const response = await axios.get(API_ENDPOINT, {
       headers,
+      params: limit ? { limit } : undefined,
       timeout: 10000, // 10 second timeout
     });
 

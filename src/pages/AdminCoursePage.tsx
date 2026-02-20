@@ -59,10 +59,16 @@ import CapstoneManager from "@/components/admin/CapstoneManager";
 import QuizManager from "@/components/admin/QuizManager";
 import { API_URL } from "@/config/api";
 import { deleteS3File } from "@/services/learningService";
-import {
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import CourseStructureEditor from "@/components/admin/CourseStructureEditor";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const AdminCoursePage: React.FC = () => {
   const navigate = useNavigate();
@@ -76,6 +82,11 @@ const AdminCoursePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterLevel, setFilterLevel] = useState<string>("all");
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<ICourse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -177,7 +188,7 @@ const AdminCoursePage: React.FC = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const coursesData = await courseService.getCourses();
+      const coursesData = await courseService.getCourses(100); // fetch up to 100 courses
       setCourses(coursesData);
     } catch (error) {
       console.error("Error fetching courses:", error);
@@ -368,18 +379,25 @@ const AdminCoursePage: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    if (window.confirm("Delete course?")) {
-      try {
-        setLoading(true);
-        await courseService.deleteCourse(courseId);
-        toast.success("Course deleted");
-        fetchCourses();
-      } catch (e) {
-        toast.error("Failed to delete");
-      } finally {
-        setLoading(false);
-      }
+  const handleDeleteCourse = (course: ICourse) => {
+    setCourseToDelete(course);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete?._id) return;
+    try {
+      setIsDeleting(true);
+      await courseService.deleteCourse(courseToDelete._id);
+      toast.success(`"${courseToDelete.title}" deleted successfully`);
+      setDeleteDialogOpen(false);
+      setCourseToDelete(null);
+      fetchCourses();
+    } catch (e: any) {
+      const message = e?.response?.data?.message || "Failed to delete course";
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -405,7 +423,7 @@ const AdminCoursePage: React.FC = () => {
       // Update Subchapter Material
       if (
         subchapterIndex !== undefined &&
-        chapters[chapterIndex].subchapters && 
+        chapters[chapterIndex].subchapters &&
         chapters[chapterIndex].subchapters[subchapterIndex]
       ) {
         const subchapters = [...chapters[chapterIndex].subchapters];
@@ -447,12 +465,12 @@ const AdminCoursePage: React.FC = () => {
   const getFileNameFromUrl = (url: string) => {
     if (!url) return "";
     try {
-        const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
-        const decodedPath = decodeURIComponent(pathname);
-        return decodedPath.split('/').pop() || url;
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const decodedPath = decodeURIComponent(pathname);
+      return decodedPath.split("/").pop() || url;
     } catch (e) {
-        return url.split('/').pop() || url;
+      return url.split("/").pop() || url;
     }
   };
 
@@ -538,7 +556,10 @@ const AdminCoursePage: React.FC = () => {
           ...chapters[chapterIndex],
           videoUrl: "",
         } as any;
-      } else if (subchapterIndex !== undefined && chapters[chapterIndex].subchapters) {
+      } else if (
+        subchapterIndex !== undefined &&
+        chapters[chapterIndex].subchapters
+      ) {
         const subchapters = [...chapters[chapterIndex].subchapters];
         if (subchapters[subchapterIndex]) {
           subchapters[subchapterIndex] = {
@@ -704,10 +725,17 @@ const AdminCoursePage: React.FC = () => {
                               {hasFile ? (
                                 <div className="flex items-center gap-2 w-full p-2 bg-gray-50 border border-gray-200 rounded-md">
                                   <div className="bg-gray-200 p-1.5 rounded text-gray-600">
-                                     <FileText className="h-4 w-4" />
+                                    <FileText className="h-4 w-4" />
                                   </div>
-                                  <span className="text-sm text-gray-700 truncate flex-1 font-medium" title={getFileNameFromUrl((sub as any).studyMaterialUrl)}>
-                                     {getFileNameFromUrl((sub as any).studyMaterialUrl)}
+                                  <span
+                                    className="text-sm text-gray-700 truncate flex-1 font-medium"
+                                    title={getFileNameFromUrl(
+                                      (sub as any).studyMaterialUrl,
+                                    )}
+                                  >
+                                    {getFileNameFromUrl(
+                                      (sub as any).studyMaterialUrl,
+                                    )}
                                   </span>
                                   <div className="flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
                                     <Button
@@ -786,64 +814,71 @@ const AdminCoursePage: React.FC = () => {
                       Chapter Video Upload (S3)
                     </label>
                     {(chapter as any).videoUrl ? (
-                        <div className="flex items-center gap-3 p-3 bg-white border border-purple-100 rounded-md shadow-sm">
-                           <div className="bg-purple-50 p-1.5 rounded text-purple-600">
-                             <Video className="h-5 w-5" />
-                           </div>
-                           <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Video Uploaded</p>
-                              <p className="text-sm text-gray-900 truncate font-medium" title={getFileNameFromUrl((chapter as any).videoUrl)}>
-                                 {getFileNameFromUrl((chapter as any).videoUrl)}
-                              </p>
-                           </div>
-                           <div className="flex items-center gap-1 border-l border-gray-100 pl-2">
-                             <Button
-                               size="icon"
-                               variant="ghost"
-                               className="h-9 w-9 text-gray-400 hover:text-purple-600"
-                               title="View Video"
-                               onClick={() =>
-                                 window.open((chapter as any).videoUrl, "_blank")
-                               }
-                             >
-                               <ExternalLink className="h-4 w-4" />
-                             </Button>
-                             <Button
-                               size="icon"
-                               variant="ghost"
-                               className="h-9 w-9 text-gray-400 hover:text-red-500"
-                               title="Delete Video from S3"
-                               onClick={() =>
-                                 handleDeleteResource("video", chapterIndex)
-                               }
-                             >
-                               <Trash2 className="h-4 w-4" />
-                             </Button>
-                           </div>
+                      <div className="flex items-center gap-3 p-3 bg-white border border-purple-100 rounded-md shadow-sm">
+                        <div className="bg-purple-50 p-1.5 rounded text-purple-600">
+                          <Video className="h-5 w-5" />
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                            Video Uploaded
+                          </p>
+                          <p
+                            className="text-sm text-gray-900 truncate font-medium"
+                            title={getFileNameFromUrl(
+                              (chapter as any).videoUrl,
+                            )}
+                          >
+                            {getFileNameFromUrl((chapter as any).videoUrl)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 border-l border-gray-100 pl-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-400 hover:text-purple-600"
+                            title="View Video"
+                            onClick={() =>
+                              window.open((chapter as any).videoUrl, "_blank")
+                            }
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-400 hover:text-red-500"
+                            title="Delete Video from S3"
+                            onClick={() =>
+                              handleDeleteResource("video", chapterIndex)
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
-                        <div className="relative">
-                          <Input
-                            type="file"
-                            accept="video/*"
-                            className="bg-white border-purple-200 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                handleFileUpload(
-                                  e.target.files[0],
-                                  "video",
-                                  chapterIndex,
-                                );
-                              }
-                            }}
-                            disabled={uploadingState[`video-${chapterIndex}`]}
-                          />
-                          {uploadingState[`video-${chapterIndex}`] && (
-                            <span className="absolute right-2 top-2 text-xs text-purple-600 animate-pulse">
-                              Uploading video...
-                            </span>
-                          )}
-                        </div>
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          accept="video/*"
+                          className="bg-white border-purple-200 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleFileUpload(
+                                e.target.files[0],
+                                "video",
+                                chapterIndex,
+                              );
+                            }
+                          }}
+                          disabled={uploadingState[`video-${chapterIndex}`]}
+                        />
+                        {uploadingState[`video-${chapterIndex}`] && (
+                          <span className="absolute right-2 top-2 text-xs text-purple-600 animate-pulse">
+                            Uploading video...
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1057,6 +1092,114 @@ const AdminCoursePage: React.FC = () => {
                         className="min-h-[100px]"
                       />
                     </div>
+
+                    {/* Thumbnail upload */}
+                    <div className="col-span-1 md:col-span-2 space-y-3">
+                      <label className="text-sm font-medium text-gray-700">
+                        Course Thumbnail
+                      </label>
+                      <div className="flex flex-col sm:flex-row items-start gap-4">
+                        {/* Current thumbnail preview */}
+                        <div className="w-40 h-28 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0 flex items-center justify-center border border-gray-200">
+                          {formData.thumbnail ? (
+                            <img
+                              src={formData.thumbnail}
+                              alt="Thumbnail preview"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <span className="text-gray-400 text-xs text-center px-2">
+                              No thumbnail
+                            </span>
+                          )}
+                        </div>
+                        {/* Upload button */}
+                        <div className="flex flex-col gap-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            className="text-sm file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 w-64"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const token = localStorage.getItem("token");
+                              if (!token) {
+                                toast.error("Not authenticated");
+                                return;
+                              }
+                              const uploadData = new FormData();
+                              uploadData.append("file", file);
+                              try {
+                                const { default: axios } =
+                                  await import("axios");
+                                const { API_URL: apiUrl } =
+                                  await import("@/config/api");
+                                toast.loading("Uploading thumbnail...", {
+                                  id: "thumb-upload",
+                                });
+                                const res = await axios.post(
+                                  `${apiUrl}/api/upload`,
+                                  uploadData,
+                                  {
+                                    headers: {
+                                      Authorization: `Bearer ${token}`,
+                                      "Content-Type": "multipart/form-data",
+                                    },
+                                  },
+                                );
+                                if (res.data.success) {
+                                  const s3Url = res.data.data.url;
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    thumbnail: s3Url,
+                                  }));
+                                  // Also persist to the course immediately
+                                  if (selectedCourse?._id) {
+                                    await courseService.updateCourse(
+                                      selectedCourse._id,
+                                      { thumbnail: s3Url },
+                                    );
+                                  }
+                                  toast.success("Thumbnail uploaded!", {
+                                    id: "thumb-upload",
+                                  });
+                                } else {
+                                  toast.error("Upload failed", {
+                                    id: "thumb-upload",
+                                  });
+                                }
+                              } catch (err) {
+                                console.error(err);
+                                toast.error("Failed to upload thumbnail", {
+                                  id: "thumb-upload",
+                                });
+                              }
+                            }}
+                          />
+                          <p className="text-xs text-gray-400">
+                            PNG, JPG, WEBP up to 10MB. Stored on S3.
+                          </p>
+                          {formData.thumbnail && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  thumbnail: "",
+                                }))
+                              }
+                              className="text-xs text-red-500 hover:underline text-left"
+                            >
+                              Remove thumbnail
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -1065,17 +1208,19 @@ const AdminCoursePage: React.FC = () => {
                   className="animate-in fade-in-50 duration-300"
                 >
                   <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                     <CourseStructureEditor
-                        courseId={selectedCourse?._id || ""}
-                        courseStructure={courseStructure}
-                        onUpdate={(updatedStructure) => {
-                           setCourseStructure(updatedStructure);
-                           // Also refresh course data if needed
-                           if (selectedCourse?._id) {
-                               courseStructureService.getCourseStructure(selectedCourse._id);
-                           }
-                        }}
-                     />
+                    <CourseStructureEditor
+                      courseId={selectedCourse?._id || ""}
+                      courseStructure={courseStructure}
+                      onUpdate={(updatedStructure) => {
+                        setCourseStructure(updatedStructure);
+                        // Also refresh course data if needed
+                        if (selectedCourse?._id) {
+                          courseStructureService.getCourseStructure(
+                            selectedCourse._id,
+                          );
+                        }
+                      }}
+                    />
                   </div>
                 </TabsContent>
 
@@ -1179,13 +1324,21 @@ const AdminCoursePage: React.FC = () => {
                   key={course._id}
                   className="group hover:shadow-lg transition-all border-gray-200"
                 >
-                  <div className="h-40 bg-gray-200 relative">
-                    {course.thumbnail && (
+                  <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 relative flex items-center justify-center">
+                    {course.thumbnail ? (
                       <img
                         src={course.thumbnail}
-                        alt=""
-                        className="w-full h-full object-cover"
+                        alt={course.title}
+                        className="w-full h-full object-cover absolute inset-0"
+                        onError={(e) => {
+                          // Hide broken image; background gradient acts as placeholder
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
                       />
+                    ) : (
+                      <span className="text-gray-400 text-xs">
+                        No thumbnail
+                      </span>
                     )}
                     <Badge className="absolute top-2 right-2 bg-white/90 text-black hover:bg-white">
                       {course.level}
@@ -1215,6 +1368,14 @@ const AdminCoursePage: React.FC = () => {
                     >
                       Structure
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      title="Delete Course"
+                      onClick={() => handleDeleteCourse(course)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -1222,6 +1383,59 @@ const AdminCoursePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!isDeleting) setDeleteDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Delete Course
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-gray-900">
+                "{courseToDelete?.title}"
+              </span>
+              ?
+              <br />
+              <span className="text-red-500 text-sm mt-1 block">
+                This will permanently remove all chapters, quizzes, assignments,
+                and course structure.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteCourse}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" /> Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Course
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
