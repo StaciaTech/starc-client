@@ -47,12 +47,26 @@ import CourseAssignmentsPage from "./pages/CourseAssignmentsPage";
 import AdminAssignmentDashboard from "./pages/admin/AdminAssignmentDashboard";
 import CourseSubmissionsPage from "./pages/admin/CourseSubmissionsPage";
 
+// ULearn Pages
+import ULearnHome from "./pages/ULearn/ULearnHome";
+import DiagnosticTest from "./pages/ULearn/DiagnosticTest";
+import CourseGenerating from "./pages/ULearn/CourseGenerating";
+import CourseRoadmap from "./pages/ULearn/CourseRoadmap";
+import ChapterView from "./pages/ULearn/ChapterView";
+import MyCourses from "./pages/ULearn/MyCourses";
+
 // Services
 import authService from "./services/authService";
 import AdminDashboard from "./pages/AdminDashboard";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import CreateSupervisedCourse from "./pages/AdminCourseCreation";
+import CoursesProfilePage from "./pages/CoursesProfilePage";
+import AdminULBooksPage from "./pages/AdminULBooksPage";
+import BookReaderPage from "./pages/ULearn/BookReaderPage";
+import GroupStudyJoin from "./pages/GroupStudyJoin";
+import GroupStudyDashboard from "./pages/GroupStudyDashboard";
+import GroupStudyLeaderboard from "./pages/GroupStudyLeaderboard";
 
 // Create AuthContext
 interface AuthContextType {
@@ -66,7 +80,7 @@ export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   user: null,
-  checkAuthStatus: () => {},
+  checkAuthStatus: () => { },
 });
 
 // Custom event for auth state changes
@@ -245,6 +259,7 @@ const App: React.FC = () => {
                 <Route path="/book" element={<Book />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/my-courses" element={<ProtectedRoute><CoursesProfilePage /></ProtectedRoute>} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
@@ -321,7 +336,14 @@ const App: React.FC = () => {
                     </AdminRoute>
                   }
                 />
-
+                <Route
+                  path="/admin/unsupervised-books"
+                  element={
+                    <AdminRoute>
+                      <AdminULBooksPage />
+                    </AdminRoute>
+                  }
+                />
                 <Route
                   path="/admin/assignments/:courseId"
                   element={
@@ -372,6 +394,25 @@ const App: React.FC = () => {
                   }
                 />
 
+                {/* ── ULearn Routes ── */}
+                <Route path="/learn" element={<Navigate to="/my-courses" replace />} />
+                <Route path="/learn/diagnostic" element={<ProtectedRoute><DiagnosticTest /></ProtectedRoute>} />
+                <Route path="/learn/generating/:courseId" element={<ProtectedRoute><CourseGenerating /></ProtectedRoute>} />
+                <Route path="/learn/course/:courseId" element={<ProtectedRoute><CourseRoadmap /></ProtectedRoute>} />
+                <Route path="/learn/course/:courseId/chapter/:chapterId" element={<ProtectedRoute><ChapterView /></ProtectedRoute>} />
+                <Route path="/learn/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+                <Route path="/learn/group-study/join/:inviteToken" element={<ProtectedRoute><GroupStudyJoin /></ProtectedRoute>} />
+                <Route path="/learn/group-study/:groupId" element={<ProtectedRoute><GroupStudyDashboard /></ProtectedRoute>} />
+                <Route path="/learn/group-study/:groupId/leaderboard" element={<ProtectedRoute><GroupStudyLeaderboard /></ProtectedRoute>} />
+
+                <Route
+                  path="/learn/book/:courseId"
+                  element={
+                    <ProtectedRoute>
+                      <BookReaderPage />
+                    </ProtectedRoute>
+                  }
+                />
                 {/* Catch-all Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

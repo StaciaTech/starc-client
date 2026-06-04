@@ -126,6 +126,17 @@ const AdminDashboard: React.FC = () => {
       iconColor: "text-green-600",
       path: "/admin/assignments",
       stats: "Review Pending",
+      comingSoon: true,
+    },
+    {
+      title: "Unsuperwise learning Book Management",
+      description: "Review and create books",
+      icon: ListChecks,
+      color: "from-green-500 to-green-700",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-600",
+      path: "/admin/unsupervised-books",
+      stats: "create book",
       comingSoon: false,
     },
     {
@@ -305,9 +316,8 @@ const AdminDashboard: React.FC = () => {
               return (
                 <Card
                   key={index}
-                  className={`group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-transparent hover:border-[#8A63FF] ${
-                    card.comingSoon ? "opacity-75" : ""
-                  }`}
+                  className={`group cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-transparent hover:border-[#8A63FF] ${card.comingSoon ? "opacity-75" : ""
+                    }`}
                   onClick={() => !card.comingSoon && navigate(card.path)}
                 >
                   <CardHeader>

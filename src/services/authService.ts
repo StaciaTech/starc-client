@@ -122,19 +122,36 @@ export const forgotPassword = async (
     });
     return response.data;
   } catch (error) {
-    throw handleApiError(error, "Failed to send password reset email");
+    throw handleApiError(error, "Failed to send password reset verification code");
   }
 };
 
+export const verifyOtp = async (
+  email: string,
+  otp: string,
+): Promise<{ message: string; data?: any }> => {
+  try {
+    const response = await axios.post(AUTH_API_URL + "/verify-otp", {
+      email,
+      otp,
+    });
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error, "Failed to verify verification code");
+  }
+};
+
+export interface ResetPasswordData {
+  email: string;
+  otp: string;
+  password: string;
+}
+
 export const resetPassword = async (
-  token: string,
-  password: string,
+  data: ResetPasswordData,
 ): Promise<{ message: string }> => {
   try {
-    const response = await axios.post(AUTH_API_URL + "/reset-password", {
-      token,
-      password,
-    });
+    const response = await axios.post(AUTH_API_URL + "/reset-password", data);
     return response.data;
   } catch (error) {
     throw handleApiError(error, "Failed to reset password");
@@ -224,6 +241,7 @@ export default {
   login,
   register,
   forgotPassword,
+  verifyOtp,
   resetPassword,
   verifyToken,
   logout,

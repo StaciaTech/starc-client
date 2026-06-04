@@ -57,8 +57,8 @@ const CourseCard: React.FC<CourseCardProps> = ({
 }) => {
   // Determine the appropriate image based on course title or category keywords
   const getAppropriateImage = () => {
-    // ✅ If a real thumbnail URL is provided (e.g. S3 URL), always use it
-    if (image && image.startsWith("http")) {
+    // ✅ If a thumbnail is provided, use it
+    if (image) {
       return image;
     }
 

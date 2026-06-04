@@ -75,6 +75,15 @@ function CourseCard({ course, index }: { course: ICourse & { badge?: string }, i
 
   // Enhanced image selection logic based on course content
   const getCourseImage = () => {
+    const imgUrl = course.thumbnail || (course as any).image;
+    if (imgUrl && (
+      imgUrl.startsWith("http") ||
+      imgUrl.startsWith("/") ||
+      /\.(jpeg|jpg|gif|png|svg|webp)/i.test(imgUrl)
+    )) {
+      return imgUrl;
+    }
+
     const title = course.title ? course.title.toLowerCase() : '';
     const category = course.category ? course.category.toLowerCase() : '';
     
@@ -253,7 +262,7 @@ export default function CoursesSection() {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const data = await courseService.getCourses();
+        const data = await courseService.getCourses(100);
         setCourses(data || []);
       } catch (error) {
         console.error("Error fetching courses:", error);

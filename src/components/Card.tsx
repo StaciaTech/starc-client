@@ -92,8 +92,12 @@ const Recard: React.FC<CardProps> = ({ course }) => {
 
   // Determine the appropriate image based on course content
   const getImage = () => {
-    // ✅ If a real S3/HTTP thumbnail URL is provided, always use it
-    if (course.image && course.image.startsWith("http")) {
+    // ✅ If a real S3/HTTP thumbnail URL or local image path is provided, always use it
+    if (course.image && (
+      course.image.startsWith("http") ||
+      course.image.startsWith("/") ||
+      /\.(jpeg|jpg|gif|png|svg|webp)/i.test(course.image)
+    )) {
       return course.image;
     }
 
@@ -229,9 +233,8 @@ const Recard: React.FC<CardProps> = ({ course }) => {
           {/* ✅ Discount Badge with Animation */}
           {hasDiscount && (
             <div
-              className={`bg-gradient-to-r from-red-500 to-pink-500 text-white py-1 px-2.5 rounded-full text-xs font-bold shadow-lg transform transition-all duration-500 ${
-                showDiscount ? "scale-100 opacity-100" : "scale-0 opacity-0"
-              }`}
+              className={`bg-gradient-to-r from-red-500 to-pink-500 text-white py-1 px-2.5 rounded-full text-xs font-bold shadow-lg transform transition-all duration-500 ${showDiscount ? "scale-100 opacity-100" : "scale-0 opacity-0"
+                }`}
             >
               {course.discount}% OFF
             </div>
@@ -266,11 +269,10 @@ const Recard: React.FC<CardProps> = ({ course }) => {
             <Star
               key={i}
               size={14}
-              className={`${
-                i < Math.floor(course.rating)
+              className={`${i < Math.floor(course.rating)
                   ? "fill-yellow-400 text-yellow-400"
                   : "text-gray-300"
-              }`}
+                }`}
             />
           ))}
           <span className="text-gray-500 ml-1 text-xs sm:text-sm">
@@ -324,11 +326,10 @@ const Recard: React.FC<CardProps> = ({ course }) => {
                 {hasDiscount ? (
                   <>
                     <span
-                      className={`text-[#8A63FF] font-bold text-lg sm:text-xl transition-all duration-500 ${
-                        showDiscount
+                      className={`text-[#8A63FF] font-bold text-lg sm:text-xl transition-all duration-500 ${showDiscount
                           ? "opacity-100 translate-x-0"
                           : "opacity-0 -translate-x-4"
-                      }`}
+                        }`}
                     >
                       ${discountedPrice.toFixed(2)}
                     </span>
@@ -340,9 +341,8 @@ const Recard: React.FC<CardProps> = ({ course }) => {
                       </span>
                       {/* Animated strikethrough line */}
                       <div
-                        className={`absolute top-1/2 left-0 h-[2px] bg-red-500 transition-all duration-700 ease-out ${
-                          showStrike ? "w-full" : "w-0"
-                        }`}
+                        className={`absolute top-1/2 left-0 h-[2px] bg-red-500 transition-all duration-700 ease-out ${showStrike ? "w-full" : "w-0"
+                          }`}
                         style={{ transform: "translateY(-50%)" }}
                       ></div>
                     </div>
@@ -357,11 +357,10 @@ const Recard: React.FC<CardProps> = ({ course }) => {
               {/* ✅ Discount Percentage Badge (Right side) */}
               {hasDiscount && (
                 <div
-                  className={`flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-md text-xs font-bold shadow-md transition-all duration-500 ${
-                    showDiscount
+                  className={`flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-md text-xs font-bold shadow-md transition-all duration-500 ${showDiscount
                       ? "opacity-100 scale-100"
                       : "opacity-0 scale-50"
-                  }`}
+                    }`}
                 >
                   <svg
                     className="w-3 h-3"

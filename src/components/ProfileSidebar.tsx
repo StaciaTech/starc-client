@@ -16,7 +16,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = memo(({ user = { name: 'St
   // Define navigation items once
   const navItems = useMemo(() => [
     { path: '/profile', icon: <LayoutDashboard className="h-5 w-5" />, label: 'Overview' },
-    { path: '/course', icon: <BookOpen className="h-5 w-5" />, label: 'Courses' },
+    { path: '/my-courses', icon: <BookOpen className="h-5 w-5" />, label: 'My Courses' },
     { path: '/book', icon: <Book className="h-5 w-5" />, label: 'Books' },
     { path: '/schedule', icon: <Calendar className="h-5 w-5" />, label: 'Schedule' },
     { path: '/settings', icon: <Settings className="h-5 w-5" />, label: 'Settings' },
