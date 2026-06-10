@@ -76,14 +76,14 @@ const CardDetail: React.FC = () => {
   // Computed Statuses
   const isEnrolled =
     enrollmentsData?.data?.some(
-      (enrollment: any) => enrollment.courseId._id === id,
+      (enrollment: any) => enrollment.courseId?._id === id,
     ) || false;
 
   const isInCart =
-    cartData?.data?.items?.some((item: any) => item.course._id === id) || false;
+    cartData?.data?.items?.some((item: any) => item.course?._id === id) || false;
 
   const isInWishlist =
-    wishlistData?.data?.items?.some((item: any) => item.course._id === id) ||
+    wishlistData?.data?.items?.some((item: any) => item.course?._id === id) ||
     false;
 
   // Format Duration Helper
@@ -650,12 +650,12 @@ const CardDetail: React.FC = () => {
               ) : (
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-gray-900">
-                    ₹{discountedPrice.toFixed(2)}
+                    ${discountedPrice.toFixed(2)}
                   </span>
                   {course.discount > 0 && (
                     <>
                       <span className="text-lg text-gray-400 line-through">
-                        ₹{course.price.toFixed(2)}
+                        ${course.price.toFixed(2)}
                       </span>
                       <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">
                         {course.discount}% OFF

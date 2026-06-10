@@ -176,8 +176,8 @@ const Course: React.FC = () => {
             instructor: course.instructor?.name || "Unknown Instructor",
             rating: course.rating || 0,
             students: course.enrolledUsers?.length || 0,
-            price: 299.99, // ✅ Discounted price
-            originalPrice: 299.99, // ✅ Original price (before discount)
+            price: discountedPrice, // ✅ Discounted price
+            originalPrice: originalPrice, // ✅ Original price (before discount)
             discount: course.discount || 0, // ✅ Add discount percentage
             duration: `${course.duration} hours`,
             lessons: course.lessons?.length || 0,
@@ -763,7 +763,7 @@ const Course: React.FC = () => {
                                           <p className="text-[10px] text-gray-400 font-mont">Joined</p>
                                         </div>
                                         <div className="bg-gray-50 rounded-xl py-2 px-1">
-                                          <p className="text-sm font-bold text-[#8A63FF] font-mont">₹{group.pricePerPerson}</p>
+                                          <p className="text-sm font-bold text-[#8A63FF] font-mont">${group.pricePerPerson}</p>
                                           <p className="text-[10px] text-gray-400 font-mont">Per Person</p>
                                         </div>
                                         <div className="bg-gray-50 rounded-xl py-2 px-1">
@@ -786,7 +786,7 @@ const Course: React.FC = () => {
                                       {/* Redistribution notice */}
                                       {group.redistributionTriggered && group.redistributionAmount > 0 && (
                                         <div className="bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 text-xs text-orange-700 font-mont">
-                                          ⚠️ Extra ₹{group.redistributionAmount.toFixed(0)}/person due to no-shows
+                                          ⚠️ Extra ${group.redistributionAmount.toFixed(0)}/person due to no-shows
                                         </div>
                                       )}
 

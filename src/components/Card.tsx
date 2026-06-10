@@ -57,7 +57,7 @@ interface CardProps {
 }
 
 const Recard: React.FC<CardProps> = ({ course }) => {
-  console.log(course);
+  console.log("recard", course);
 
   const navigate = useNavigate();
   const titleLower = course.title ? course.title.toLowerCase() : "";
@@ -70,10 +70,8 @@ const Recard: React.FC<CardProps> = ({ course }) => {
 
   // ✅ Calculate discounted price from backend discount percentage
   const hasDiscount = course.discount && course.discount > 0;
-  const originalPrice = course.price;
-  const discountedPrice = hasDiscount
-    ? course.price - course.price * (course.discount / 100)
-    : course.price;
+  const originalPrice = course.originalPrice;
+  const discountedPrice = course.price;
 
   // ✅ Trigger animation on mount
   useEffect(() => {
@@ -270,8 +268,8 @@ const Recard: React.FC<CardProps> = ({ course }) => {
               key={i}
               size={14}
               className={`${i < Math.floor(course.rating)
-                  ? "fill-yellow-400 text-yellow-400"
-                  : "text-gray-300"
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-gray-300"
                 }`}
             />
           ))}
@@ -301,10 +299,10 @@ const Recard: React.FC<CardProps> = ({ course }) => {
                 <Users size={14} className="mr-1 shrink-0" />
                 <span>{course.students.toLocaleString()}</span>
               </div>
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <Clock size={14} className="mr-1 shrink-0" />
                 <span>{course.duration}</span>
-              </div>
+              </div> */}
             </>
           )}
         </div>
@@ -327,8 +325,8 @@ const Recard: React.FC<CardProps> = ({ course }) => {
                   <>
                     <span
                       className={`text-[#8A63FF] font-bold text-lg sm:text-xl transition-all duration-500 ${showDiscount
-                          ? "opacity-100 translate-x-0"
-                          : "opacity-0 -translate-x-4"
+                        ? "opacity-100 translate-x-0"
+                        : "opacity-0 -translate-x-4"
                         }`}
                     >
                       ${discountedPrice.toFixed(2)}
@@ -358,8 +356,8 @@ const Recard: React.FC<CardProps> = ({ course }) => {
               {hasDiscount && (
                 <div
                   className={`flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-md text-xs font-bold shadow-md transition-all duration-500 ${showDiscount
-                      ? "opacity-100 scale-100"
-                      : "opacity-0 scale-50"
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-50"
                     }`}
                 >
                   <svg

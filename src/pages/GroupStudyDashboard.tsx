@@ -177,7 +177,7 @@ const GroupStudyDashboard = () => {
                         </div>
                         <div className="bg-gray-50 rounded-xl p-3 text-center">
                             <p className="text-base font-bold text-[#8A63FF]">
-                                {group.pricePerPerson > 0 ? `₹${group.pricePerPerson}` : "TBD"}
+                                {group.pricePerPerson > 0 ? `$${group.pricePerPerson}` : "TBD"}
                             </p>
                             <p className="text-[11px] text-gray-400 mt-0.5">Per Person</p>
                         </div>
@@ -223,7 +223,7 @@ const GroupStudyDashboard = () => {
                         {paying ? (
                             <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing…</>
                         ) : (
-                            <><CreditCard className="w-4 h-4" /> Pay ₹{myMember.amountDue} Now</>
+                            <><CreditCard className="w-4 h-4" /> Pay ${myMember.amountDue} Now</>
                         )}
                     </button>
                 )}
@@ -238,7 +238,7 @@ const GroupStudyDashboard = () => {
                         {paying ? (
                             <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing…</>
                         ) : (
-                            <><AlertCircle className="w-4 h-4" /> Pay Extra ₹{(myMember.amountDue - myMember.amountPaid).toFixed(0)}</>
+                            <><AlertCircle className="w-4 h-4" /> Pay Extra ${(myMember.amountDue - myMember.amountPaid).toFixed(0)}</>
                         )}
                     </button>
                 )}
@@ -268,7 +268,7 @@ const GroupStudyDashboard = () => {
                         <p className="text-sm font-semibold text-orange-700">Redistribution Applied</p>
                         <p className="text-xs text-orange-600 mt-0.5">
                             {group.groupSize - (group.members?.length || 0)} slot(s) went unfilled after the deadline.
-                            Each paid member owes an additional ₹{group.redistributionAmount.toFixed(0)}.
+                            Each paid member owes an additional ${group.redistributionAmount.toFixed(0)}.
                             Contact admin to complete the extra payment.
                         </p>
                     </div>
@@ -322,8 +322,8 @@ const GroupStudyDashboard = () => {
                                         )}
                                     </div>
                                     <p className="text-xs text-gray-400 mt-0.5">
-                                        ₹{member.amountPaid} paid
-                                        {member.amountDue > 0 && ` / ₹${member.amountDue} due`}
+                                        ${member.amountPaid} paid
+                                        {member.amountDue > 0 && ` / $${member.amountDue} due`}
                                     </p>
                                 </div>
 

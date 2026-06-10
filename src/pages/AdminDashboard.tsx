@@ -155,7 +155,7 @@ const AdminDashboard: React.FC = () => {
   const statsCards = [
     {
       title: "Total Revenue",
-      value: `₹${stats.totalRevenue.toLocaleString()}`,
+      value: `$${stats.totalRevenue.toLocaleString()}`,
       change: "+12.5%",
       changeType: "positive",
       icon: DollarSign,

@@ -136,6 +136,18 @@ const Navbar = () => {
             )}
           </Link>
 
+          {/* ✅ Notification Bell */}
+          <Link to="/notifications" className="hidden sm:block relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-[#8A63FF] border rounded-[50%] border-[#8A63FF] hover:bg-[#8A63FF] hover:text-white h-8 w-8 sm:h-10 sm:w-10"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4 sm:h-6 sm:w-6" />
+            </Button>
+          </Link>
+
           {authState.isAuthenticated ? (
             <div className="flex items-center space-x-2 lg:space-x-4">
               <Link to="/profile">
@@ -198,6 +210,17 @@ const Navbar = () => {
                   {cartCount > 9 ? "9+" : cartCount}
                 </span>
               )}
+            </Link>
+
+            {/* ✅ Mobile Notifications Link */}
+            <Link
+              to="/notifications"
+              className="flex items-center justify-between p-3 mb-4 bg-purple-50 rounded-lg hover:bg-purple-100"
+            >
+              <div className="flex items-center">
+                <Bell className="h-5 w-5 mr-3 text-[#8A63FF]" />
+                <span className="text-gray-800 font-medium">Notifications</span>
+              </div>
             </Link>
 
             {/* Mobile Navigation Links */}

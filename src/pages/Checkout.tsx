@@ -301,11 +301,11 @@ const Checkout: React.FC = () => {
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-semibold text-gray-900">
-                            ₹{course.price}
+                            ${course.price}
                           </span>
                           {course.originalPrice && (
                             <span className="text-xs text-gray-400 line-through">
-                              ₹{course.originalPrice}
+                              ${course.originalPrice}
                             </span>
                           )}
                         </div>
@@ -347,26 +347,26 @@ const Checkout: React.FC = () => {
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
                     <span className="font-semibold">
-                      ₹{subtotal.toFixed(2)}
+                      ${subtotal.toFixed(2)}
                     </span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
                       <span className="font-semibold">
-                        -₹{discount.toFixed(2)}
+                        -${discount.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-gray-600">
                     <span>Tax (GST 18%)</span>
-                    <span className="font-semibold">₹{tax.toFixed(2)}</span>
+                    <span className="font-semibold">${tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-3">
                     <div className="flex justify-between text-xl font-bold text-gray-800">
                       <span>Total</span>
                       <span className="text-[#8A63FF]">
-                        ₹{total.toFixed(2)}
+                        ${total.toFixed(2)}
                       </span>
                     </div>
                   </div>

@@ -24,6 +24,7 @@ import Dashboard from "./pages/Dashboard";
 import SchedulePage from "./pages/SchedulePage";
 import SettingsPage from "./pages/SettingsPage";
 import WishlistPage from "./pages/WishlistPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import LoginPage from "./pages/LoginPage";
@@ -263,6 +264,8 @@ const App: React.FC = () => {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/courses" element={<Navigate to="/course" replace />} />
                 <Route
                   path="/learning/overview"
                   element={<LearningOverview />}

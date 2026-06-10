@@ -52,7 +52,7 @@ const MyCourses = () => {
             <p className="text-sm text-gray-400 mt-0.5">Your personalised AI-generated learning paths</p>
           </div>
           <button
-            onClick={() => navigate("/courses")}
+            onClick={() => navigate("/course")}
             className="flex items-center gap-2 bg-[#8A63FF] hover:bg-[#7A53EF] text-white font-semibold px-5 py-2.5 rounded-full transition-colors"
           >
             <Plus className="w-4 h-4" /> New Course
@@ -73,7 +73,7 @@ const MyCourses = () => {
               <div className="bg-white rounded-[20px] p-8 text-center mb-6">
                 <p className="text-gray-400 text-sm">No solo courses yet.</p>
                 <button
-                  onClick={() => navigate("/courses")}
+                  onClick={() => navigate("/course")}
                   className="mt-3 bg-[#8A63FF] text-white px-6 py-2 rounded-full text-sm font-semibold"
                 >Start Learning</button>
               </div>
@@ -124,7 +124,7 @@ const MyCourses = () => {
               <div className="bg-white rounded-[20px] p-8 text-center">
                 <p className="text-gray-400 text-sm">No group courses yet.</p>
                 <button
-                  onClick={() => navigate("/courses")}
+                  onClick={() => navigate("/course")}
                   className="mt-3 bg-[#8A63FF] text-white px-6 py-2 rounded-full text-sm font-semibold"
                 >Create Group</button>
               </div>
@@ -150,7 +150,7 @@ const MyCourses = () => {
                         </span>
                         {myMember?.paymentStatus === "pending" && myMember?.amountDue > 0 && (
                           <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full font-semibold">
-                            💳 Pay ₹{myMember.amountDue}
+                            💳 Pay ${myMember.amountDue}
                           </span>
                         )}
                         {myMember?.hasAccess && (
@@ -166,7 +166,7 @@ const MyCourses = () => {
                           <Users className="w-3 h-3" />{group.membersCount}/{group.groupSize} members
                         </span>
                         <span className="text-[#8A63FF] font-semibold">
-                          {group.pricePerPerson > 0 ? `₹${group.pricePerPerson}/person` : "Price TBD"}
+                          {group.pricePerPerson > 0 ? `$${group.pricePerPerson}/person` : "Price TBD"}
                         </span>
                       </div>
                     </div>

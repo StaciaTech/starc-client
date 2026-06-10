@@ -197,7 +197,7 @@ const GroupStudyJoin = () => {
                             <Zap className="w-4 h-4 text-[#8A63FF]" />
                         </div>
                         <p className="text-lg font-bold text-[#8A63FF]">
-                            {group.pricePerPerson > 0 ? `₹${group.pricePerPerson}` : "TBD"}
+                            {group.pricePerPerson > 0 ? `$${group.pricePerPerson}` : "TBD"}
                         </p>
                         <p className="text-[11px] text-gray-400 mt-0.5">Per Person</p>
                     </div>
@@ -294,11 +294,11 @@ const GroupStudyJoin = () => {
                             </p>
                             <p className="text-gray-400 text-sm mb-6">
                                 {group.pricePerPerson > 0
-                                    ? `Once your payment of ₹${group.pricePerPerson} is confirmed by the admin, you'll get full access.`
+                                    ? `Once your payment of $${group.pricePerPerson} is confirmed by the admin, you'll get full access.`
                                     : "Once the AI sets the price and your payment is confirmed, you'll get full access."}
                             </p>
                             <button
-                                onClick={() => navigate("/courses")}
+                                onClick={() => navigate("/course")}
                                 className="flex items-center gap-2 mx-auto bg-[#8A63FF] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#7A53EF] transition-colors"
                             >
                                 Browse More Courses <ChevronRight className="w-4 h-4" />
@@ -322,7 +322,7 @@ const GroupStudyJoin = () => {
                                         "This group is no longer accepting new members."}
                             </p>
                             <button
-                                onClick={() => navigate("/courses")}
+                                onClick={() => navigate("/course")}
                                 className="text-[#8A63FF] text-sm font-semibold hover:underline flex items-center gap-1 mx-auto"
                             >
                                 Browse other courses <ChevronRight className="w-4 h-4" />
@@ -336,11 +336,11 @@ const GroupStudyJoin = () => {
                                 <div>
                                     <p className="text-sm text-gray-500">Your share</p>
                                     <p className="text-3xl font-bold text-[#8A63FF]">
-                                        {group.pricePerPerson > 0 ? `₹${group.pricePerPerson}` : "Price TBD"}
+                                        {group.pricePerPerson > 0 ? `$${group.pricePerPerson}` : "Price TBD"}
                                     </p>
                                     {group.pricePerPerson > 0 && (
                                         <p className="text-xs text-gray-400 mt-0.5">
-                                            ₹{group.groupPrice} total ÷ {group.groupSize} people
+                                            ${group.groupPrice} total ÷ {group.groupSize} people
                                         </p>
                                     )}
                                 </div>

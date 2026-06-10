@@ -236,11 +236,11 @@ const CourseGenerating = () => {
                         <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 text-sm font-mont">
                           <div className="flex justify-between text-gray-500">
                             <span>AI Course Price</span>
-                            <span className="font-medium text-gray-700">₹{aiPrice}</span>
+                            <span className="font-medium text-gray-700">${aiPrice}</span>
                           </div>
                           <div className="flex justify-between text-gray-500">
                             <span>Group Price (×1.3)</span>
-                            <span className="font-medium text-gray-700">₹{groupPrice}</span>
+                            <span className="font-medium text-gray-700">${groupPrice}</span>
                           </div>
                           <div className="flex justify-between text-gray-500">
                             <span>Group Size</span>
@@ -248,7 +248,7 @@ const CourseGenerating = () => {
                           </div>
                           <div className="flex justify-between text-[#8A63FF] font-bold border-t border-gray-200 pt-2.5 text-base">
                             <span>Your Share</span>
-                            <span>₹{pricePerPerson}</span>
+                            <span>${pricePerPerson}</span>
                           </div>
                         </div>
 
@@ -282,7 +282,7 @@ const CourseGenerating = () => {
                       <>
                         <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-3">
                           <span className="text-gray-600">Chapters ({totalChapterCount})</span>
-                          <span className="font-semibold text-gray-900">₹{course.price}</span>
+                          <span className="font-semibold text-gray-900">${course.price}</span>
                         </div>
                         <div className="bg-purple-50 rounded-xl p-3 space-y-2 border border-purple-100">
                           <p className="text-xs font-semibold text-[#8A63FF] flex items-center gap-1 font-mont">
@@ -299,7 +299,7 @@ const CourseGenerating = () => {
                         </div>
                         <div className="flex justify-between items-center pt-1">
                           <span className="font-bold text-gray-900 font-mont">Total Price</span>
-                          <span className="text-xl font-bold text-[#8A63FF] font-mont">₹{course.price}</span>
+                          <span className="text-xl font-bold text-[#8A63FF] font-mont">${course.price}</span>
                         </div>
                       </>
                     )}
@@ -313,7 +313,7 @@ const CourseGenerating = () => {
                     {paying
                       ? <Loader2 className="w-5 h-5 animate-spin" />
                       : <CreditCard className="w-5 h-5" />}
-                    {paying ? "Processing…" : isGroupStudy ? `Pay ₹${pricePerPerson}` : `Pay ₹${course.price}`}
+                    {paying ? "Processing…" : isGroupStudy ? `Pay $${pricePerPerson}` : `Pay $${course.price}`}
                   </button>
                   <p className="text-[10px] text-gray-400 text-center mt-3 flex items-center justify-center gap-1 font-mont">
                     <AlertCircle className="w-3 h-3" /> Test mode: No real charge
@@ -330,7 +330,7 @@ const CourseGenerating = () => {
                       <div>
                         <p className="text-sm font-bold text-gray-900 font-mont">Invite Your Group</p>
                         <p className="text-xs text-gray-400 font-mont">
-                          Share this link — they pay ₹{pricePerPerson} each
+                          Share this link — they pay ${pricePerPerson} each
                         </p>
                       </div>
                     </div>
